@@ -7,7 +7,7 @@ make
 
 if [ $? -eq 0 ]; then
     echo "Build successful! Launching game..."
-    ./shootemup
+    ./bin/shootemup
 else
     echo "Build failed. Please check the error messages above."
     exit 1
