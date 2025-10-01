@@ -1,2 +1,39 @@
-collision_log.txt
+# Build artifacts
+build/
+*.o
+*.a
+*.so
+*.dylib
+
+# Executable
+bin
 shootemup
+
+# Debug and log files
+*.log
+*.txt
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Debug symbols
+*.dSYM/
+*.su
+*.idb
+*.pdb
+
+# Dependencies
+*.d
+
+# Core dumps
+vgcore.*
+core.*
+
+# Temporary files
+*.tmp
+*.temp
