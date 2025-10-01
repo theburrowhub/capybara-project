@@ -26,7 +26,7 @@ int main(void) {
         
         // Render everything
         BeginDrawing();
-        ClearBackground(DARKBLUE);
+        ClearBackground(BLACK);
         DrawGame(&game);
         EndDrawing();
     }

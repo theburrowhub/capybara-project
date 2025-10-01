@@ -6,18 +6,10 @@
 
 // Forward declarations
 typedef struct Game Game;
-
-// Player structure
-typedef struct Player {
-    Vector2 position;
-    Rectangle bounds;
-    Color color;
-    int health;
-    float weaponHeat;     // Current weapon heat (0-100)
-    float maxHeat;        // Maximum heat before overheat
-    bool overheated;      // Is weapon overheated?
-    float cooldownTime;   // Time remaining for cooldown
-} Player;
+typedef struct WaveSystem WaveSystem;
+typedef struct EnemyEx EnemyEx;
+typedef struct PlayerShip PlayerShip;
+typedef struct ExplosionSystem ExplosionSystem;
 
 // Bullet structure
 typedef struct Bullet {
@@ -27,56 +19,40 @@ typedef struct Bullet {
     float speed;
 } Bullet;
 
-// Enemy structure
-typedef struct Enemy {
-    Vector2 position;
-    Rectangle bounds;
-    Color color;
-    bool active;
-    float speed;
-    int health;
-    int id;               // Unique ID
-    float radius;         // Circle radius
-    float moveTimer;      // For random movement
-    float targetY;        // Target Y position for movement
-    float speedX;         // Individual X speed
-    float speedY;         // Individual Y speed
-} Enemy;
+// Note: Enemy structure has been replaced by EnemyEx in enemy_types.h
 
-// Obstacle structure
-typedef struct Obstacle {
+// Starfield for background
+typedef struct {
     Vector2 position;
-    Rectangle bounds;
-    Color color;
-    bool active;
-    bool destructible;    // Can be destroyed by bullets
-    int health;
-    float width;
-    float height;
-    int id;               // Unique ID
-} Obstacle;
+    float speed;
+    int brightness;
+} Star;
 
 // Main game state structure
 struct Game {
-    Player player;
+    PlayerShip* playerShip;   // Enhanced player ship
     Bullet* bullets;
-    Enemy* enemies;
-    Obstacle* obstacles;
+    void* projectiles;        // Projectile* (using void* to avoid circular dependency)
+    EnemyEx* enemies;         // Updated to use new enemy structure
     int score;
-    int enemySpawnTimer;
-    int obstacleSpawnTimer;
     float backgroundX;
     bool gameOver;
-    float gameTime;       // Time in seconds
+    bool gamePaused;          // Pause state
+    float gameTime;           // Time in seconds
     float scrollSpeed;
-    float enemySpeed;
-    float obstacleSpeed;
-    int speedLevel;       // Current speed level (increases every minute)
+    int speedLevel;           // Current speed level (increases every minute)
+    // Wave system
+    WaveSystem* waveSystem;
+    // Explosion system
+    ExplosionSystem* explosionSystem;
+    // Starfield
+    Star* stars;
+    int numStars;
     // Collision logging
     char deathCause[256];
-    void* logFile;        // FILE* (using void* to avoid including stdio.h here)
+    void* logFile;            // FILE* (using void* to avoid including stdio.h here)
     int nextEnemyId;
-    int nextObstacleId;
+    int nextProjectileId;
 };
 
 #endif // TYPES_H

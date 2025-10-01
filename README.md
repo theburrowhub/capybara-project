@@ -2,153 +2,113 @@
 
 A side-scrolling shoot'em up game built with Raylib in C, featuring dynamic difficulty scaling, weapon heat management, and procedurally generated obstacles.
 
-## Project Structure
+## 📚 Documentation
 
-The project has been organized into a modular architecture for better maintainability:
+Complete documentation is available in the [`docs/`](docs/INDEX.md) folder:
 
-```
-capybara-project/
-├── include/              # Header files
-│   ├── types.h          # Core data structures
-│   ├── constants.h      # Game constants
-│   ├── player.h         # Player module header
-│   ├── enemy.h          # Enemy module header
-│   ├── obstacle.h       # Obstacle module header
-│   ├── weapon.h         # Weapon/bullet module header
-│   ├── collision.h      # Collision system header
-│   ├── game.h           # Game state management header
-│   ├── renderer.h       # Rendering system header
-│   └── utils.h          # Utility functions header
-│
-├── src/                 # Source files
-│   ├── core/           # Core game logic
-│   │   ├── main.c      # Entry point
-│   │   └── game.c      # Game state management
-│   │
-│   ├── entities/       # Game entities
-│   │   ├── player.c    # Player logic
-│   │   ├── enemy.c     # Enemy logic
-│   │   └── obstacle.c  # Obstacle logic
-│   │
-│   ├── systems/        # Game systems
-│   │   ├── weapon.c    # Weapon and bullet management
-│   │   ├── collision.c # Collision detection
-│   │   └── renderer.c  # Rendering system
-│   │
-│   └── utils/          # Utilities
-│       └── logger.c    # Logging system
-│
-├── bin/                # Executable output directory
-│   └── shootemup       # Game executable (generated)
-├── build/              # Build artifacts (generated)
-├── Makefile           # Build configuration
-└── collision_log.txt  # Collision debug log (generated)
-```
+### Core Documentation
+- [Build Instructions](docs/BUILD.md) - How to compile and run the game
+- [Gameplay Guide](docs/GAMEPLAY.md) - Controls, mechanics, and strategies
+- [Architecture Overview](docs/ARCHITECTURE.md) - Project structure and design
+- [API Reference](docs/API.md) - Module interfaces and functions
 
-## Features
+### Game Content
+- [Enemies and Sprites](docs/ENEMIES_AND_SPRITES.md) - All 10 enemy types and sprite designs
+- [Weapons and Projectiles](docs/WEAPONS_AND_PROJECTILES.md) - Weapon system and projectile types
+- [Flight Plan](docs/FLIGHT_PLAN.md) - Wave system and phase progression
 
-- **Modular Architecture**: Clean separation of concerns with distinct modules for each game component
-- **Dynamic Difficulty**: Speed increases every 20 seconds
-- **Weapon Heat System**: Prevents spam shooting with overheat mechanics
-- **Enemy Variety**: Enemies with random movement patterns
-- **Obstacle Types**: Destructible and indestructible obstacles
-- **Debug Features**: Collision logging and hitbox visualization
-- **Score System**: Points for destroying enemies and obstacles
+### Development
+- [Debug Features](docs/DEBUG_FEATURES.md) - Testing tools and debug modes
+- [TODO List](docs/TODO.md) - Planned features and improvements
 
-## Building
-
-### Prerequisites
-
-- GCC compiler
-- Raylib library (installed via Homebrew on macOS: `brew install raylib`)
-- Make build tool
-
-### Compilation
+## Quick Start
 
 ```bash
-# Build the game (executable will be in bin/shootemup)
+# Clone the repository
+git clone <repository-url>
+cd capybara-project
+
+# Build the game
 make
 
-# Clean build artifacts
-make clean
+# Run the game
+./bin/shootemup
 
-# Rebuild from scratch
-make rebuild
-
-# Build with debug symbols
-make debug
-
-# Build with optimizations
-make release
-
-# Build and run
-make run
+# Run with debug info (optional)
+./test_debug.sh
 ```
 
-The executable will be generated in the `bin/` directory as `bin/shootemup`.
+## Key Features
+
+- 🎮 **Dynamic Gameplay**: Speed increases every 20 seconds
+- 🔫 **Heat Management**: Weapon overheats with continuous fire
+- 👾 **10 Enemy Types**: Each with unique behaviors and attack patterns
+- 🌊 **Wave System**: 17 phases with progressive difficulty
+- 📊 **Score System**: Points for destroying enemies
+- 🐛 **Debug Mode**: Invulnerability, phase selection, and hitbox visualization
 
 ## Controls
 
-- **WASD/Arrow Keys**: Move player
-- **Space/Left Click**: Shoot
-- **H**: Show hitboxes (debug)
-- **R**: Restart when game over
-- **ESC**: Exit game
+| Action | Keys |
+|--------|------|
+| Move | WASD / Arrow Keys |
+| Shoot | Left Click (hold for continuous fire) |
+| Pause | P |
+| Debug | H (show hitboxes) |
+| Restart | R (when game over) |
+| Exit | ESC |
 
-## Game Mechanics
+## Requirements
 
-### Player
-- 3 health points
-- Limited to left half of screen
-- Loses health on enemy collision
-- Instant death on obstacle collision
+- C compiler (GCC/Clang)
+- [Raylib](https://www.raylib.com/) graphics library
+- Make build tool
+- pkg-config
 
-### Weapon System
-- Heat builds up with continuous firing
-- Automatic cooldown when not shooting
-- 3-second penalty cooldown on overheat
-- Visual heat indicator with color coding
+### macOS Installation
+```bash
+brew install raylib
+```
 
-### Enemies
-- Spawn from the right side
-- Random sizes and movement patterns
-- Worth 100 points when destroyed
-- Various AI behaviors (zigzag, dive, smooth movement)
+### Linux Installation
+```bash
+# Ubuntu/Debian
+sudo apt install libraylib-dev
 
-### Obstacles
-- **Destructible (Orange)**: Can be destroyed with 2 hits, worth 50 points
-- **Indestructible (Gray)**: Cannot be destroyed, must be avoided
-- Randomly generated sizes and positions
-
-### Difficulty Progression
-- Speed increases every 20 seconds
-- Affects enemy spawn rate, movement speed, and scroll speed
-- Visual warning before speed increases
+# Fedora
+sudo dnf install raylib-devel
+```
 
 ## Debug Features
 
-The game includes a comprehensive logging system that tracks:
-- Collision events with detailed position data
-- Player movement (sampled)
-- Enemy and obstacle spawning
-- Weapon overheat events
+The game includes several debug features for testing and development:
 
-Logs are written to `collision_log.txt` for post-game analysis.
+- **Invulnerability Mode**: Set `DEBUG_INVULNERABILITY` to `true` in `constants.h`
+- **Start at Any Phase**: Set `DEBUG_START_PHASE` (1-17) in `constants.h`
+- **Pause Function**: Press P during gameplay
+- **Hitbox Visualization**: Press H to show collision boxes
 
-## Module Responsibilities
+See [Debug Features Documentation](docs/DEBUG_FEATURES.md) for detailed usage.
 
-- **Core**: Main game loop and state management
-- **Entities**: Individual game object logic (player, enemies, obstacles)
-- **Systems**: Game-wide systems (collision, rendering, weapons)
-- **Utils**: Helper functions and logging
+## Project Structure
 
-## Development
+```
+capybara-project/
+├── src/        # Source code (.c files)
+├── include/    # Headers (.h files)
+├── docs/       # Documentation
+├── assets/     # Sprites and graphics
+├── bin/        # Executable output
+└── build/      # Compilation artifacts
+```
 
-The modular structure makes it easy to:
-- Add new enemy types
-- Implement new weapons
-- Create additional obstacle varieties
-- Extend the collision system
-- Add new visual effects
+## Contributing
 
-Each module has clear interfaces defined in the header files, promoting loose coupling and high cohesion.
+The modular architecture makes it easy to extend:
+- See [Architecture Overview](docs/ARCHITECTURE.md) for design details
+- Check [API Reference](docs/API.md) for module interfaces
+- Review [TODO List](docs/TODO.md) for planned features
+
+## License
+
+[Add your license here]
