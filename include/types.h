@@ -12,6 +12,7 @@ typedef struct Player {
     Vector2 position;
     Rectangle bounds;
     Color color;
+    Texture2D sprite;     // Player sprite texture
     int health;
     float weaponHeat;     // Current weapon heat (0-100)
     float maxHeat;        // Maximum heat before overheat

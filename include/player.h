@@ -12,4 +12,7 @@ void UpdatePlayer(Game* game);
 // Draw player on screen
 void DrawPlayer(const Player* player, bool showHitbox);
 
+// Cleanup player resources
+void CleanupPlayer(Player* player);
+
 #endif // PLAYER_H

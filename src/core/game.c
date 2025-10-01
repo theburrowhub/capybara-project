@@ -99,6 +99,9 @@ void UpdateGame(Game* game) {
 void CleanupGame(Game* game) {
     CloseLogger(game);
     
+    // Cleanup player resources
+    CleanupPlayer(&game->player);
+    
     // Free allocated memory
     if (game->bullets) {
         free(game->bullets);

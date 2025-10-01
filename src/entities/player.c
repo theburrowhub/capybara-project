@@ -13,6 +13,7 @@ void InitPlayer(Player* player) {
         30
     };
     player->color = GREEN;
+    player->sprite = LoadTexture("resources/sprites/main.png");
     player->health = 3;
     player->weaponHeat = 0.0f;
     player->maxHeat = 100.0f;
@@ -61,11 +62,33 @@ void UpdatePlayer(Game* game) {
 }
 
 void DrawPlayer(const Player* player, bool showHitbox) {
-    // Draw player (spaceship shape)
-    Vector2 v1 = {player->position.x - 20, player->position.y};
-    Vector2 v2 = {player->position.x + 20, player->position.y - 15};
-    Vector2 v3 = {player->position.x + 20, player->position.y + 15};
-    DrawTriangle(v1, v3, v2, player->color);
+    // Draw player sprite if loaded, fallback to triangle if not
+    if (player->sprite.id > 0) {
+        // Calculate sprite scale to fit player bounds
+        float scaleX = player->bounds.width / (float)player->sprite.width;
+        float scaleY = player->bounds.height / (float)player->sprite.height;
+        float scale = (scaleX < scaleY) ? scaleX : scaleY;
+        
+        // Calculate sprite dimensions
+        float spriteWidth = player->sprite.width * scale * 1.5f;  // Slightly bigger
+        float spriteHeight = player->sprite.height * scale * 1.5f;
+        
+        // Draw sprite centered on player position
+        Rectangle source = {0, 0, (float)player->sprite.width, (float)player->sprite.height};
+        Rectangle dest = {
+            player->position.x - spriteWidth/2,
+            player->position.y - spriteHeight/2,
+            spriteWidth,
+            spriteHeight
+        };
+        DrawTexturePro(player->sprite, source, dest, (Vector2){0, 0}, 0.0f, WHITE);
+    } else {
+        // Fallback to triangle if sprite not loaded
+        Vector2 v1 = {player->position.x - 20, player->position.y};
+        Vector2 v2 = {player->position.x + 20, player->position.y - 15};
+        Vector2 v3 = {player->position.x + 20, player->position.y + 15};
+        DrawTriangle(v1, v3, v2, player->color);
+    }
     
     // Debug: Show hitbox when requested
     if (showHitbox) {
@@ -74,5 +97,13 @@ void DrawPlayer(const Player* player, bool showHitbox) {
             player->bounds.width, player->bounds.height,
             LIME
         );
+    }
+}
+
+void CleanupPlayer(Player* player) {
+    // Unload sprite texture if loaded
+    if (player->sprite.id > 0) {
+        UnloadTexture(player->sprite);
+        player->sprite.id = 0;
     }
 }
