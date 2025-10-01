@@ -69,9 +69,9 @@ void DrawPlayer(const Player* player, bool showHitbox) {
         float scaleY = player->bounds.height / (float)player->sprite.height;
         float scale = (scaleX < scaleY) ? scaleX : scaleY;
         
-        // Calculate sprite dimensions
-        float spriteWidth = player->sprite.width * scale * 1.5f;  // Slightly bigger
-        float spriteHeight = player->sprite.height * scale * 1.5f;
+        // Calculate sprite dimensions - increased size
+        float spriteWidth = player->sprite.width * scale * 2.5f;  // Bigger sprite
+        float spriteHeight = player->sprite.height * scale * 2.5f;
         
         // Draw sprite centered on player position
         Rectangle source = {0, 0, (float)player->sprite.width, (float)player->sprite.height};
