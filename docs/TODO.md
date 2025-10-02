@@ -18,28 +18,28 @@
 - [ ] Implement proper scaling for different resolutions
 
 ## 🎨 Sprites & Visual Assets
-- [ ] Create/add simple sprites
+- [x] Create/add simple sprites
   - [ ] Capybara in a rocket as player character
-  - [ ] Different enemy types with unique sprites
-  - [ ] Animated sprite sheets for movement/actions
-  - [ ] Explosion animations
-  - [ ] Projectile sprites (lasers, missiles)
-- [ ] Add particle effects for:
-  - [ ] Engine thrust
-  - [ ] Weapon impacts
-  - [ ] Explosions
-  - [ ] Shield effects
+  - [x] Different enemy types with unique sprites
+  - [x] Animated sprite sheets for movement/actions
+  - [x] Explosion animations
+  - [x] Projectile sprites (lasers, missiles)
+- [x] Add particle effects for:
+  - [x] Engine thrust
+  - [x] Weapon impacts
+  - [x] Explosions
+  - [x] Shield effects
 - [ ] Implement parallax background scrolling
 - [ ] Add space-themed background with stars/planets
 
 ## 🎯 Gameplay Features
-- [ ] Power-ups system
-  - [ ] Weapon upgrades (spread shot, laser, missiles)
-  - [ ] Shield/health pickups
-  - [ ] Speed boost
+- [x] Power-ups system
+  - [x] Weapon upgrades (spread shot, laser, missiles)
+  - [x] Shield/health pickups
+  - [x] Speed boost
   - [ ] Score multipliers
-- [ ] Boss battles at level intervals
-- [ ] Wave-based enemy spawning with patterns
+- [x] Boss battles at level intervals
+- [x] Wave-based enemy spawning with patterns
 - [ ] Combo system for chaining enemy kills
 - [ ] Different difficulty modes (Easy, Normal, Hard, Insane)
 
@@ -58,17 +58,17 @@
 ## 💾 Game Systems
 - [ ] Save/Load game state
 - [ ] High score system with leaderboard
-- [ ] Statistics tracking (enemies killed, accuracy, time played)
+- [x] Statistics tracking (enemies killed, accuracy, time played)
 - [ ] Achievements/unlockables
-- [ ] Pause menu with options
+- [x] Pause menu with options
 
 ## ⚙️ Technical Improvements
-- [ ] Implement entity pooling for better performance
+- [x] Implement entity pooling for better performance
 - [ ] Add configuration file (JSON/INI) for game settings
 - [ ] Improve collision detection with spatial partitioning
-- [ ] Add delta time for frame-independent movement
-- [ ] Implement proper game states (Menu, Playing, Paused, GameOver)
-- [ ] Add debug mode with additional information display
+- [x] Add delta time for frame-independent movement
+- [x] Implement proper game states (Menu, Playing, Paused, GameOver)
+- [x] Add debug mode with additional information display
 
 ## 🎨 UI/UX Improvements
 - [ ] Main menu screen
@@ -85,7 +85,7 @@
   - [ ] Mini-map or radar
   - [ ] Boss health bar
   - [ ] Combo counter
-  - [ ] Wave indicator
+  - [x] Wave indicator
 - [ ] Smooth transitions between screens
 
 ## 🚀 Future Enhancements

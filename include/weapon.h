@@ -10,7 +10,7 @@ void InitBullets(Bullet* bullets);
 void ShootBullet(Bullet* bullets, Vector2 position);
 
 // Update weapon heat system
-void UpdateWeaponHeat(Player* player, float deltaTime);
+void UpdateWeaponHeat(PlayerShip* playerShip, float deltaTime);
 
 // Update all bullets and handle shooting
 void UpdateBullets(Game* game);
@@ -19,6 +19,6 @@ void UpdateBullets(Game* game);
 void DrawBullets(const Bullet* bullets);
 
 // Draw weapon heat UI
-void DrawWeaponHeatBar(const Player* player);
+void DrawWeaponHeatBar(const PlayerShip* playerShip);
 
 #endif // WEAPON_H
