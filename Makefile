@@ -70,6 +70,12 @@ PLAYER_SHOWCASE_SRCS = $(SRC_DIR)/demo/player_ship_showcase.c \
 # Player sprite generator source files
 PLAYER_GEN_SRCS = $(SRC_DIR)/tools/generate_player_sprite.c
 
+# Audio spectrogram demo source files
+AUDIO_DEMO_SRCS = $(SRC_DIR)/demo/audio_spectrogram.c
+
+# Audio bass analyzer (console) source files  
+AUDIO_ANALYZER_SRCS = $(SRC_DIR)/demo/audio_bass_analyzer.c
+
 # Object files for showcases
 SHOWCASE_OBJS = $(SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 SPRITE_SHOWCASE_OBJS = $(SPRITE_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
@@ -79,6 +85,8 @@ PROJECTILE_GEN_OBJS = $(PROJECTILE_GEN_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PROJECTILE_SHOWCASE_OBJS = $(PROJECTILE_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PLAYER_SHOWCASE_OBJS = $(PLAYER_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PLAYER_GEN_OBJS = $(PLAYER_GEN_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+AUDIO_DEMO_OBJS = $(AUDIO_DEMO_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+AUDIO_ANALYZER_OBJS = $(AUDIO_ANALYZER_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # Executable names
 TARGET = $(BIN_DIR)/shootemup
@@ -90,6 +98,8 @@ PROJECTILE_GEN_TARGET = $(BIN_DIR)/generate_projectile_sprites
 PROJECTILE_SHOWCASE_TARGET = $(BIN_DIR)/projectile_showcase
 PLAYER_SHOWCASE_TARGET = $(BIN_DIR)/player_showcase
 PLAYER_GEN_TARGET = $(BIN_DIR)/generate_player_sprite
+AUDIO_DEMO_TARGET = $(BIN_DIR)/audio_spectrogram
+AUDIO_ANALYZER_TARGET = $(BIN_DIR)/audio_bass_analyzer
 
 # Platform-specific settings
 UNAME_S := $(shell uname -s)
@@ -149,6 +159,14 @@ $(PLAYER_SHOWCASE_TARGET): $(PLAYER_SHOWCASE_OBJS)
 # Link the player sprite generator executable
 $(PLAYER_GEN_TARGET): $(PLAYER_GEN_OBJS)
 	$(CC) $(PLAYER_GEN_OBJS) -o $@ $(LIBS)
+
+# Link the audio demo executable
+$(AUDIO_DEMO_TARGET): $(AUDIO_DEMO_OBJS)
+	$(CC) $(AUDIO_DEMO_OBJS) -o $@ $(LIBS) -lm
+
+# Link the audio analyzer executable
+$(AUDIO_ANALYZER_TARGET): $(AUDIO_ANALYZER_OBJS)
+	$(CC) $(AUDIO_ANALYZER_OBJS) -o $@ $(LIBS) -lm
 
 # Compile source files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
@@ -215,6 +233,20 @@ player_showcase: directories $(PLAYER_SHOWCASE_TARGET)
 # Build and run player demo
 player: generate_player player_showcase
 
+# Build audio demo
+audio_demo: directories $(AUDIO_DEMO_TARGET)
+
+# Run audio demo
+run_audio: audio_demo
+	./$(AUDIO_DEMO_TARGET)
+
+# Build audio analyzer (console version)
+audio_analyzer: directories $(AUDIO_ANALYZER_TARGET)
+
+# Run audio analyzer
+run_analyzer: audio_analyzer
+	./$(AUDIO_ANALYZER_TARGET)
+
 # Debug build
 debug: CFLAGS += -g -DDEBUG
 debug: all
@@ -233,6 +265,8 @@ help:
 	@echo "  sprites          - Generate sprites and run sprite showcase"
 	@echo "  player           - Generate player sprite and run player showcase"
 	@echo "  player_showcase  - Run the player ship showcase"
+	@echo "  audio_demo       - Build the audio spectrogram demo"
+	@echo "  run_audio        - Build and run the audio spectrogram demo"
 	@echo "  clean            - Remove build artifacts"
 	@echo "  rebuild          - Clean and rebuild"
 	@echo "  run              - Build and run the game"
