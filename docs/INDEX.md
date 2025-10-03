@@ -11,7 +11,8 @@ Welcome to the Capybara Shoot'em Up documentation!
 ### Game Content
 - **[ENEMIES_AND_SPRITES.md](ENEMIES_AND_SPRITES.md)** - All 10 enemy types, behaviors, and sprite designs
 - **[WEAPONS_AND_PROJECTILES.md](WEAPONS_AND_PROJECTILES.md)** - Weapon systems, projectile types, and combat mechanics
-- **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** - Wave system design and phase progression
+- **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** - Bass-driven wave orchestration and phase progression
+- **[BASS_DRIVEN_GAMEPLAY.md](BASS_DRIVEN_GAMEPLAY.md)** - 🎵 Music-reactive enemy spawning system
 
 ### Technical Documentation
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Project structure, design patterns, and module organization
@@ -53,11 +54,13 @@ capybara-project/
 
 ## 🎮 Game Features
 
+- **🎵 Bass-Driven Gameplay**: Enemy waves sync with music bass patterns
 - **10 Enemy Types**: Each with unique behaviors and attack patterns
 - **4 Projectile Types**: Laser, Plasma, Missile, and Energy Orb
-- **17 Wave Phases**: Progressive difficulty with themed enemy encounters
+- **Music-Reactive Spawning**: Difficulty adapts to audio intensity in real-time
+- **Epic Boss Battle**: Timed to appear at musical climax (427s)
 - **Heat Management**: Weapon overheating system
-- **Dynamic Difficulty**: Speed increases over time
+- **Dynamic Difficulty**: Progressive scaling throughout 9-minute soundtrack
 - **Sprite System**: Both abstract and spaceship designs
 - **Debug Mode**: Invulnerability, phase selection, pause, and hitbox visualization
 
