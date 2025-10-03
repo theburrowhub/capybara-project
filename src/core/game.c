@@ -80,9 +80,46 @@ void InitGame(Game* game) {
     game->backgroundX = 0;
     game->gameOver = false;
     game->gamePaused = false;
-    game->gameTime = 0.0f;
+    
+    // Apply DEBUG_START_PHASE to set starting time
+    float startTime = 0.0f;
+    if (DEBUG_START_PHASE > 0 && DEBUG_START_PHASE <= 17) {
+        // Phase timing mapping based on documentation
+        const float phaseTimes[] = {
+            0.0f,    // Phase 0: Normal start
+            0.0f,    // Phase 1: Warm-Up (0-5s)
+            5.0f,    // Phase 2: First Wave (5-35s)
+            35.0f,   // Phase 3: Tank Squadron (35-55s)
+            55.0f,   // Phase 4: Swarm Attack (55-85s)
+            85.0f,   // Phase 5: Mixed Assault (85-120s)
+            120.0f,  // Phase 6: Elite Squadron (120-150s)
+            150.0f,  // Phase 7: Zigzag Chaos (150-180s)
+            180.0f,  // Phase 8: Shield Wall (180-220s)
+            220.0f,  // Phase 9: Bomber Run (220-260s)
+            260.0f,  // Phase 10: Ghost Ambush (260-300s)
+            300.0f,  // Phase 11: Combined Arms (300-345s)
+            345.0f,  // Phase 12: Mini-Boss (345-390s)
+            390.0f,  // Phase 13: Recovery (390-420s)
+            420.0f,  // Phase 14: Elite & Shield (420-460s)
+            460.0f,  // Phase 15: Evasive Maneuvers (460-500s)
+            500.0f,  // Phase 16: Heavy Assault (500-540s)
+            540.0f   // Phase 17: Final Wave (540-590s)
+        };
+        startTime = phaseTimes[DEBUG_START_PHASE];
+        
+        // Seek music to start time if music is loaded
+        if (game->musicLoaded) {
+            SeekMusicStream(game->backgroundMusic, startTime);
+        }
+    }
+    
+    game->gameTime = startTime;
     game->scrollSpeed = BASE_SCROLL_SPEED;
     game->speedLevel = 1;
+    
+    // Update scroll speed based on start time
+    UpdateGameSpeed(game);
+    
     game->nextEnemyId = 1;
     game->nextProjectileId = 1;
     strcpy(game->deathCause, "Alive");
@@ -296,6 +333,12 @@ void UpdateGame(Game* game) {
             
             // Update score from player ship
             game->score = game->playerShip->score;
+            
+            // Check if level time limit reached (9 minutes 13 seconds)
+            if (game->gameTime >= 553.0f) {
+                game->gameOver = true;
+                strcpy(game->deathCause, "Victory! You survived the entire level!");
+            }
             
             // Game over check
             if (game->playerShip->health <= 0) {

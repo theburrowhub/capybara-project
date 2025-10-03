@@ -1,5 +1,6 @@
 #include "raylib.h"
 #include "enemy_types.h"
+#include "projectile_types.h"
 #include "constants.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +24,9 @@ typedef struct {
 } ShowcaseState;
 
 void InitShowcase(ShowcaseState* state) {
-    // Initialize enemy types
+    // Initialize enemy types and projectile types
     InitEnemyTypes();
+    InitProjectileTypes();
     
     // Create one enemy of each type
     for (int i = 0; i < ENEMY_TYPE_COUNT; i++) {
@@ -236,7 +238,7 @@ void DrawShowcase(ShowcaseState* state) {
         const EnemyTypeDefinition* def = GetEnemyTypeDefinition(enemy->type);
         
         int panelWidth = 300;
-        int panelHeight = 200;
+        int panelHeight = 280;  // Increased from 200 to accommodate weapon info
         int panelX = SHOWCASE_WIDTH - panelWidth - 20;
         int panelY = 80;
         
@@ -270,6 +272,30 @@ void DrawShowcase(ShowcaseState* state) {
         
         snprintf(info, sizeof(info), "Symbol: %s", def->symbol);
         DrawText(info, panelX + 10, textY, 16, WHITE);
+        textY += 25;
+        
+        // Show weapon configuration
+        const EnemyWeaponConfig* weaponCfg = GetEnemyWeaponConfig(enemy->type);
+        DrawText("--- WEAPON ---", panelX + 10, textY, 14, YELLOW);
+        textY += 18;
+        
+        const ProjectileDefinition* projDef = GetProjectileDefinition(weaponCfg->primaryProjectile);
+        snprintf(info, sizeof(info), "Projectile: %s", projDef->name);
+        DrawText(info, panelX + 10, textY, 14, LIGHTGRAY);
+        textY += 16;
+        
+        snprintf(info, sizeof(info), "Fire Rate: %.1f/s", weaponCfg->fireRate);
+        DrawText(info, panelX + 10, textY, 14, LIGHTGRAY);
+        textY += 16;
+        
+        snprintf(info, sizeof(info), "Burst: %d shots", weaponCfg->burstCount);
+        DrawText(info, panelX + 10, textY, 14, LIGHTGRAY);
+        textY += 16;
+        
+        if (weaponCfg->spreadAngle > 0) {
+            snprintf(info, sizeof(info), "Spread: %.0f degrees", weaponCfg->spreadAngle);
+            DrawText(info, panelX + 10, textY, 14, LIGHTGRAY);
+        }
     }
     
     // Animation status

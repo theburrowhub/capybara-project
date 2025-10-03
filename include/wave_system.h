@@ -61,9 +61,13 @@ void CleanupWaveSystem(WaveSystem* waveSystem);
 const char* GetCurrentPhaseName(const WaveSystem* waveSystem);
 float GetWaveProgress(const WaveSystem* waveSystem);
 bool IsWaveComplete(const WaveSystem* waveSystem);
+int GetCurrentPhaseNumber(const WaveSystem* waveSystem);
 
 // Movement pattern functions
 void ApplyMovementPattern(EnemyEx* enemy, const char* pattern);
 void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime);
+
+// Static wave creation
+SpawnEvent* CreateStaticWaveplan(int* eventCount);
 
 #endif // WAVE_SYSTEM_H
