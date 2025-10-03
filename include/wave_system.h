@@ -3,6 +3,7 @@
 
 #include "types.h"
 #include "enemy_types.h"
+#include "bass_events.h"
 
 // Wave phase structure
 typedef struct WavePhase {
@@ -44,6 +45,12 @@ typedef struct WaveSystem {
     float lastSpawnTime;
     int totalEnemiesSpawned;
     int totalEnemiesKilled;
+    
+    // Bass-driven spawning system
+    BassEventSystem* bassSystem;
+    float nextBassSpawnTime;
+    float bassSpawnInterval;
+    bool bossSpawned;
 } WaveSystem;
 
 // Function declarations

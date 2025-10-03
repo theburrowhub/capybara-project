@@ -15,6 +15,22 @@ void InitGame(Game* game) {
     // Initialize logger
     InitLogger(game);
     
+    // Initialize audio device
+    InitAudioDevice();
+    
+    // Try to load background music
+    game->musicLoaded = false;
+    const char* musicPath = "assets/audio/level1.mp3";
+    if (FileExists(musicPath)) {
+        game->backgroundMusic = LoadMusicStream(musicPath);
+        // Check if music loaded successfully (ctxType will be non-zero if valid)
+        if (game->backgroundMusic.ctxType > 0) {
+            game->musicLoaded = true;
+            PlayMusicStream(game->backgroundMusic);
+            SetMusicVolume(game->backgroundMusic, 0.5f);  // 50% volume
+        }
+    }
+    
     // Allocate memory for arrays
     game->bullets = (Bullet*)malloc(MAX_BULLETS * sizeof(Bullet));
     game->projectiles = malloc(MAX_PROJECTILES * sizeof(Projectile));
@@ -220,9 +236,22 @@ void UpdateProjectiles(Game* game) {
 }
 
 void UpdateGame(Game* game) {
+    // Update music stream if loaded
+    if (game->musicLoaded) {
+        UpdateMusicStream(game->backgroundMusic);
+    }
+    
     // Handle pause toggle (P key only)
     if (IsKeyPressed(KEY_P)) {
         game->gamePaused = !game->gamePaused;
+        // Pause/resume music based on game state
+        if (game->musicLoaded) {
+            if (game->gamePaused) {
+                PauseMusicStream(game->backgroundMusic);
+            } else {
+                ResumeMusicStream(game->backgroundMusic);
+            }
+        }
     }
     
     if (!game->gameOver) {
@@ -286,6 +315,14 @@ void UpdateGame(Game* game) {
 
 void CleanupGame(Game* game) {
     CloseLogger(game);
+    
+    // Cleanup audio
+    if (game->musicLoaded) {
+        StopMusicStream(game->backgroundMusic);
+        UnloadMusicStream(game->backgroundMusic);
+        game->musicLoaded = false;
+    }
+    CloseAudioDevice();
     
     // Free wave system
     if (game->waveSystem) {
