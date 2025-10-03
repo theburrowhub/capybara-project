@@ -19,6 +19,7 @@ Welcome to the Capybara Shoot'em Up documentation!
 
 ### Development
 - **[DEBUG_FEATURES.md](DEBUG_FEATURES.md)** - Testing tools, debug modes, and development utilities
+- **[AUDIO_DEMO.md](AUDIO_DEMO.md)** - Audio spectrogram demo with bass detection
 - **[TODO.md](TODO.md)** - Roadmap and planned features
 
 ## 🚀 Quick Links

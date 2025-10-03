@@ -37,3 +37,6 @@ core.*
 # Temporary files
 *.tmp
 *.temp
+
+# Media files (audio)
+assets/audio/
