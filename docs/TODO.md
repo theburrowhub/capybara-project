@@ -77,7 +77,7 @@
   - [ ] High scores
   - [x] Credits
   - [ ] Exit
-- [ ] Settings menu
+- [-] Settings menu
   - [ ] Graphics options
   - [x] Audio options
   - [ ] Control configuration
