@@ -20,6 +20,7 @@ void InitGame(Game* game) {
     
     // Try to load background music
     game->musicLoaded = false;
+    game->musicVolume = 0.5f;  // Default 50% volume
     const char* musicPath = "assets/audio/level1.mp3";
     if (FileExists(musicPath)) {
         game->backgroundMusic = LoadMusicStream(musicPath);
@@ -27,7 +28,7 @@ void InitGame(Game* game) {
         if (game->backgroundMusic.ctxType > 0) {
             game->musicLoaded = true;
             PlayMusicStream(game->backgroundMusic);
-            SetMusicVolume(game->backgroundMusic, 0.5f);  // 50% volume
+            SetMusicVolume(game->backgroundMusic, game->musicVolume);
         }
     }
     
@@ -404,6 +405,13 @@ void CleanupGame(Game* game) {
     if (game->enemies) {
         free(game->enemies);
         game->enemies = NULL;
+    }
+}
+
+void SetGameMusicVolume(Game* game, float volume) {
+    game->musicVolume = volume;
+    if (game->musicLoaded) {
+        SetMusicVolume(game->backgroundMusic, volume);
     }
 }
 
