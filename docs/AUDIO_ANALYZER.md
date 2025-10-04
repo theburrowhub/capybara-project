@@ -61,7 +61,7 @@ See **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** for the current static wave system desi
 ./run_audio_demo.sh
 
 # Or use CLI for batch processing
-./bin/audio_bass_analyzer -f level2.mp3
+./bin/audio_analysis_cli -f level2.mp3
 ```
 
 **Adjust thresholds to match your track's character:**
@@ -72,7 +72,7 @@ See **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** for the current static wave system desi
 
 **Save your configuration:**
 ```bash
-./bin/audio_bass_analyzer -f level2.mp3 --low 0.12 --medium 0.30 --high 0.55 --save-config
+./bin/audio_analysis_cli -f level2.mp3 --low 0.12 --medium 0.30 --high 0.55 --save-config
 ```
 
 #### Step 2: Review the Generated Log
@@ -199,23 +199,23 @@ make
 ./run_audio_demo.sh
 
 # Or use make
-make run_audio
+make run_audio_gui
 ```
 
-### Console Version
+### CLI Version
 
 ```bash
 # Interactive file selection
-make run_analyzer
+make run_audio_cli
 
 # Analyze specific file
-./bin/audio_bass_analyzer -f level1.mp3
+./bin/audio_analysis_cli -f level1.mp3
 
 # With custom thresholds
-./bin/audio_bass_analyzer -f level1.mp3 --low 0.10 --medium 0.25 --high 0.50 --save-config
+./bin/audio_analysis_cli -f level1.mp3 --low 0.10 --medium 0.25 --high 0.50 --save-config
 
 # Quick test (first 30 seconds)
-./bin/audio_bass_analyzer -f level1.mp3 -t 30
+./bin/audio_analysis_cli -f level1.mp3 -t 30
 ```
 
 ---
@@ -268,13 +268,16 @@ make run_analyzer
 
 ### Configuration Files
 
-Both programs use persistent configuration files stored in `bin/`:
+Both programs use persistent configuration files:
 
-- **Shared config file**: `bin/audio_spectrogram.conf`
+- **Default location**: `audio_analysis.conf` (in repository root)
+- **Custom location**: Can be specified via `--config` option
+- **Preserved**: Not deleted by `make clean`
+- **Git-ignored**: Config files won't be committed to repository
 
 **File Format:**
 ```ini
-# Bass Detection Configuration
+# Bass Analyzer Configuration
 # Bass detection thresholds (0.0 - 1.0)
 
 threshold_low=0.150
@@ -300,11 +303,14 @@ peak_threshold=0.200
 
 ### Command-Line Options
 
+#### CLI Version (`audio_analysis_cli`)
+
 ```bash
-./bin/audio_bass_analyzer [OPTIONS]
+./bin/audio_analysis_cli [OPTIONS]
 
 Options:
   -f, --file <filename>    Specify MP3 file (relative to assets/audio/)
+  -c, --config <path>      Specify configuration file path (default: audio_analysis.conf)
   -t, --time <seconds>     Limit analysis to first N seconds (default: full song)
   -v, --verbose            Show all energy readings every 0.5s (for debugging)
   --low <value>            Set LOW threshold (default: 0.15)
@@ -316,39 +322,99 @@ Options:
   -h, --help               Show help message
 ```
 
-**Examples:**
+**CLI Examples:**
 
 ```bash
-# Analyze with defaults
-./bin/audio_bass_analyzer -f level1.mp3
+# Use default config (audio_analysis.conf in repo root)
+./bin/audio_analysis_cli -f level1.mp3
+
+# Use custom config file
+./bin/audio_analysis_cli -f level1.mp3 --config my_settings.conf
+
+# Save to custom config
+./bin/audio_analysis_cli -f level1.mp3 --config my_settings.conf --low 0.10 --save-config
+
+# Config path can be anywhere
+./bin/audio_analysis_cli -f level1.mp3 --config ~/configs/audio.conf
 
 # Custom thresholds for EDM track (with peak detection enabled)
-./bin/audio_bass_analyzer -f edm_level.mp3 --low 0.10 --medium 0.25 --high 0.50 --enable-peak --peak 0.25 --save-config
+./bin/audio_analysis_cli -f edm_level.mp3 --low 0.10 --medium 0.25 --high 0.50 --enable-peak --peak 0.25 --save-config
 
 # Quick 30-second test
-./bin/audio_bass_analyzer -f new_track.mp3 -t 30
+./bin/audio_analysis_cli -f new_track.mp3 -t 30
 
 # Verbose mode - see all energy readings (debugging)
-./bin/audio_bass_analyzer -f level2.mp3 -t 30 -v
+./bin/audio_analysis_cli -f level2.mp3 -t 30 -v
+```
 
-# Use saved config
-./bin/audio_bass_analyzer -f level2.mp3
+#### GUI Version (`audio_analysis_gui`)
+
+```bash
+./bin/audio_analysis_gui [OPTIONS]
+
+Options:
+  -c, --config <path>   Specify configuration file path (default: audio_analysis.conf)
+  -h, --help            Show this help message
+```
+
+**GUI Examples:**
+
+```bash
+# Use default config
+./bin/audio_analysis_gui
+
+# Use custom config file
+./bin/audio_analysis_gui --config my_settings.conf
+
+# Show help
+./bin/audio_analysis_gui --help
+```
+
+### Configuration Behavior
+
+**Default Behavior (No --config specified):**
+- Looks for `audio_analysis.conf` in the current directory (repo root)
+- If not found, uses built-in defaults
+- No error if config file doesn't exist
+
+**With --config Argument:**
+- Loads config from specified path (can be relative or absolute)
+- Saves to the same path when using `--save-config` (CLI) or `S` key (GUI)
+- If file doesn't exist, uses defaults (no error)
+
+### Multiple Configuration Profiles
+
+You can maintain different configurations for different music genres:
+
+```bash
+# Create configs for different genres
+./bin/audio_analysis_cli --config rock.conf --low 0.15 --medium 0.35 --high 0.60 --save-config
+./bin/audio_analysis_cli --config edm.conf --low 0.10 --medium 0.25 --high 0.50 --save-config
+./bin/audio_analysis_cli --config classical.conf --low 0.08 --medium 0.20 --high 0.40 --save-config
+
+# Use them
+./bin/audio_analysis_cli -f rock_song.mp3 --config rock.conf
+./bin/audio_analysis_cli -f edm_song.mp3 --config edm.conf
+./bin/audio_analysis_gui --config classical.conf
 ```
 
 ### Managing Configuration
 
 ```bash
-# View current config
-cat bin/bass_analyzer.conf
+# View current default config
+cat audio_analysis.conf
 
-# Reset to defaults
-rm bin/*.conf
+# View specific config
+cat my_config.conf
 
-# Clean everything (binaries + configs)
-make clean
+# Manual editing (any text editor)
+nano audio_analysis.conf
 
-# Manual editing
-nano bin/bass_analyzer.conf
+# Create default config with your settings
+./bin/audio_analysis_cli -f song.mp3 --low 0.10 --medium 0.25 --save-config
+
+# Note: Config files are preserved by 'make clean'
+make clean  # Configs NOT deleted
 ```
 
 ---
@@ -415,7 +481,7 @@ bassEnergy = sqrt(bassSum / totalWeight);
 **CLI Version:**
 - Use `--enable-peak` flag to enable
 - Use `--save-config` to persist the enabled state
-- Example: `./bin/audio_bass_analyzer -f level1.mp3 --enable-peak`
+- Example: `./bin/audio_analysis_cli -f level1.mp3 --enable-peak`
 
 ### How It Works
 
@@ -485,7 +551,7 @@ if (energyIncrease >= peak_threshold) {
 
 ```bash
 # Analyze track with peak detection enabled
-./bin/audio_bass_analyzer -f boss_level.mp3 --enable-peak --peak 0.25
+./bin/audio_analysis_cli -f boss_level.mp3 --enable-peak --peak 0.25
 
 # Check log file
 cat assets/audio/boss_level.log
@@ -547,16 +613,16 @@ If you previously used peak detection (when it was enabled by default), you need
 **CLI Workflow:**
 ```bash
 # Old way (peaks were automatic)
-./bin/audio_bass_analyzer -f level1.mp3 --peak 0.25
+./bin/audio_analysis_cli -f level1.mp3 --peak 0.25
 
 # New way (must enable)
-./bin/audio_bass_analyzer -f level1.mp3 --enable-peak --peak 0.25
+./bin/audio_analysis_cli -f level1.mp3 --enable-peak --peak 0.25
 
 # Save the enabled state
-./bin/audio_bass_analyzer -f level1.mp3 --enable-peak --peak 0.25 --save-config
+./bin/audio_analysis_cli -f level1.mp3 --enable-peak --peak 0.25 --save-config
 
 # Future runs use saved config
-./bin/audio_bass_analyzer -f level2.mp3  # Peaks still enabled from config
+./bin/audio_analysis_cli -f level2.mp3  # Peaks still enabled from config
 ```
 
 **Backward Compatibility:**
@@ -662,31 +728,31 @@ Session duration: 554.02 seconds
 
 ```bash
 # Build tools
-make audio_demo      # Build GUI version
-make audio_analyzer  # Build console version
+make audio_gui       # Build GUI version
+make audio_cli       # Build CLI version
 
 # Run tools
-make run_audio       # Build and run GUI
-make run_analyzer    # Build and run console
+make run_audio_gui   # Build and run GUI
+make run_audio_cli   # Build and run CLI
 
 # Scripts
 ./run_audio_demo.sh  # Automated GUI launcher
-./test_audio.sh      # Quick console test
+./test_audio.sh      # Quick CLI test
 
 # Cleanup
-make clean          # Remove binaries, configs, and build artifacts
+make clean          # Remove binaries and build artifacts (preserves config files)
 ```
 
 ### Files Structure
 
 **Source Files:**
-- `src/demo/audio_spectrogram.c` - GUI version with SDL/Raylib
-- `src/demo/audio_bass_analyzer.c` - Console version (silent analysis)
+- `src/demo/audio_analysis_gui.c` - GUI version with SDL/Raylib
+- `src/demo/audio_analysis_cli.c` - Console version (silent analysis)
 
 **Generated Files:**
-- `bin/audio_spectrogram` - GUI binary
-- `bin/audio_bass_analyzer` - Console binary
-- `bin/audio_spectrogram.conf` - Shared configuration file
+- `bin/audio_analysis_gui` - GUI binary
+- `bin/audio_analysis_cli` - CLI binary
+- `audio_analysis.conf` - Default configuration file (in repo root)
 - `assets/audio/*.log` - Analysis logs
 - `assets/audio/*_backup_*.log` - Automatic log backups
 
@@ -694,7 +760,7 @@ make clean          # Remove binaries, configs, and build artifacts
 
 The peak detection feature is implemented in both programs:
 
-1. **audio_spectrogram.c** (GUI):
+1. **audio_analysis_gui.c** (GUI):
    - Added `peakEnabled` and `peakThreshold` to `BassConfig` struct
    - Added peak detection fields to `AudioAnalyzer` struct (`previousBassEnergy`, `lastPeakTime`, `peakCount`)
    - Implemented conditional peak detection in `analyzeAudioFrame()`
@@ -702,7 +768,7 @@ The peak detection feature is implemented in both programs:
    - Added keyboard toggle (`P` key) for enable/disable
    - Peak threshold adjustment (Hold `4` + UP/DOWN) only when enabled
 
-2. **audio_bass_analyzer.c** (CLI):
+2. **audio_analysis_cli.c** (CLI):
    - Added `peakEnabled` and `peakThreshold` to `BassConfig` struct
    - Added peak detection fields to `Analyzer` struct
    - Implemented conditional peak detection in `analyzeAudioFrame()`
@@ -757,13 +823,13 @@ Both programs share the same config file format and peak detection algorithm.
 
 ```bash
 # Analyze multiple tracks with same settings
-./bin/audio_bass_analyzer -f level1.mp3 --low 0.12 --save-config
-./bin/audio_bass_analyzer -f level2.mp3  # Uses saved config
-./bin/audio_bass_analyzer -f level3.mp3  # Uses saved config
+./bin/audio_analysis_cli -f level1.mp3 --low 0.12 --save-config
+./bin/audio_analysis_cli -f level2.mp3  # Uses saved config
+./bin/audio_analysis_cli -f level3.mp3  # Uses saved config
 
 # Compare different threshold settings
-./bin/audio_bass_analyzer -f track.mp3 --low 0.10 --medium 0.25 --high 0.50 -t 60
-./bin/audio_bass_analyzer -f track.mp3 --low 0.15 --medium 0.35 --high 0.60 -t 60
+./bin/audio_analysis_cli -f track.mp3 --low 0.10 --medium 0.25 --high 0.50 -t 60
+./bin/audio_analysis_cli -f track.mp3 --low 0.15 --medium 0.35 --high 0.60 -t 60
 ```
 
 ### A/B Testing Thresholds
@@ -784,15 +850,15 @@ Both programs share the same config file format and peak detection algorithm.
 
 ```bash
 # Create genre-specific profiles
-./bin/audio_bass_analyzer -f edm_track.mp3 --low 0.10 --medium 0.25 --high 0.50 --save-config
+./bin/audio_analysis_cli -f edm_track.mp3 --low 0.10 --medium 0.25 --high 0.50 --save-config
 cp bin/bass_analyzer.conf bin/bass_analyzer_edm.conf
 
-./bin/audio_bass_analyzer -f rock_track.mp3 --low 0.15 --medium 0.35 --high 0.60 --save-config
+./bin/audio_analysis_cli -f rock_track.mp3 --low 0.15 --medium 0.35 --high 0.60 --save-config
 cp bin/bass_analyzer.conf bin/bass_analyzer_rock.conf
 
 # Load specific profile
 cp bin/bass_analyzer_edm.conf bin/bass_analyzer.conf
-./bin/audio_bass_analyzer -f new_edm.mp3
+./bin/audio_analysis_cli -f new_edm.mp3
 ```
 
 ---
