@@ -105,6 +105,9 @@ typedef struct PlayerShip {
     int score;
     int enemiesDestroyed;
     float survivalTime;
+    
+    // Visibility (for boss escape sequence)
+    bool isVisible;
 } PlayerShip;
 
 // Ship configuration

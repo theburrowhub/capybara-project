@@ -156,8 +156,8 @@ void DrawGame(Game* game) {
     // Draw the new enhanced player ship
     DrawPlayerShip(game->playerShip);
     
-    // Draw hitbox if requested
-    if (showHitbox) {
+    // Draw hitbox if requested (and ship is visible)
+    if (showHitbox && game->playerShip->isVisible) {
         DrawRectangleLines(
             game->playerShip->bounds.x,
             game->playerShip->bounds.y,

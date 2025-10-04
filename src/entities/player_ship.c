@@ -121,6 +121,9 @@ void InitPlayerShip(PlayerShip* ship) {
     ship->score = 0;
     ship->enemiesDestroyed = 0;
     ship->survivalTime = 0.0f;
+    
+    // Visibility
+    ship->isVisible = true;
 }
 
 void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
@@ -335,6 +338,11 @@ void UpdateShipEffects(PlayerShip* ship, float deltaTime) {
 }
 
 void DrawPlayerShip(const PlayerShip* ship) {
+    // Don't draw if ship is not visible (e.g., during boss escape)
+    if (!ship->isVisible) {
+        return;
+    }
+    
     // Draw engine trail
     DrawEngineTrail(ship);
     
@@ -463,6 +471,11 @@ void DrawEngineTrail(const PlayerShip* ship) {
 }
 
 void DrawShipHUD(const PlayerShip* ship) {
+    // Don't draw HUD if ship is not visible
+    if (!ship->isVisible) {
+        return;
+    }
+    
     int hudX = 10;
     int hudY = SCREEN_HEIGHT - 120;
     

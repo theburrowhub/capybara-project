@@ -138,6 +138,13 @@ void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const c
             // Enemies can fire after the warm-up period (first 55 seconds)
             game->enemies[i].can_fire = (game->waveSystem->waveTimer >= 55.0f);
             
+            // Track boss enemy
+            if (type == ENEMY_BOSS) {
+                game->bossEnemyIndex = i;
+                LogEvent(game, "[%.2f] BOSS spawned - ID:%d at index %d", 
+                        game->gameTime, game->enemies[i].id, i);
+            }
+            
             LogEvent(game, "[%.2f] Enemy spawned - Type:%s ID:%d Pattern:%s Pos:(%.0f,%.0f)", 
                     game->gameTime, GetEnemyTypeName(type), game->enemies[i].id, 
                     pattern ? pattern : "default", x, y);
@@ -364,6 +371,25 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
         
         case ENEMY_BOSS:
             {
+                // Check for escape mode - boss is fleeing
+                if (enemy->isEscaping) {
+                    // Move rapidly to the right to escape off screen
+                    enemy->position.x += 8.0f;  // Fast escape speed
+                    
+                    // Move towards center Y for dramatic exit
+                    float centerY = SCREEN_HEIGHT / 2;
+                    float diff = centerY - enemy->position.y;
+                    if (fabs(diff) > 5.0f) {
+                        enemy->position.y += (diff > 0 ? 1 : -1) * 3.0f;
+                    }
+                    
+                    // Deactivate boss once off screen
+                    if (enemy->position.x > SCREEN_WIDTH + 200) {
+                        enemy->active = false;
+                    }
+                    break;  // Exit switch, skip normal boss behavior
+                }
+                
                 // Define the last third boundary (right side of screen where boss enters)
                 float lastThirdStart = (SCREEN_WIDTH * 2) / 3.0f;  // 800 pixels (start of last third)
                 float minBossX = lastThirdStart + 20.0f;  // 820 pixels (stay in last third)
