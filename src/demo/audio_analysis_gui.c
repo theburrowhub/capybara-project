@@ -826,9 +826,9 @@ int main(int argc, char *argv[]) {
         
         // Show appropriate instructions based on state
         if (isPaused && GetMusicTimePlayed(music) == 0.0f) {
-            DrawText("SPACE: start | Hold 1/2/3 + UP/DOWN: adjust | P: toggle peak | S: save | ESC: exit", 20, 48, 11, YELLOW);
+            DrawText("SPACE: start | Hold 1/2/3/4 + UP/DOWN: adjust | P: toggle peak | S: save | ESC: exit", 20, 48, 11, YELLOW);
         } else {
-            DrawText("SPACE: pause/resume | R: restart | Hold 1/2/3 + UP/DOWN: adjust | P: peak | S: save | ESC: exit", 20, 48, 10, GRAY);
+            DrawText("SPACE: pause/resume | R: restart | Hold 1/2/3/4 + UP/DOWN: adjust | P: peak | S: save | ESC: exit", 20, 48, 10, GRAY);
         }
         
         // Draw visualizations
