@@ -1,10 +1,10 @@
 #!/bin/bash
 
-# Audio Spectrogram Demo Runner
-# This script builds and runs the audio spectrogram demo with bass detection
+# Audio Analysis GUI Runner
+# This script builds and runs the audio analysis GUI with bass detection
 
 echo "======================================"
-echo "Audio Spectrogram Demo - Bass Detection"
+echo "Audio Analysis GUI - Bass Detection"
 echo "======================================"
 echo ""
 
@@ -26,10 +26,10 @@ fi
 echo "Found $mp3_count MP3 file(s) in assets/audio/"
 echo ""
 
-# Clean and build the audio demo
-echo "Building audio demo..."
+# Clean and build the audio analysis GUI
+echo "Building audio analysis GUI..."
 make clean > /dev/null 2>&1
-make audio_demo
+make audio_gui
 
 if [ $? -ne 0 ]; then
     echo "Build failed! Please check for compilation errors."
@@ -37,7 +37,7 @@ if [ $? -ne 0 ]; then
 fi
 
 echo ""
-echo "Starting audio demo..."
+echo "Starting audio analysis GUI..."
 echo "======================================"
 echo "File Selection:"
 echo "  Use UP/DOWN arrows or mouse to select"
@@ -58,8 +58,8 @@ echo "Note: Log files will be saved in assets/audio/ with the same name as the M
 echo "      Existing log files will be backed up automatically."
 echo ""
 
-# Run the audio demo
-./bin/audio_spectrogram
+# Run the audio analysis GUI
+./bin/audio_analysis_gui
 
 echo ""
-echo "Audio demo finished."
+echo "Audio analysis GUI finished."
