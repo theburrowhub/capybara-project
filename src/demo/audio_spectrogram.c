@@ -26,6 +26,8 @@
 #define BASS_THRESHOLD_LOW_DEFAULT 0.05f
 #define BASS_THRESHOLD_MEDIUM_DEFAULT 0.15f
 #define BASS_THRESHOLD_HIGH_DEFAULT 0.30f
+#define PEAK_THRESHOLD_DEFAULT 0.20f  // Detect peaks when energy jumps by 20%
+#define PEAK_DEBOUNCE_TIME 0.5f       // Minimum time between peak detections (seconds)
 
 // Configuration file path
 #define CONFIG_FILE "bin/audio_spectrogram.conf"
@@ -35,6 +37,8 @@ typedef struct {
     float thresholdLow;
     float thresholdMedium;
     float thresholdHigh;
+    float peakThreshold;  // Threshold for peak detection
+    int peakEnabled;      // Enable/disable peak detection (0=disabled, 1=enabled)
 } BassConfig;
 
 typedef enum {
@@ -62,6 +66,12 @@ typedef struct {
     FILE *logFile;  // File handle for logging
     BassConfig config;  // Configuration
     int configChanged;  // Flag to show config was changed
+    // Peak detection
+    float previousBassEnergy;
+    double lastPeakTime;
+    int peakCount;
+    float peakEnergy;  // Energy of the last detected peak
+    double peakDisplayTime;  // Time to display peak indicator
 } AudioAnalyzer;
 
 // Global analyzer for audio callback
@@ -73,6 +83,8 @@ void loadConfig(BassConfig *config) {
     config->thresholdLow = BASS_THRESHOLD_LOW_DEFAULT;
     config->thresholdMedium = BASS_THRESHOLD_MEDIUM_DEFAULT;
     config->thresholdHigh = BASS_THRESHOLD_HIGH_DEFAULT;
+    config->peakThreshold = PEAK_THRESHOLD_DEFAULT;
+    config->peakEnabled = 0;  // Disabled by default
     
     FILE *file = fopen(CONFIG_FILE, "r");
     if (file == NULL) {
@@ -94,6 +106,10 @@ void loadConfig(BassConfig *config) {
                 config->thresholdMedium = value;
             } else if (strcmp(key, "threshold_high") == 0) {
                 config->thresholdHigh = value;
+            } else if (strcmp(key, "peak_threshold") == 0) {
+                config->peakThreshold = value;
+            } else if (strcmp(key, "peak_enabled") == 0) {
+                config->peakEnabled = (int)value;
             }
         }
     }
@@ -116,6 +132,11 @@ void saveConfig(const BassConfig *config) {
     fprintf(file, "threshold_low=%.3f\n", config->thresholdLow);
     fprintf(file, "threshold_medium=%.3f\n", config->thresholdMedium);
     fprintf(file, "threshold_high=%.3f\n", config->thresholdHigh);
+    fprintf(file, "\n# Peak detection configuration\n");
+    fprintf(file, "# peak_enabled: 0=disabled, 1=enabled (default: 0)\n");
+    fprintf(file, "# peak_threshold: energy increase percentage (e.g., 0.20 = 20%% jump)\n");
+    fprintf(file, "peak_enabled=%d\n", config->peakEnabled);
+    fprintf(file, "peak_threshold=%.3f\n", config->peakThreshold);
     
     fclose(file);
     printf("Configuration saved to: %s\n", CONFIG_FILE);
@@ -418,8 +439,39 @@ void analyzeAudioFrame(AudioAnalyzer *analyzer) {
         analyzer->currentBassLevel = BASS_HIGH;
     }
     
-    // Log bass events (with debouncing to avoid rapid toggles)
+    // Detect peaks - only if enabled
     double currentTime = GetTime();
+    
+    if (analyzer->config.peakEnabled) {
+        // Peak detection: sudden energy increases
+        float energyDelta = analyzer->bassEnergy - analyzer->previousBassEnergy;
+        float energyIncrease = (analyzer->previousBassEnergy > 0.01f) ? 
+                               (energyDelta / analyzer->previousBassEnergy) : 0.0f;
+        
+        // Detect peak if energy increases by threshold percentage and enough time has passed
+        if (energyIncrease >= analyzer->config.peakThreshold && 
+            (currentTime - analyzer->lastPeakTime) >= PEAK_DEBOUNCE_TIME) {
+            analyzer->lastPeakTime = currentTime;
+            analyzer->peakCount++;
+            analyzer->peakEnergy = analyzer->bassEnergy;
+            analyzer->peakDisplayTime = currentTime;
+            
+            snprintf(analyzer->logBuffer, sizeof(analyzer->logBuffer),
+                    "[%.2f] PEAK detected - Energy: %.3f (increase: +%.1f%%)", 
+                    currentTime, analyzer->bassEnergy, energyIncrease * 100.0f);
+            
+            printf("%s\n", analyzer->logBuffer);
+            if (analyzer->logFile) {
+                fprintf(analyzer->logFile, "%s\n", analyzer->logBuffer);
+                fflush(analyzer->logFile);
+            }
+        }
+        
+        // Update previous energy for next peak detection
+        analyzer->previousBassEnergy = analyzer->bassEnergy;
+    }
+    
+    // Log bass events (with debouncing to avoid rapid toggles)
     
     // Detect bass start
     if (analyzer->previousBassLevel == BASS_NONE && analyzer->currentBassLevel != BASS_NONE) {
@@ -582,8 +634,8 @@ void drawSpectrogram(AudioAnalyzer *analyzer, int x, int y, int width, int heigh
 // Draw bass level indicator
 void drawBassIndicator(AudioAnalyzer *analyzer, int x, int y) {
     // Draw background
-    DrawRectangle(x, y, 350, 180, (Color){30, 30, 40, 255});
-    DrawRectangleLines(x, y, 350, 180, GRAY);
+    DrawRectangle(x, y, 350, 220, (Color){30, 30, 40, 255});
+    DrawRectangleLines(x, y, 350, 220, GRAY);
     
     DrawText("Bass Detection", x + 10, y + 10, 16, WHITE);
     
@@ -617,9 +669,23 @@ void drawBassIndicator(AudioAnalyzer *analyzer, int x, int y) {
     DrawRectangle(x + 25, y + 45, barWidth, 35, barColor);
     DrawRectangleLines(x + 25, y + 45, 300, 35, WHITE);
     
+    // Peak indicator - flash for 0.3 seconds after peak detected (only if enabled)
+    if (analyzer->config.peakEnabled) {
+        double timeSincePeak = GetTime() - analyzer->peakDisplayTime;
+        if (timeSincePeak < 0.3) {
+            // Draw flashing peak indicator
+            int alpha = (int)(255 * (1.0 - timeSincePeak / 0.3));
+            DrawRectangle(x + 25, y + 42, 300, 3, (Color){255, 255, 0, alpha});
+            DrawText("PEAK!", x + 280, y + 27, 12, (Color){255, 255, 0, alpha});
+        }
+    }
+    
     // Draw level text
     DrawText(TextFormat("Level: %s", levelText), x + 25, y + 90, 14, WHITE);
     DrawText(TextFormat("Energy: %.3f", analyzer->bassEnergy), x + 25, y + 110, 12, LIGHTGRAY);
+    if (analyzer->config.peakEnabled) {
+        DrawText(TextFormat("Peaks: %d", analyzer->peakCount), x + 180, y + 110, 12, YELLOW);
+    }
     
     // Draw threshold markers
     int lowMark = (int)(300 * analyzer->config.thresholdLow);
@@ -635,16 +701,29 @@ void drawBassIndicator(AudioAnalyzer *analyzer, int x, int y) {
     DrawText("H", x + 22 + highMark, y + 30, 10, RED);
     
     // Display threshold values
-    DrawText("Thresholds (hold 1/2/3 + UP/DOWN, S to save):", x + 10, y + 130, 9, DARKGRAY);
+    DrawText("Thresholds (hold 1/2/3/4 + UP/DOWN, S to save):", x + 10, y + 130, 9, DARKGRAY);
     DrawText(TextFormat("L:%.3f M:%.3f H:%.3f", 
              analyzer->config.thresholdLow, 
              analyzer->config.thresholdMedium, 
              analyzer->config.thresholdHigh), 
              x + 10, y + 145, 10, LIGHTGRAY);
     
-    if (analyzer->configChanged) {
-        DrawText("* Config changed - press S to save", x + 10, y + 160, 9, YELLOW);
+    // Peak detection status and settings
+    if (analyzer->config.peakEnabled) {
+        DrawText(TextFormat("Peak: ENABLED %.2f (%.0f%% increase)", 
+                 analyzer->config.peakThreshold,
+                 analyzer->config.peakThreshold * 100.0f), 
+                 x + 10, y + 160, 10, GREEN);
+    } else {
+        DrawText("Peak: DISABLED (press P to enable)", x + 10, y + 160, 10, DARKGRAY);
     }
+    
+    if (analyzer->configChanged) {
+        DrawText("* Config changed - press S to save", x + 10, y + 175, 9, YELLOW);
+    }
+    
+    // Peak detection controls
+    DrawText("P: toggle peak detection | Hold 4 + UP/DOWN: adjust", x + 10, y + 195, 8, DARKGRAY);
 }
 
 // Draw info panel
@@ -729,6 +808,12 @@ int main(void) {
     printf("\n=== Bass Detection Log ===\n");
     printf("Thresholds: LOW=%.3f, MEDIUM=%.3f, HIGH=%.3f\n", 
            analyzer.config.thresholdLow, analyzer.config.thresholdMedium, analyzer.config.thresholdHigh);
+    printf("Peak detection: %s", analyzer.config.peakEnabled ? "ENABLED" : "DISABLED");
+    if (analyzer.config.peakEnabled) {
+        printf(" (threshold: %.3f = %.0f%% energy increase)", 
+               analyzer.config.peakThreshold, analyzer.config.peakThreshold * 100.0f);
+    }
+    printf("\n");
     printf("Bass frequency range: 0-%.0f Hz\n\n", BASS_FREQ_MAX);
     
     // Generate log file path from MP3 path
@@ -748,6 +833,12 @@ int main(void) {
         fprintf(analyzer.logFile, "Sample rate: %u Hz\n", music.stream.sampleRate);
         fprintf(analyzer.logFile, "Thresholds: LOW=%.3f, MEDIUM=%.3f, HIGH=%.3f\n", 
                analyzer.config.thresholdLow, analyzer.config.thresholdMedium, analyzer.config.thresholdHigh);
+        fprintf(analyzer.logFile, "Peak detection: %s", analyzer.config.peakEnabled ? "ENABLED" : "DISABLED");
+        if (analyzer.config.peakEnabled) {
+            fprintf(analyzer.logFile, " (threshold: %.3f = %.0f%% energy increase)", 
+                   analyzer.config.peakThreshold, analyzer.config.peakThreshold * 100.0f);
+        }
+        fprintf(analyzer.logFile, "\n");
         fprintf(analyzer.logFile, "Bass frequency range: 0-%.0f Hz\n\n", BASS_FREQ_MAX);
         fprintf(analyzer.logFile, "Time format: [seconds from start]\n");
         fprintf(analyzer.logFile, "=====================================\n\n");
@@ -764,7 +855,14 @@ int main(void) {
     SetMusicVolume(music, 0.7f);
     
     printf("Music loaded. Press SPACE to start, R to restart, ESC to exit\n");
-    printf("Adjust thresholds with 1/2/3 + UP/DOWN before starting\n\n");
+    printf("Adjust thresholds with 1/2/3 + UP/DOWN before starting\n");
+    printf("  1: LOW, 2: MEDIUM, 3: HIGH bass thresholds\n");
+    printf("  P: Toggle peak detection (currently: %s)\n", 
+           analyzer.config.peakEnabled ? "ENABLED" : "DISABLED");
+    if (analyzer.config.peakEnabled) {
+        printf("  4: PEAK detection threshold (hold 4 + UP/DOWN)\n");
+    }
+    printf("\n");
     
     // Track pause state - start paused
     bool isPaused = true;
@@ -821,6 +919,12 @@ int main(void) {
             memset(analyzer.magnitude, 0, sizeof(analyzer.magnitude));
             analyzer.samplesCollected = 0;
             analyzer.audioBufferWritePos = 0;
+            // Reset peak detection
+            analyzer.peakCount = 0;
+            analyzer.previousBassEnergy = 0.0f;
+            analyzer.lastPeakTime = 0.0;
+            analyzer.peakEnergy = 0.0f;
+            analyzer.peakDisplayTime = 0.0;
             
             // Reopen log file
             if (analyzer.logFile) {
@@ -835,6 +939,12 @@ int main(void) {
                 fprintf(analyzer.logFile, "Sample rate: %u Hz\n", music.stream.sampleRate);
                 fprintf(analyzer.logFile, "Thresholds: LOW=%.3f, MEDIUM=%.3f, HIGH=%.3f\n", 
                        analyzer.config.thresholdLow, analyzer.config.thresholdMedium, analyzer.config.thresholdHigh);
+                fprintf(analyzer.logFile, "Peak detection: %s", analyzer.config.peakEnabled ? "ENABLED" : "DISABLED");
+                if (analyzer.config.peakEnabled) {
+                    fprintf(analyzer.logFile, " (threshold: %.3f = %.0f%% energy increase)", 
+                           analyzer.config.peakThreshold, analyzer.config.peakThreshold * 100.0f);
+                }
+                fprintf(analyzer.logFile, "\n");
                 fprintf(analyzer.logFile, "Bass frequency range: 0-%.0f Hz\n\n", BASS_FREQ_MAX);
                 fprintf(analyzer.logFile, "Time format: [seconds from start]\n");
                 fprintf(analyzer.logFile, "=====================================\n\n");
@@ -898,6 +1008,30 @@ int main(void) {
             }
         }
         
+        // Adjust PEAK threshold (hold 4, then press UP/DOWN) - only if enabled
+        if (IsKeyDown(KEY_FOUR) && analyzer.config.peakEnabled) {
+            if (IsKeyPressed(KEY_UP)) {
+                analyzer.config.peakThreshold += step;
+                if (analyzer.config.peakThreshold > 1.0f) analyzer.config.peakThreshold = 1.0f;
+                analyzer.configChanged = 1;
+                printf("PEAK threshold: %.3f (%.0f%% energy increase)\n", 
+                       analyzer.config.peakThreshold, analyzer.config.peakThreshold * 100.0f);
+            } else if (IsKeyPressed(KEY_DOWN)) {
+                analyzer.config.peakThreshold -= step;
+                if (analyzer.config.peakThreshold < 0.0f) analyzer.config.peakThreshold = 0.0f;
+                analyzer.configChanged = 1;
+                printf("PEAK threshold: %.3f (%.0f%% energy increase)\n", 
+                       analyzer.config.peakThreshold, analyzer.config.peakThreshold * 100.0f);
+            }
+        }
+        
+        // Toggle peak detection (P key)
+        if (IsKeyPressed(KEY_P)) {
+            analyzer.config.peakEnabled = !analyzer.config.peakEnabled;
+            analyzer.configChanged = 1;
+            printf("Peak detection: %s\n", analyzer.config.peakEnabled ? "ENABLED" : "DISABLED");
+        }
+        
         // Save configuration
         if (IsKeyPressed(KEY_S)) {
             saveConfig(&analyzer.config);
@@ -913,9 +1047,9 @@ int main(void) {
         
         // Show appropriate instructions based on state
         if (isPaused && GetMusicTimePlayed(music) == 0.0f) {
-            DrawText("SPACE: start | Hold 1/2/3 + UP/DOWN: adjust thresholds | S: save config | ESC: exit", 20, 48, 11, YELLOW);
+            DrawText("SPACE: start | Hold 1/2/3 + UP/DOWN: adjust | P: toggle peak | S: save | ESC: exit", 20, 48, 11, YELLOW);
         } else {
-            DrawText("SPACE: pause/resume | R: restart | Hold 1/2/3 + UP/DOWN: adjust | S: save | ESC: exit", 20, 48, 10, GRAY);
+            DrawText("SPACE: pause/resume | R: restart | Hold 1/2/3 + UP/DOWN: adjust | P: peak | S: save | ESC: exit", 20, 48, 10, GRAY);
         }
         
         // Draw visualizations
@@ -930,6 +1064,9 @@ int main(void) {
     // Cleanup
     printf("\n=== Session Summary ===\n");
     printf("Total bass events detected: %d\n", analyzer.bassEventCount);
+    if (analyzer.config.peakEnabled) {
+        printf("Total peaks detected: %d\n", analyzer.peakCount);
+    }
     printf("Session duration: %.2f seconds\n", GetTime());
     
     // Write summary to log file and close it
@@ -937,6 +1074,9 @@ int main(void) {
         fprintf(analyzer.logFile, "\n=====================================\n");
         fprintf(analyzer.logFile, "=== Session Summary ===\n");
         fprintf(analyzer.logFile, "Total bass events detected: %d\n", analyzer.bassEventCount);
+        if (analyzer.config.peakEnabled) {
+            fprintf(analyzer.logFile, "Total peaks detected: %d\n", analyzer.peakCount);
+        }
         fprintf(analyzer.logFile, "Session duration: %.2f seconds\n", GetTime());
         fclose(analyzer.logFile);
         printf("Log file closed: %s\n", logFilePath);
