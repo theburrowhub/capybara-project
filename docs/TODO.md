@@ -71,15 +71,15 @@
 - [x] Add debug mode with additional information display
 
 ## 🎨 UI/UX Improvements
-- [ ] Main menu screen
-  - [ ] Start game
-  - [ ] Settings
+- [-] Main menu screen
+  - [x] Start game
+  - [x] Settings
   - [ ] High scores
-  - [ ] Credits
+  - [x] Credits
   - [ ] Exit
-- [ ] Settings menu
+- [-] Settings menu
   - [ ] Graphics options
-  - [ ] Audio options
+  - [x] Audio options
   - [ ] Control configuration
 - [ ] HUD improvements
   - [ ] Mini-map or radar

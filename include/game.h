@@ -24,4 +24,7 @@ void FireEnemyProjectile(Game* game, struct EnemyEx* enemy);
 // Projectile management functions  
 void UpdateProjectiles(Game* game);
 
+// Audio management functions
+void SetGameMusicVolume(Game* game, float volume);
+
 #endif // GAME_H
