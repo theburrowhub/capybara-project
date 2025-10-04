@@ -5,10 +5,15 @@
 #include <string.h>
 #include <stdlib.h>
 #include <time.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <stdbool.h>
 
 // Constants
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 800
+#define MAX_MP3_FILES 50
+#define MAX_FILENAME_LENGTH 256
 #define FFT_SIZE 2048
 #define SPECTRUM_WIDTH 800
 #define SPECTRUM_HEIGHT 400
@@ -17,10 +22,20 @@
 #define SAMPLE_RATE 44100.0f
 #define HISTORY_SIZE 100      // Number of frames to keep in spectrogram history
 
-// Bass detection thresholds (normalized 0-1)
-#define BASS_THRESHOLD_LOW 0.05f
-#define BASS_THRESHOLD_MEDIUM 0.15f
-#define BASS_THRESHOLD_HIGH 0.30f
+// Bass detection thresholds (defaults)
+#define BASS_THRESHOLD_LOW_DEFAULT 0.05f
+#define BASS_THRESHOLD_MEDIUM_DEFAULT 0.15f
+#define BASS_THRESHOLD_HIGH_DEFAULT 0.30f
+
+// Configuration file path
+#define CONFIG_FILE "bin/audio_spectrogram.conf"
+
+// Configuration structure
+typedef struct {
+    float thresholdLow;
+    float thresholdMedium;
+    float thresholdHigh;
+} BassConfig;
 
 typedef enum {
     BASS_NONE = 0,
@@ -45,10 +60,230 @@ typedef struct {
     int audioBufferWritePos;
     int samplesCollected;
     FILE *logFile;  // File handle for logging
+    BassConfig config;  // Configuration
+    int configChanged;  // Flag to show config was changed
 } AudioAnalyzer;
 
 // Global analyzer for audio callback
 AudioAnalyzer *g_analyzer = NULL;
+
+// Load configuration from file
+void loadConfig(BassConfig *config) {
+    // Set defaults
+    config->thresholdLow = BASS_THRESHOLD_LOW_DEFAULT;
+    config->thresholdMedium = BASS_THRESHOLD_MEDIUM_DEFAULT;
+    config->thresholdHigh = BASS_THRESHOLD_HIGH_DEFAULT;
+    
+    FILE *file = fopen(CONFIG_FILE, "r");
+    if (file == NULL) {
+        return;  // No config file, use defaults
+    }
+    
+    char line[256];
+    while (fgets(line, sizeof(line), file)) {
+        // Skip comments and empty lines
+        if (line[0] == '#' || line[0] == '\n') continue;
+        
+        // Parse key=value pairs
+        char key[64];
+        float value;
+        if (sscanf(line, "%63[^=]=%f", key, &value) == 2) {
+            if (strcmp(key, "threshold_low") == 0) {
+                config->thresholdLow = value;
+            } else if (strcmp(key, "threshold_medium") == 0) {
+                config->thresholdMedium = value;
+            } else if (strcmp(key, "threshold_high") == 0) {
+                config->thresholdHigh = value;
+            }
+        }
+    }
+    
+    fclose(file);
+    printf("Configuration loaded from: %s\n", CONFIG_FILE);
+}
+
+// Save configuration to file
+void saveConfig(const BassConfig *config) {
+    FILE *file = fopen(CONFIG_FILE, "w");
+    if (file == NULL) {
+        printf("Warning: Could not save configuration file: %s\n", CONFIG_FILE);
+        return;
+    }
+    
+    fprintf(file, "# Audio Spectrogram Configuration\n");
+    fprintf(file, "# Bass detection thresholds (0.0 - 1.0)\n");
+    fprintf(file, "# These values determine when bass is detected at different levels\n\n");
+    fprintf(file, "threshold_low=%.3f\n", config->thresholdLow);
+    fprintf(file, "threshold_medium=%.3f\n", config->thresholdMedium);
+    fprintf(file, "threshold_high=%.3f\n", config->thresholdHigh);
+    
+    fclose(file);
+    printf("Configuration saved to: %s\n", CONFIG_FILE);
+}
+
+// Helper function to get log file path from MP3 path
+void getLogFilePath(const char *mp3Path, char *logPath, size_t logPathSize) {
+    strncpy(logPath, mp3Path, logPathSize - 1);
+    logPath[logPathSize - 1] = '\0';
+    
+    // Replace .mp3 extension with .log
+    char *ext = strrchr(logPath, '.');
+    if (ext != NULL && strcmp(ext, ".mp3") == 0) {
+        strcpy(ext, ".log");
+    } else {
+        // If no .mp3 extension found, just append .log
+        strncat(logPath, ".log", logPathSize - strlen(logPath) - 1);
+    }
+}
+
+// Helper function to backup existing log file
+void backupLogFile(const char *logPath) {
+    struct stat st;
+    if (stat(logPath, &st) != 0) {
+        // File doesn't exist, no backup needed
+        return;
+    }
+    
+    // Create backup filename with date
+    time_t now = time(NULL);
+    struct tm *t = localtime(&now);
+    char backupPath[512];
+    char dateStr[64];
+    
+    strftime(dateStr, sizeof(dateStr), "%Y%m%d_%H%M%S", t);
+    
+    // Insert "_backup_DATE" before the .log extension
+    strncpy(backupPath, logPath, sizeof(backupPath) - 1);
+    backupPath[sizeof(backupPath) - 1] = '\0';
+    
+    char *ext = strrchr(backupPath, '.');
+    if (ext != NULL) {
+        *ext = '\0';
+        snprintf(backupPath, sizeof(backupPath), "%s_backup_%s.log", backupPath, dateStr);
+    } else {
+        snprintf(backupPath, sizeof(backupPath), "%s_backup_%s", logPath, dateStr);
+    }
+    
+    // Rename existing log file to backup
+    if (rename(logPath, backupPath) == 0) {
+        printf("Backed up existing log to: %s\n", backupPath);
+    } else {
+        printf("Warning: Could not backup existing log file\n");
+    }
+}
+
+// Helper function to scan for MP3 files in a directory
+int scanMP3Files(const char *directory, char files[][MAX_FILENAME_LENGTH], int maxFiles) {
+    DIR *dir = opendir(directory);
+    if (dir == NULL) {
+        printf("Error: Could not open directory: %s\n", directory);
+        return 0;
+    }
+    
+    struct dirent *entry;
+    int count = 0;
+    
+    while ((entry = readdir(dir)) != NULL && count < maxFiles) {
+        // Check if file has .mp3 extension
+        size_t len = strlen(entry->d_name);
+        if (len > 4 && strcmp(entry->d_name + len - 4, ".mp3") == 0) {
+            strncpy(files[count], entry->d_name, MAX_FILENAME_LENGTH - 1);
+            files[count][MAX_FILENAME_LENGTH - 1] = '\0';
+            count++;
+        }
+    }
+    
+    closedir(dir);
+    return count;
+}
+
+// Helper function to display file selection screen and get selected file
+int selectAudioFile(char *selectedPath, size_t pathSize) {
+    const char *audioDir = "assets/audio";
+    char mp3Files[MAX_MP3_FILES][MAX_FILENAME_LENGTH];
+    int fileCount = scanMP3Files(audioDir, mp3Files, MAX_MP3_FILES);
+    
+    if (fileCount == 0) {
+        printf("Error: No MP3 files found in %s\n", audioDir);
+        return 0;
+    }
+    
+    printf("Found %d MP3 file(s) in %s:\n", fileCount, audioDir);
+    for (int i = 0; i < fileCount; i++) {
+        printf("  %d. %s\n", i + 1, mp3Files[i]);
+    }
+    
+    // Initialize window for file selection
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Audio Spectrogram - Select Audio File");
+    SetTargetFPS(60);
+    
+    int selectedIndex = 0;
+    int confirmed = 0;
+    
+    while (!WindowShouldClose() && !confirmed) {
+        // Handle input
+        if (IsKeyPressed(KEY_UP)) {
+            selectedIndex = (selectedIndex - 1 + fileCount) % fileCount;
+        }
+        if (IsKeyPressed(KEY_DOWN)) {
+            selectedIndex = (selectedIndex + 1) % fileCount;
+        }
+        if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+            confirmed = 1;
+        }
+        
+        // Mouse selection
+        Vector2 mousePos = GetMousePosition();
+        int listStartY = 200;
+        int itemHeight = 40;
+        
+        for (int i = 0; i < fileCount; i++) {
+            int itemY = listStartY + i * itemHeight;
+            if (mousePos.x >= 100 && mousePos.x <= SCREEN_WIDTH - 100 &&
+                mousePos.y >= itemY && mousePos.y <= itemY + itemHeight - 5) {
+                selectedIndex = i;
+                if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+                    confirmed = 1;
+                }
+            }
+        }
+        
+        // Draw
+        BeginDrawing();
+        ClearBackground((Color){20, 20, 30, 255});
+        
+        DrawText("Select Audio File", 50, 50, 32, WHITE);
+        DrawText("Use UP/DOWN arrows or mouse to select, ENTER/SPACE to confirm", 50, 100, 16, GRAY);
+        DrawText(TextFormat("Files in: %s", audioDir), 50, 140, 14, DARKGRAY);
+        
+        // Draw file list
+        for (int i = 0; i < fileCount; i++) {
+            int itemY = listStartY + i * itemHeight;
+            Color bgColor = (i == selectedIndex) ? (Color){60, 120, 180, 255} : (Color){40, 40, 50, 255};
+            Color textColor = (i == selectedIndex) ? WHITE : LIGHTGRAY;
+            
+            DrawRectangle(100, itemY, SCREEN_WIDTH - 200, itemHeight - 5, bgColor);
+            DrawRectangleLines(100, itemY, SCREEN_WIDTH - 200, itemHeight - 5, 
+                              (i == selectedIndex) ? SKYBLUE : GRAY);
+            
+            DrawText(mp3Files[i], 120, itemY + 10, 20, textColor);
+        }
+        
+        // Instructions
+        DrawText("ESC to exit", 50, SCREEN_HEIGHT - 50, 14, GRAY);
+        
+        EndDrawing();
+    }
+    
+    if (confirmed) {
+        snprintf(selectedPath, pathSize, "%s/%s", audioDir, mp3Files[selectedIndex]);
+        printf("\nSelected file: %s\n", selectedPath);
+        return 1;
+    }
+    
+    CloseWindow();
+    return 0;
+}
 
 // Audio callback to capture processed audio
 void AudioProcessorCallback(void *buffer, unsigned int frames) {
@@ -170,14 +405,14 @@ void analyzeAudioFrame(AudioAnalyzer *analyzer) {
         analyzer->bassEnergy = sqrtf(bassSum / totalWeight);
     }
     
-    // Determine bass level
+    // Determine bass level using configured thresholds
     analyzer->previousBassLevel = analyzer->currentBassLevel;
     
-    if (analyzer->bassEnergy < BASS_THRESHOLD_LOW) {
+    if (analyzer->bassEnergy < analyzer->config.thresholdLow) {
         analyzer->currentBassLevel = BASS_NONE;
-    } else if (analyzer->bassEnergy < BASS_THRESHOLD_MEDIUM) {
+    } else if (analyzer->bassEnergy < analyzer->config.thresholdMedium) {
         analyzer->currentBassLevel = BASS_LOW;
-    } else if (analyzer->bassEnergy < BASS_THRESHOLD_HIGH) {
+    } else if (analyzer->bassEnergy < analyzer->config.thresholdHigh) {
         analyzer->currentBassLevel = BASS_MEDIUM;
     } else {
         analyzer->currentBassLevel = BASS_HIGH;
@@ -205,11 +440,10 @@ void analyzeAudioFrame(AudioAnalyzer *analyzer) {
             fflush(analyzer->logFile);
         }
     }
-    // Detect bass level change (only if significant and stable for a moment)
+    // Detect bass level change (log all transitions for accurate level design data)
     else if (analyzer->previousBassLevel != BASS_NONE && 
              analyzer->currentBassLevel != BASS_NONE &&
-             analyzer->previousBassLevel != analyzer->currentBassLevel &&
-             currentTime - analyzer->lastLogTime > 0.1) {  // Debounce 100ms
+             analyzer->previousBassLevel != analyzer->currentBassLevel) {
         
         const char *levelStr = (analyzer->currentBassLevel == BASS_LOW) ? "LOW" :
                                (analyzer->currentBassLevel == BASS_MEDIUM) ? "MEDIUM" : "HIGH";
@@ -348,8 +582,8 @@ void drawSpectrogram(AudioAnalyzer *analyzer, int x, int y, int width, int heigh
 // Draw bass level indicator
 void drawBassIndicator(AudioAnalyzer *analyzer, int x, int y) {
     // Draw background
-    DrawRectangle(x, y, 350, 140, (Color){30, 30, 40, 255});
-    DrawRectangleLines(x, y, 350, 140, GRAY);
+    DrawRectangle(x, y, 350, 180, (Color){30, 30, 40, 255});
+    DrawRectangleLines(x, y, 350, 180, GRAY);
     
     DrawText("Bass Detection", x + 10, y + 10, 16, WHITE);
     
@@ -388,9 +622,9 @@ void drawBassIndicator(AudioAnalyzer *analyzer, int x, int y) {
     DrawText(TextFormat("Energy: %.3f", analyzer->bassEnergy), x + 25, y + 110, 12, LIGHTGRAY);
     
     // Draw threshold markers
-    int lowMark = (int)(300 * BASS_THRESHOLD_LOW);
-    int medMark = (int)(300 * BASS_THRESHOLD_MEDIUM);
-    int highMark = (int)(300 * BASS_THRESHOLD_HIGH);
+    int lowMark = (int)(300 * analyzer->config.thresholdLow);
+    int medMark = (int)(300 * analyzer->config.thresholdMedium);
+    int highMark = (int)(300 * analyzer->config.thresholdHigh);
     
     DrawLine(x + 25 + lowMark, y + 40, x + 25 + lowMark, y + 85, GREEN);
     DrawLine(x + 25 + medMark, y + 40, x + 25 + medMark, y + 85, ORANGE);
@@ -399,10 +633,22 @@ void drawBassIndicator(AudioAnalyzer *analyzer, int x, int y) {
     DrawText("L", x + 22 + lowMark, y + 30, 10, GREEN);
     DrawText("M", x + 21 + medMark, y + 30, 10, ORANGE);
     DrawText("H", x + 22 + highMark, y + 30, 10, RED);
+    
+    // Display threshold values
+    DrawText("Thresholds (hold 1/2/3 + UP/DOWN, S to save):", x + 10, y + 130, 9, DARKGRAY);
+    DrawText(TextFormat("L:%.3f M:%.3f H:%.3f", 
+             analyzer->config.thresholdLow, 
+             analyzer->config.thresholdMedium, 
+             analyzer->config.thresholdHigh), 
+             x + 10, y + 145, 10, LIGHTGRAY);
+    
+    if (analyzer->configChanged) {
+        DrawText("* Config changed - press S to save", x + 10, y + 160, 9, YELLOW);
+    }
 }
 
 // Draw info panel
-void drawInfoPanel(AudioAnalyzer *analyzer, Music music, const char *logFileName, int x, int y) {
+void drawInfoPanel(AudioAnalyzer *analyzer, Music music, const char *audioFileName, const char *logFileName, int x, int y, bool isPaused) {
     DrawRectangle(x, y, 350, 170, (Color){30, 30, 40, 255});
     DrawRectangleLines(x, y, 350, 170, GRAY);
     
@@ -412,34 +658,53 @@ void drawInfoPanel(AudioAnalyzer *analyzer, Music music, const char *logFileName
     float musicPlayed = GetMusicTimePlayed(music);
     float progress = musicPlayed / musicLength;
     
-    DrawText(TextFormat("File: level1.mp3"), x + 10, y + 35, 12, LIGHTGRAY);
-    DrawText(TextFormat("Time: %.1f / %.1f s", musicPlayed, musicLength), x + 10, y + 55, 12, LIGHTGRAY);
-    DrawText(TextFormat("Bass Events: %d", analyzer->bassEventCount), x + 10, y + 75, 12, LIGHTGRAY);
+    // Show status
+    if (isPaused && musicPlayed == 0.0f) {
+        DrawText("[Ready - Press SPACE to start]", x + 10, y + 55, 11, YELLOW);
+    } else if (isPaused) {
+        DrawText("[Paused - Press SPACE to resume]", x + 10, y + 55, 11, ORANGE);
+    } else {
+        DrawText("[Playing]", x + 10, y + 55, 11, GREEN);
+    }
+    
+    // Extract just the filename from the full path
+    const char *displayName = strrchr(audioFileName, '/');
+    if (displayName == NULL) {
+        displayName = audioFileName;
+    } else {
+        displayName++; // Skip the '/'
+    }
+    
+    DrawText(TextFormat("File: %s", displayName), x + 10, y + 35, 12, LIGHTGRAY);
+    
+    DrawText(TextFormat("Time: %.1f / %.1f s", musicPlayed, musicLength), x + 10, y + 75, 12, LIGHTGRAY);
+    DrawText(TextFormat("Bass Events: %d", analyzer->bassEventCount), x + 10, y + 95, 12, LIGHTGRAY);
     
     // Log file info
     if (analyzer->logFile && logFileName) {
-        DrawText("Logging to file:", x + 10, y + 93, 10, DARKGRAY);
-        DrawText(logFileName, x + 10, y + 105, 9, (Color){150, 150, 150, 255});
+        DrawText("Logging to file:", x + 10, y + 113, 10, DARKGRAY);
+        DrawText(logFileName, x + 10, y + 125, 9, (Color){150, 150, 150, 255});
     }
     
     // Progress bar
-    DrawRectangle(x + 10, y + 120, (int)(330 * progress), 20, GREEN);
-    DrawRectangleLines(x + 10, y + 120, 330, 20, WHITE);
-    
-    // Last log message (show for 2 seconds)
-    if (strlen(analyzer->logBuffer) > 0 && GetTime() - analyzer->lastLogTime < 2.0) {
-        DrawText(analyzer->logBuffer, x + 10, y + 148, 9, YELLOW);
-    }
+    DrawRectangle(x + 10, y + 140, (int)(330 * progress), 20, isPaused ? GRAY : GREEN);
+    DrawRectangleLines(x + 10, y + 140, 330, 20, WHITE);
 }
 
 int main(void) {
-    // Initialize window
+    // Select audio file
+    char audioFile[512];
+    if (!selectAudioFile(audioFile, sizeof(audioFile))) {
+        printf("No file selected. Exiting.\n");
+        return 0;
+    }
+    
+    // Initialize window and audio
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Audio Spectrogram Demo - Bass Detection");
     InitAudioDevice();
     SetTargetFPS(60);
     
     // Load audio file
-    const char *audioFile = "assets/audio/level1.mp3";
     Music music = LoadMusicStream(audioFile);
     
     // Check if music was loaded successfully
@@ -454,46 +719,55 @@ int main(void) {
     printf("Music duration: %.2f seconds\n", GetMusicTimeLength(music));
     printf("Sample rate: %u Hz\n", music.stream.sampleRate);
     printf("Channels: %u\n", music.stream.channels);
-    printf("\n=== Bass Detection Log ===\n");
-    printf("Thresholds: LOW=%.2f, MEDIUM=%.2f, HIGH=%.2f\n", 
-           BASS_THRESHOLD_LOW, BASS_THRESHOLD_MEDIUM, BASS_THRESHOLD_HIGH);
-    printf("Bass frequency range: 0-%.0f Hz\n\n", BASS_FREQ_MAX);
-    
     // Initialize audio analyzer
     AudioAnalyzer analyzer = {0};
     g_analyzer = &analyzer;
     
-    // Open log file with timestamp
-    char logFileName[256];
-    time_t now = time(NULL);
-    struct tm *t = localtime(&now);
-    strftime(logFileName, sizeof(logFileName), "bass_detection_%Y%m%d_%H%M%S.log", t);
-    analyzer.logFile = fopen(logFileName, "w");
+    // Load configuration
+    loadConfig(&analyzer.config);
+    
+    printf("\n=== Bass Detection Log ===\n");
+    printf("Thresholds: LOW=%.3f, MEDIUM=%.3f, HIGH=%.3f\n", 
+           analyzer.config.thresholdLow, analyzer.config.thresholdMedium, analyzer.config.thresholdHigh);
+    printf("Bass frequency range: 0-%.0f Hz\n\n", BASS_FREQ_MAX);
+    
+    // Generate log file path from MP3 path
+    char logFilePath[512];
+    getLogFilePath(audioFile, logFilePath, sizeof(logFilePath));
+    
+    // Backup existing log file if it exists
+    backupLogFile(logFilePath);
+    
+    // Open new log file
+    analyzer.logFile = fopen(logFilePath, "w");
     
     if (analyzer.logFile) {
         fprintf(analyzer.logFile, "=== Bass Detection Log ===\n");
         fprintf(analyzer.logFile, "Audio file: %s\n", audioFile);
         fprintf(analyzer.logFile, "Duration: %.2f seconds\n", GetMusicTimeLength(music));
         fprintf(analyzer.logFile, "Sample rate: %u Hz\n", music.stream.sampleRate);
-        fprintf(analyzer.logFile, "Thresholds: LOW=%.2f, MEDIUM=%.2f, HIGH=%.2f\n", 
-               BASS_THRESHOLD_LOW, BASS_THRESHOLD_MEDIUM, BASS_THRESHOLD_HIGH);
+        fprintf(analyzer.logFile, "Thresholds: LOW=%.3f, MEDIUM=%.3f, HIGH=%.3f\n", 
+               analyzer.config.thresholdLow, analyzer.config.thresholdMedium, analyzer.config.thresholdHigh);
         fprintf(analyzer.logFile, "Bass frequency range: 0-%.0f Hz\n\n", BASS_FREQ_MAX);
         fprintf(analyzer.logFile, "Time format: [seconds from start]\n");
         fprintf(analyzer.logFile, "=====================================\n\n");
         fflush(analyzer.logFile);
-        printf("Log file created: %s\n", logFileName);
+        printf("Log file created: %s\n", logFilePath);
     } else {
-        printf("Warning: Could not create log file\n");
+        printf("Warning: Could not create log file: %s\n", logFilePath);
     }
     
     // Attach audio processor to capture audio data
     AttachAudioStreamProcessor(music.stream, AudioProcessorCallback);
     
-    // Start playing music
-    PlayMusicStream(music);
+    // Load music but don't start playing yet
     SetMusicVolume(music, 0.7f);
     
-    printf("Music playing... Press SPACE to pause, ESC to exit\n\n");
+    printf("Music loaded. Press SPACE to start, R to restart, ESC to exit\n");
+    printf("Adjust thresholds with 1/2/3 + UP/DOWN before starting\n\n");
+    
+    // Track pause state - start paused
+    bool isPaused = true;
     
     // Main loop
     while (!WindowShouldClose()) {
@@ -505,22 +779,129 @@ int main(void) {
             analyzeAudioFrame(&analyzer);
         }
         
-        // Restart music if it ends
-        if (!IsMusicStreamPlaying(music)) {
+        // Restart music if it ends (but not if manually paused)
+        if (!isPaused && !IsMusicStreamPlaying(music)) {
             StopMusicStream(music);
             PlayMusicStream(music);
             printf("\n=== Music Restarted ===\n\n");
         }
         
-        // Controls
+        // Controls - Play/Pause toggle
         if (IsKeyPressed(KEY_SPACE)) {
-            if (IsMusicStreamPlaying(music)) {
-                PauseMusicStream(music);
-                printf("[%.2f] Music PAUSED\n", GetTime());
+            if (isPaused) {
+                // Start or resume music
+                if (!IsMusicStreamPlaying(music)) {
+                    PlayMusicStream(music);
+                    printf("[%.2f] Music STARTED\n", GetTime());
+                } else {
+                    ResumeMusicStream(music);
+                    printf("[%.2f] Music RESUMED\n", GetTime());
+                }
+                isPaused = false;
             } else {
-                ResumeMusicStream(music);
-                printf("[%.2f] Music RESUMED\n", GetTime());
+                PauseMusicStream(music);
+                isPaused = true;
+                printf("[%.2f] Music PAUSED\n", GetTime());
             }
+        }
+        
+        // Restart hotkey (R) - Reset song and log data
+        if (IsKeyPressed(KEY_R)) {
+            StopMusicStream(music);
+            SeekMusicStream(music, 0.0f);
+            
+            // Reset analyzer state
+            analyzer.bassEventCount = 0;
+            analyzer.bassStartTime = 0;
+            analyzer.bassEndTime = 0;
+            analyzer.currentBassLevel = BASS_NONE;
+            analyzer.previousBassLevel = BASS_NONE;
+            analyzer.historyIndex = 0;
+            memset(analyzer.history, 0, sizeof(analyzer.history));
+            memset(analyzer.magnitude, 0, sizeof(analyzer.magnitude));
+            analyzer.samplesCollected = 0;
+            analyzer.audioBufferWritePos = 0;
+            
+            // Reopen log file
+            if (analyzer.logFile) {
+                fclose(analyzer.logFile);
+            }
+            backupLogFile(logFilePath);
+            analyzer.logFile = fopen(logFilePath, "w");
+            if (analyzer.logFile) {
+                fprintf(analyzer.logFile, "=== Bass Detection Log ===\n");
+                fprintf(analyzer.logFile, "Audio file: %s\n", audioFile);
+                fprintf(analyzer.logFile, "Duration: %.2f seconds\n", GetMusicTimeLength(music));
+                fprintf(analyzer.logFile, "Sample rate: %u Hz\n", music.stream.sampleRate);
+                fprintf(analyzer.logFile, "Thresholds: LOW=%.3f, MEDIUM=%.3f, HIGH=%.3f\n", 
+                       analyzer.config.thresholdLow, analyzer.config.thresholdMedium, analyzer.config.thresholdHigh);
+                fprintf(analyzer.logFile, "Bass frequency range: 0-%.0f Hz\n\n", BASS_FREQ_MAX);
+                fprintf(analyzer.logFile, "Time format: [seconds from start]\n");
+                fprintf(analyzer.logFile, "=====================================\n\n");
+                fflush(analyzer.logFile);
+            }
+            
+            printf("\n=== RESTART - Song and log data reset ===\n");
+            printf("Press SPACE to start playback\n\n");
+            isPaused = true;
+        }
+        
+        // Threshold adjustment controls
+        // Hold 1/2/3 and press UP/DOWN to adjust thresholds
+        float step = 0.01f;  // Adjustment step
+        if (IsKeyDown(KEY_LEFT_SHIFT) || IsKeyDown(KEY_RIGHT_SHIFT)) {
+            step = 0.001f;  // Fine adjustment with shift
+        }
+        
+        // Adjust LOW threshold (hold 1, then press UP/DOWN)
+        if (IsKeyDown(KEY_ONE)) {
+            if (IsKeyPressed(KEY_UP)) {
+                analyzer.config.thresholdLow += step;
+                if (analyzer.config.thresholdLow > 1.0f) analyzer.config.thresholdLow = 1.0f;
+                analyzer.configChanged = 1;
+                printf("LOW threshold: %.3f\n", analyzer.config.thresholdLow);
+            } else if (IsKeyPressed(KEY_DOWN)) {
+                analyzer.config.thresholdLow -= step;
+                if (analyzer.config.thresholdLow < 0.0f) analyzer.config.thresholdLow = 0.0f;
+                analyzer.configChanged = 1;
+                printf("LOW threshold: %.3f\n", analyzer.config.thresholdLow);
+            }
+        }
+        
+        // Adjust MEDIUM threshold (hold 2, then press UP/DOWN)
+        if (IsKeyDown(KEY_TWO)) {
+            if (IsKeyPressed(KEY_UP)) {
+                analyzer.config.thresholdMedium += step;
+                if (analyzer.config.thresholdMedium > 1.0f) analyzer.config.thresholdMedium = 1.0f;
+                analyzer.configChanged = 1;
+                printf("MEDIUM threshold: %.3f\n", analyzer.config.thresholdMedium);
+            } else if (IsKeyPressed(KEY_DOWN)) {
+                analyzer.config.thresholdMedium -= step;
+                if (analyzer.config.thresholdMedium < 0.0f) analyzer.config.thresholdMedium = 0.0f;
+                analyzer.configChanged = 1;
+                printf("MEDIUM threshold: %.3f\n", analyzer.config.thresholdMedium);
+            }
+        }
+        
+        // Adjust HIGH threshold (hold 3, then press UP/DOWN)
+        if (IsKeyDown(KEY_THREE)) {
+            if (IsKeyPressed(KEY_UP)) {
+                analyzer.config.thresholdHigh += step;
+                if (analyzer.config.thresholdHigh > 1.0f) analyzer.config.thresholdHigh = 1.0f;
+                analyzer.configChanged = 1;
+                printf("HIGH threshold: %.3f\n", analyzer.config.thresholdHigh);
+            } else if (IsKeyPressed(KEY_DOWN)) {
+                analyzer.config.thresholdHigh -= step;
+                if (analyzer.config.thresholdHigh < 0.0f) analyzer.config.thresholdHigh = 0.0f;
+                analyzer.configChanged = 1;
+                printf("HIGH threshold: %.3f\n", analyzer.config.thresholdHigh);
+            }
+        }
+        
+        // Save configuration
+        if (IsKeyPressed(KEY_S)) {
+            saveConfig(&analyzer.config);
+            analyzer.configChanged = 0;
         }
         
         // Draw
@@ -529,13 +910,19 @@ int main(void) {
         
         // Title
         DrawText("Audio Spectrogram Demo with Real-Time Bass Detection", 20, 20, 22, WHITE);
-        DrawText("Press SPACE to pause/resume | ESC to exit", 20, 48, 14, GRAY);
+        
+        // Show appropriate instructions based on state
+        if (isPaused && GetMusicTimePlayed(music) == 0.0f) {
+            DrawText("SPACE: start | Hold 1/2/3 + UP/DOWN: adjust thresholds | S: save config | ESC: exit", 20, 48, 11, YELLOW);
+        } else {
+            DrawText("SPACE: pause/resume | R: restart | Hold 1/2/3 + UP/DOWN: adjust | S: save | ESC: exit", 20, 48, 10, GRAY);
+        }
         
         // Draw visualizations
         drawSpectrum(&analyzer, 50, 90, SPECTRUM_WIDTH, SPECTRUM_HEIGHT);
         drawSpectrogram(&analyzer, 50, 510, SPECTRUM_WIDTH, SPECTROGRAM_HEIGHT);
         drawBassIndicator(&analyzer, 870, 90);
-        drawInfoPanel(&analyzer, music, logFileName, 870, 250);
+        drawInfoPanel(&analyzer, music, audioFile, logFilePath, 870, 250, isPaused);
         
         EndDrawing();
     }
@@ -552,7 +939,7 @@ int main(void) {
         fprintf(analyzer.logFile, "Total bass events detected: %d\n", analyzer.bassEventCount);
         fprintf(analyzer.logFile, "Session duration: %.2f seconds\n", GetTime());
         fclose(analyzer.logFile);
-        printf("Log file closed: %s\n", logFileName);
+        printf("Log file closed: %s\n", logFilePath);
     }
     
     DetachAudioStreamProcessor(music.stream, AudioProcessorCallback);
