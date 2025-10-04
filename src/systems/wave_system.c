@@ -1,5 +1,4 @@
 #include "wave_system.h"
-#include "bass_events.h"
 #include "enemy_types.h"
 #include "constants.h"
 #include "utils.h"
@@ -8,138 +7,9 @@
 #include <math.h>
 #include <stdio.h>
 
-// Anticipation/lead time: enemies start spawning this many seconds BEFORE bass hits
-#define BASS_ANTICIPATION_TIME 1.5f  // Adjust this value for better feel (1.0-2.0 seconds recommended)
-
-// Enemy spawn configuration based on bass level
-typedef struct {
-    EnemyType type;
-    int weight;         // Spawn probability weight
-    float minInterval;  // Minimum spawn interval
-    float maxInterval;  // Maximum spawn interval
-} EnemySpawnConfig;
-
-// Spawn configurations for different bass levels
-static EnemySpawnConfig noBassSpawns[] = {
-    {ENEMY_GRUNT, 70, 2.0f, 4.0f},
-    {ENEMY_SWARM, 30, 1.5f, 3.0f},
-};
-
-static EnemySpawnConfig lowBassSpawns[] = {
-    {ENEMY_GRUNT, 40, 1.5f, 2.5f},
-    {ENEMY_SWARM, 30, 1.0f, 2.0f},
-    {ENEMY_SPEEDER, 20, 2.0f, 4.0f},
-    {ENEMY_ZIGZAG, 10, 3.0f, 5.0f},
-};
-
-static EnemySpawnConfig mediumBassSpawns[] = {
-    {ENEMY_TANK, 25, 3.0f, 6.0f},  // Increased weight and reduced interval
-    {ENEMY_SPEEDER, 20, 1.5f, 3.0f},
-    {ENEMY_ZIGZAG, 15, 2.0f, 4.0f},
-    {ENEMY_SHIELD, 15, 5.0f, 10.0f},
-    {ENEMY_BOMBER, 10, 6.0f, 12.0f},
-    {ENEMY_GRUNT, 10, 1.0f, 2.0f},
-    {ENEMY_SWARM, 5, 0.8f, 1.5f},  // Reduced swarm weight
-};
-
-static EnemySpawnConfig highBassSpawns[] = {
-    {ENEMY_ELITE, 25, 6.0f, 12.0f},
-    {ENEMY_BOMBER, 20, 5.0f, 10.0f},
-    {ENEMY_GHOST, 20, 4.0f, 8.0f},
-    {ENEMY_TANK, 25, 2.0f, 4.0f},  // Significantly increased weight and reduced interval for intense phases
-    {ENEMY_SHIELD, 10, 4.0f, 8.0f},
-};
-
-// Helper function to select enemy type based on bass level
-static EnemyType SelectEnemyForBassLevel(BassLevel level) {
-    EnemySpawnConfig* configs = NULL;
-    int configCount = 0;
-    
-    switch (level) {
-        case BASS_NONE:
-            configs = noBassSpawns;
-            configCount = sizeof(noBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-        case BASS_LOW:
-            configs = lowBassSpawns;
-            configCount = sizeof(lowBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-        case BASS_MEDIUM:
-            configs = mediumBassSpawns;
-            configCount = sizeof(mediumBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-        case BASS_HIGH:
-            configs = highBassSpawns;
-            configCount = sizeof(highBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-    }
-    
-    if (configs == NULL || configCount == 0) {
-        return ENEMY_GRUNT;
-    }
-    
-    // Calculate total weight
-    int totalWeight = 0;
-    for (int i = 0; i < configCount; i++) {
-        totalWeight += configs[i].weight;
-    }
-    
-    // Select random enemy based on weights
-    int randomValue = GetRandomValue(0, totalWeight - 1);
-    int currentWeight = 0;
-    for (int i = 0; i < configCount; i++) {
-        currentWeight += configs[i].weight;
-        if (randomValue < currentWeight) {
-            return configs[i].type;
-        }
-    }
-    
-    return configs[0].type;
-}
-
-// Get spawn interval for bass level
-static float GetSpawnIntervalForBassLevel(BassLevel level, EnemyType type) {
-    EnemySpawnConfig* configs = NULL;
-    int configCount = 0;
-    
-    switch (level) {
-        case BASS_NONE:
-            configs = noBassSpawns;
-            configCount = sizeof(noBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-        case BASS_LOW:
-            configs = lowBassSpawns;
-            configCount = sizeof(lowBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-        case BASS_MEDIUM:
-            configs = mediumBassSpawns;
-            configCount = sizeof(mediumBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-        case BASS_HIGH:
-            configs = highBassSpawns;
-            configCount = sizeof(highBassSpawns) / sizeof(EnemySpawnConfig);
-            break;
-    }
-    
-    // Find the config for this type
-    for (int i = 0; i < configCount; i++) {
-        if (configs[i].type == type) {
-            float min = configs[i].minInterval;
-            float max = configs[i].maxInterval;
-            return min + ((float)GetRandomValue(0, 100) / 100.0f) * (max - min);
-        }
-    }
-    
-    return 2.0f; // Default
-}
-
 void InitWaveSystem(WaveSystem* waveSystem) {
     // Initialize enemy types first
     InitEnemyTypes();
-    
-    // Initialize bass event system (still used for phase names)
-    waveSystem->bassSystem = (BassEventSystem*)malloc(sizeof(BassEventSystem));
-    InitBassEvents(waveSystem->bassSystem);
     
     // No predefined phases - tracking is based on spawn events
     waveSystem->phaseCount = 0;
@@ -181,7 +51,7 @@ void InitWaveSystem(WaveSystem* waveSystem) {
     
     // Initialize state with debug start time
     waveSystem->waveTimer = startTime;
-    waveSystem->totalDuration = waveSystem->bassSystem->songDuration;
+    waveSystem->totalDuration = 553.82f; // Level duration from audio analysis
     waveSystem->isComplete = false;
     waveSystem->lastSpawnTime = startTime;
     waveSystem->totalEnemiesSpawned = 0;
@@ -196,11 +66,6 @@ void InitWaveSystem(WaveSystem* waveSystem) {
         printf("[WAVE SYSTEM] DEBUG: Starting at phase %d (%.1f seconds), skipped %d events\n", 
                DEBUG_START_PHASE, startTime, waveSystem->nextEventIndex);
     }
-    
-    // Not used for boss anymore but kept for compatibility
-    waveSystem->bossSpawned = false;
-    waveSystem->nextBassSpawnTime = 0;
-    waveSystem->bassSpawnInterval = 0;
     
     printf("[WAVE SYSTEM] Initialized STATIC wave system (%.1f seconds)\n", 
             waveSystem->totalDuration);
@@ -270,14 +135,12 @@ void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const c
             game->enemies[i].id = game->nextEnemyId++;
             ApplyMovementPattern(&game->enemies[i], pattern);
             
-            // Enemies can fire once the first bass actually hits (not during anticipation)
-            // This prevents enemies from firing too early
-            game->enemies[i].can_fire = (game->waveSystem->waveTimer >= 55.85f);
+            // Enemies can fire after the warm-up period (first 55 seconds)
+            game->enemies[i].can_fire = (game->waveSystem->waveTimer >= 55.0f);
             
-            LogEvent(game, "[%.2f] Enemy spawned - Type:%s ID:%d Pattern:%s Pos:(%.0f,%.0f) BassLevel:%d", 
+            LogEvent(game, "[%.2f] Enemy spawned - Type:%s ID:%d Pattern:%s Pos:(%.0f,%.0f)", 
                     game->gameTime, GetEnemyTypeName(type), game->enemies[i].id, 
-                    pattern ? pattern : "default", x, y,
-                    GetBassLevelAtTime(game->waveSystem->bassSystem, game->waveSystem->waveTimer));
+                    pattern ? pattern : "default", x, y);
             break;
         }
     }
@@ -599,12 +462,6 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
 }
 
 void CleanupWaveSystem(WaveSystem* waveSystem) {
-    if (waveSystem->bassSystem) {
-        CleanupBassEvents(waveSystem->bassSystem);
-        free(waveSystem->bassSystem);
-        waveSystem->bassSystem = NULL;
-    }
-    
     if (waveSystem->phases) {
         free(waveSystem->phases);
         waveSystem->phases = NULL;
@@ -616,22 +473,27 @@ void CleanupWaveSystem(WaveSystem* waveSystem) {
 }
 
 const char* GetCurrentPhaseName(const WaveSystem* waveSystem) {
-    // Return bass-driven phase name based on ACTUAL bass (not anticipated)
-    // This ensures the phase name matches what the player hears
-    BassLevel level = GetBassLevelAtTime(waveSystem->bassSystem, waveSystem->waveTimer);
+    // Return phase name based on current time
+    float time = waveSystem->waveTimer;
     
-    if (waveSystem->waveTimer < 55.85f) {
+    if (time < 55.0f) {
         return "Warm-Up";
-    } else if (waveSystem->waveTimer >= 427.0f && waveSystem->waveTimer <= 451.0f) {
+    } else if (time >= 427.0f && time <= 451.0f) {
         return "BOSS BATTLE";
+    } else if (time < 90.0f) {
+        return "Opening Assault";
+    } else if (time < 150.0f) {
+        return "Building Intensity";
+    } else if (time < 260.0f) {
+        return "Mixed Combat";
+    } else if (time < 345.0f) {
+        return "Heavy Assault";
+    } else if (time < 420.0f) {
+        return "Elite Encounters";
+    } else if (time < 510.0f) {
+        return "Final Push";
     } else {
-        switch (level) {
-            case BASS_NONE: return "Calm";
-            case BASS_LOW: return "Building";
-            case BASS_MEDIUM: return "Intense";
-            case BASS_HIGH: return "Maximum";
-            default: return "Unknown";
-        }
+        return "Victory Lap";
     }
 }
 

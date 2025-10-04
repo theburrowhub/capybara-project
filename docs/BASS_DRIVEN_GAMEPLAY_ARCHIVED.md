@@ -1,4 +1,9 @@
-# Bass-Driven Gameplay System
+# Bass-Driven Gameplay System (ARCHIVED)
+
+> **⚠️ IMPORTANT: This documentation is archived.**  
+> The bass-driven gameplay system described here has been replaced by a static wave system.  
+> The game now uses predefined spawn events defined in `static_waves.c`.  
+> This document is kept for historical reference only.
 
 ## Overview
 

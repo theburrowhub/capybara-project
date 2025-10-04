@@ -124,7 +124,6 @@ void DrawGameOver(const Game* game) {
     
     DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - 120, SCREEN_HEIGHT/2 + 80, 30, WHITE);
     DrawText("Press R to Restart", SCREEN_WIDTH/2 - 110, SCREEN_HEIGHT/2 + 120, 25, WHITE);
-    DrawText("Check collision_log.txt for details", SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 + 150, 18, GRAY);
 }
 
 void DrawProjectiles(const Game* game, bool showHitbox) {
