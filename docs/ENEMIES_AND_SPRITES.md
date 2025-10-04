@@ -9,7 +9,7 @@ The game features 10 distinct enemy types, each with unique characteristics:
 | Type | Name | Symbol | Power | Health | Speed | Size | Resistance | Color |
 |------|------|--------|-------|--------|-------|------|------------|-------|
 | 1 | **Grunt** | ▲ | 10 | 1 | 1.2x | 0.8x | 0% | Dark Red |
-| 2 | **Tank** | ■ | 30 | 5 | 0.5x | 2.0x | 50% | Gray-Blue |
+| 2 | **Tank** | ■ | 30 | 20 | 0.5x | 2.0x | 20% | Gray-Blue |
 | 3 | **Speeder** | » | 15 | 1 | 2.5x | 0.6x | 0% | Yellow |
 | 4 | **Zigzag** | ◊ | 20 | 2 | 1.0x | 1.0x | 10% | Green |
 | 5 | **Bomber** | ◉ | 40 | 3 | 0.8x | 1.5x | 20% | Purple |
@@ -28,12 +28,21 @@ The game features 10 distinct enemy types, each with unique characteristics:
 - **Visual Design**: Small arrow-shaped fighter with swept wings
 - **Sprite Features**: Compact triangular hull, small cockpit, wing-tip weapons
 
-### 2. Tank (■) - Heavy Cruiser
-- **Role**: Damage sponge
-- **Behavior**: Slow steady movement, hard to destroy
-- **Strategy**: Requires multiple hits, blocks path for other enemies
+### 2. Tank (■) - Heavy Assault Cruiser ⚠️⚠️
+- **Role**: Heavy missile platform with tactical assault capability
+- **Health**: 20 hits (very durable!)
+- **Behavior**: Tactical assault pattern - advances, pauses at strategic position, then retreats
+- **Weapons**: 3 medium-speed tracking missiles with 20° spread pattern, fires at 0.6/s
+- **Spawning**: During intense bass phases (medium/high), exactly 2 tanks spawn in spaced formation (150px apart)
+- **Movement Pattern**: 
+  - Advances at variable speeds (50-100% speed)
+  - Stops at random positions (not reaching left third of screen)
+  - Pauses for 5-10 seconds while firing
+  - Retreats back to right edge and disappears
+  - Each tank has independent timing
+- **Strategy**: EXTREMELY HIGH PRIORITY! Focus fire while they're paused. Avoid missile barrages. Takes sustained damage to destroy.
 - **Visual Design**: Blocky, heavily armored battleship
-- **Sprite Features**: Rectangular main hull, side engine pods, front armor plating
+- **Sprite Features**: Rectangular main hull, side engine pods, front armor plating, missile tubes
 
 ### 3. Speeder (») - Fast Interceptor
 - **Role**: Fast attacker

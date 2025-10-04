@@ -23,12 +23,12 @@ void InitEnemyTypes(void) {
         .symbol = "▲"
     };
     
-    // TANK - Large, slow, high health (7 hits per flight plan)
+    // TANK - Large, slow, very high health (20 hits - heavy assault platform)
     enemyTypes[ENEMY_TANK] = (EnemyTypeDefinition){
         .type = ENEMY_TANK,
         .name = "Tank",
         .size = 2.0f,
-        .health = 7,
+        .health = 20,  // Increased from 7 to 20 for sustained combat
         .speed = 0.5f,
         .power = 30,
         .primaryColor = (Color){80, 80, 100, 255},    // Dark Gray-Blue
@@ -113,12 +113,12 @@ void InitEnemyTypes(void) {
         .symbol = "•"
     };
     
-    // ELITE - Strong all-around (10 hits per flight plan)
+    // ELITE - Strong all-around (5 hits - balanced challenge)
     enemyTypes[ENEMY_ELITE] = (EnemyTypeDefinition){
         .type = ENEMY_ELITE,
         .name = "Elite",
         .size = 1.3f,
-        .health = 10,
+        .health = 5,
         .speed = 1.3f,
         .power = 35,
         .primaryColor = (Color){200, 200, 0, 255},    // Gold
@@ -143,18 +143,18 @@ void InitEnemyTypes(void) {
         .symbol = "◈"
     };
     
-    // BOSS - Very large and powerful (500 hits per flight plan + 100 shield)
+    // BOSS - Very large and powerful (no shield, just lots of health)
     enemyTypes[ENEMY_BOSS] = (EnemyTypeDefinition){
         .type = ENEMY_BOSS,
         .name = "Boss",
         .size = 3.0f,
-        .health = 600,  // 500 health + 100 shield = 600 total
+        .health = 150,  // Balanced health pool, no shield mechanic
         .speed = 0.6f,
         .power = 50,
         .primaryColor = (Color){150, 0, 0, 255},      // Dark Red
         .secondaryColor = (Color){100, 0, 0, 255},    // Very Dark Red
         .glowColor = (Color){255, 50, 50, 128},       // Red glow
-        .resistance = 0.3f,  // Reduced from 0.6 to ensure damage
+        .resistance = 0.3f,  // 30% damage reduction
         .symbol = "✦"
     };
 }
@@ -210,11 +210,10 @@ void InitializeEnemyFromType(EnemyEx* enemy, EnemyType type, float x, float y) {
     enemy->shieldAngle = 0;
     enemy->swarmGroup = 0;
     
-    // Boss-specific shield initialization
+    // Boss-specific initialization (no shield, just high health)
     if (type == ENEMY_BOSS) {
-        // Use shieldAngle to track shield health (100 = full shield)
-        enemy->shieldAngle = BOSS_SHIELD_HEALTH;
-        // Use specialTimer to track shield regeneration
+        // Boss has no shield, just lots of health
+        enemy->shieldAngle = 0;
         enemy->specialTimer = 0;
     }
     

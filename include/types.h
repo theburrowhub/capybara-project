@@ -53,6 +53,9 @@ struct Game {
     void* logFile;            // FILE* (using void* to avoid including stdio.h here)
     int nextEnemyId;
     int nextProjectileId;
+    // Audio
+    Music backgroundMusic;
+    bool musicLoaded;
 };
 
 #endif // TYPES_H

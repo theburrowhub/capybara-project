@@ -45,11 +45,11 @@ void InitProjectileTypes(void) {
         .explosionRadius = 0.0f
     };
     
-    // MISSILE - Slow, high damage, strong homing
+    // MISSILE - Medium-fast, high damage, strong homing
     projectileTypes[PROJECTILE_MISSILE] = (ProjectileDefinition){
         .type = PROJECTILE_MISSILE,
         .name = "Missile",
-        .speed = 200.0f,
+        .speed = 280.0f,  // Balanced speed - faster than original 200, slower than 380
         .damage = 50,
         .size = 20.0f,
         .hitboxRadius = 8.0f,
@@ -58,13 +58,13 @@ void InitProjectileTypes(void) {
         .glowColor = (Color){255, 200, 0, 150},         // Yellow-orange glow
         .pattern = PATTERN_HOMING,
         .homingStrength = 0.7f,
-        .lifetime = 5.0f,
+        .lifetime = 999.0f,  // Long lifetime to reach screen edge
         .piercing = false,
         .explosive = true,
         .explosionRadius = 30.0f
     };
     
-    // ENERGY ORB - Slow, area damage
+    // ENERGY ORB - Slow, area damage, infinite range
     projectileTypes[PROJECTILE_ENERGY_ORB] = (ProjectileDefinition){
         .type = PROJECTILE_ENERGY_ORB,
         .name = "Energy Orb",
@@ -77,7 +77,7 @@ void InitProjectileTypes(void) {
         .glowColor = (Color){255, 150, 255, 150},       // Pink glow
         .pattern = PATTERN_WAVE,
         .homingStrength = 0.0f,
-        .lifetime = 6.0f,
+        .lifetime = 999.0f,  // Effectively infinite - will despawn at screen edge instead
         .piercing = true,
         .explosive = true,
         .explosionRadius = 40.0f
@@ -113,14 +113,14 @@ void InitProjectileTypes(void) {
         .spreadAngle = 0.0f
     };
     
-    // TANK - Slow but powerful missiles
+    // TANK - Powerful missile barrage
     enemyWeapons[ENEMY_TANK] = (EnemyWeaponConfig){
         .enemyType = ENEMY_TANK,
         .primaryProjectile = PROJECTILE_MISSILE,
         .secondaryProjectile = PROJECTILE_ENERGY_ORB,
-        .fireRate = 0.5f,
-        .burstCount = 1,
-        .spreadAngle = 0.0f
+        .fireRate = 0.6f,   // Reduced from 0.75 for better balance
+        .burstCount = 3,    // Reduced from 4 to 3 missiles (less overwhelming)
+        .spreadAngle = 20.0f  // Reduced spread from 25° to 20°
     };
     
     // SPEEDER - Rapid laser fire

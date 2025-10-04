@@ -100,16 +100,30 @@ void DrawDebugInfo(const Game* game) {
 
 void DrawGameOver(const Game* game) {
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(BLACK, 0.7f));
-    DrawText("GAME OVER", SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 100, 50, RED);
+    DrawText("GAME OVER", SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 150, 50, RED);
+    
+    // Show current phase number for easy debug restart
+    if (game->waveSystem) {
+        int phaseNum = GetCurrentPhaseNumber(game->waveSystem);
+        int minutes = (int)(game->gameTime / 60);
+        int seconds = (int)game->gameTime % 60;
+        
+        DrawRectangle(SCREEN_WIDTH/2 - 200, SCREEN_HEIGHT/2 - 90, 400, 60, Fade(DARKBLUE, 0.8f));
+        DrawRectangleLines(SCREEN_WIDTH/2 - 200, SCREEN_HEIGHT/2 - 90, 400, 60, SKYBLUE);
+        
+        DrawText(TextFormat("Phase: %d  |  Time: %02d:%02d", phaseNum, minutes, seconds), 
+                SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 75, 24, SKYBLUE);
+        DrawText(TextFormat("To restart here: ./run_debug_game.sh -i -p %d", phaseNum), 
+                SCREEN_WIDTH/2 - 190, SCREEN_HEIGHT/2 - 50, 18, LIGHTGRAY);
+    }
     
     // Show death cause with better formatting
     int textWidth = MeasureText(game->deathCause, 20);
-    DrawText("Cause of Death:", SCREEN_WIDTH/2 - 80, SCREEN_HEIGHT/2 - 30, 22, ORANGE);
-    DrawText(game->deathCause, SCREEN_WIDTH/2 - textWidth/2, SCREEN_HEIGHT/2, 20, YELLOW);
+    DrawText("Cause of Death:", SCREEN_WIDTH/2 - 80, SCREEN_HEIGHT/2 + 10, 22, ORANGE);
+    DrawText(game->deathCause, SCREEN_WIDTH/2 - textWidth/2, SCREEN_HEIGHT/2 + 40, 20, YELLOW);
     
-    DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - 120, SCREEN_HEIGHT/2 + 40, 30, WHITE);
-    DrawText("Press R to Restart", SCREEN_WIDTH/2 - 110, SCREEN_HEIGHT/2 + 80, 25, WHITE);
-    DrawText("Check collision_log.txt for details", SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 + 110, 18, GRAY);
+    DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - 120, SCREEN_HEIGHT/2 + 80, 30, WHITE);
+    DrawText("Press R to Restart", SCREEN_WIDTH/2 - 110, SCREEN_HEIGHT/2 + 120, 25, WHITE);
 }
 
 void DrawProjectiles(const Game* game, bool showHitbox) {

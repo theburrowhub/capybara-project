@@ -24,9 +24,9 @@ The game features 4 distinct projectile types with unique characteristics:
 
 ### 3. 🚀 Missile
 - **Damage**: 50 (highest)
-- **Speed**: 200 (slow)
+- **Speed**: 280 (medium-fast)
 - **Pattern**: Strong homing (70% tracking)
-- **Special**: Explosive (30 radius), high damage
+- **Special**: Explosive (30 radius), high damage, long lifetime
 - **Visual**: Gray missile with orange exhaust flame
 - **Best for**: Heavy targets, guaranteed hits on tanks/bosses
 
@@ -34,7 +34,7 @@ The game features 4 distinct projectile types with unique characteristics:
 - **Damage**: 35
 - **Speed**: 150 (slowest)
 - **Pattern**: Wave motion
-- **Special**: Piercing, explosive (40 radius)
+- **Special**: Piercing, explosive (40 radius), infinite range
 - **Visual**: Purple orb with rotating energy rings
 - **Best for**: Area denial, crowd control, multiple targets
 
@@ -45,7 +45,7 @@ Each enemy type has specific weapon loadouts:
 | Enemy | Primary | Secondary | Burst | Spread | Fire Rate | Pattern |
 |-------|---------|-----------|-------|--------|-----------|---------|
 | **Grunt** | Laser | Laser | 1 | 0° | 1.0/s | Single shot |
-| **Tank** | Missile | Energy Orb | 1 | 0° | 0.5/s | Heavy fire |
+| **Tank** | Missile | Energy Orb | 3 | 20° | 0.6/s | Missile barrage ⚠️ |
 | **Speeder** | Laser | Laser | 3 | 15° | 3.0/s | Burst fire |
 | **Zigzag** | Plasma | Laser | 2 | 30° | 1.5/s | Spread shot |
 | **Bomber** | Energy Orb | Missile | 1 | 0° | 0.8/s | Area attack |
@@ -54,6 +54,8 @@ Each enemy type has specific weapon loadouts:
 | **Elite** | Plasma | Missile | 4 | 45° | 2.0/s | Multi-shot |
 | **Ghost** | Plasma | Energy Orb | 2 | 20° | 1.0/s | Phase fire |
 | **Boss** | Missile | Energy Orb | 8 | 360° | 2.5/s | Barrage |
+
+**Note**: Tank enemies fire 3 medium-speed tracking missiles in a spread pattern. During intense bass phases (medium/high), multiple tanks spawn simultaneously creating challenging missile barrages.
 
 ## Player Weapon System
 

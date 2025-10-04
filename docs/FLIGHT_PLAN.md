@@ -1,176 +1,244 @@
-# Flight Plan
+# Flight Plan - Static Wave Orchestration
 
-## 10-Minute Gameplay Sequence
+## Overview
+This game features a **predetermined, carefully designed wave system** with exact enemy spawn times, types, and positions. Each wave is meticulously crafted to create a balanced and consistent gameplay experience.
 
-### Phase 1: Warm-Up (0:00 - 0:35)
-**Time 0:00 - 0:05 (5 seconds)**
-- No enemy ships appear
-- Player gets familiar with controls
-- Calm before the storm
+## Music Duration
+- **Total Duration**: 553.82 seconds (~9 minutes, 14 seconds)
+- **Sample Rate**: 44100 Hz
+- **Format**: MP3
 
-**Time 0:05 - 0:35 (30 seconds) - First Wave**
-- Small enemy ships (Grunts) appear
-- Formation: 5 horizontal lines of 8 enemies each
-- Movement: Enter from right, move steadily left
-- Behavior: No firing, passive movement only
-- Speed: Slow (allows player to practice aiming)
-- Points: 10 per enemy
+## Static Wave System
 
-### Phase 2: First Challenge (0:35 - 0:55)
-**Time 0:35 - 0:55 (20 seconds) - Tank Squadron**
-- 5 Tank enemies appear from the right
-- Remain on screen for 20 seconds or until destroyed
-- Exit through left side if not destroyed
-- High resistance to damage (7 hits to destroy)
-- Continuous firing pattern (1 shot per second)
-- Points: 50 per enemy
+### Design Philosophy
+All enemy waves are **predetermined and static**:
+- **No randomization** - Same enemies spawn at same times every playthrough
+- **Exact positions** - Each enemy has a specific spawn location
+- **Designed formations** - Enemies spawn in crafted patterns
+- **Balanced difficulty** - Carefully tuned progression
 
-### Phase 3: Swarm Attack (0:55 - 1:25)
-**Time 0:55 - 1:25 (30 seconds) - Swarm Wave**
-- 30 Swarm enemies in groups of 6
-- Enter in V-formations from alternating top-right and bottom-right
-- Fast movement, erratic patterns
-- Light firing (occasional shots)
-- Low health (1 hit to destroy)
-- Points: 15 per enemy
+### Wave Types
 
-### Phase 4: Mixed Assault (1:25 - 2:00)
-**Time 1:25 - 2:00 (35 seconds) - Combined Forces**
-- Mix of Speeders and Grunts
-- 10 Speeders: zigzag patterns, fast movement, light firing
-- 15 Grunts: straight lines, moderate speed, moderate firing
-- Enemies appear in alternating patterns
-- Points: Speeders 25, Grunts 10
+#### Formation Waves
+- Multiple enemies spawn at once in specific patterns
+- Example: 2 Tanks in vertical formation (150px spacing)
+- Coordinated attacks create tactical challenges
 
-### Phase 5: Elite Squadron (2:00 - 2:30)
-**Time 2:00 - 2:30 (30 seconds) - Elite Challenge**
-- 3 Elite enemies appear simultaneously
-- Hover in formation at right side of screen
-- Coordinated attack patterns
-- Heavy firing (2 shots per second)
-- High health (10 hits to destroy)
-- Points: 100 per enemy
+#### Single Spawns
+- Individual high-value targets
+- Elite enemies, Bosses
+- Strategic placement for specific challenges
 
-### Phase 6: Zigzag Chaos (2:30 - 3:00)
-**Time 2:30 - 3:00 (30 seconds) - Zigzag Wave**
-- 20 Zigzag enemies
-- Unpredictable movement patterns
-- Enter from all sides of the screen
-- Medium firing rate
-- Medium health (2 hits)
-- Points: 20 per enemy
+#### Sequential Waves
+- Enemies spawn in quick succession
+- Creates flowing combat encounters
+- Varied enemy types for dynamic gameplay
 
-### Phase 7: Shield Wall (3:00 - 3:40)
-**Time 3:00 - 3:40 (40 seconds) - Shield Formation**
-- 8 Shield enemies in defensive formation
-- Move slowly across screen
-- Protected by energy shields (must hit 3 times to break shield, then 4 more to destroy)
-- Fire in synchronized bursts
-- Points: 75 per enemy
+## Wave Timeline (Redesigned for Continuous Intense Action)
 
-### Phase 8: Bomber Run (3:40 - 4:20)
-**Time 3:40 - 4:20 (40 seconds) - Bomber Squadron**
-- 6 Bomber enemies
-- Appear one at a time every 6-7 seconds
-- Drop explosive projectiles in arc patterns
-- Move in predictable horizontal lines at varying heights
-- Medium-high health (6 hits)
-- Points: 60 per enemy
+### Wave Design Philosophy
+**INTENSE PHASES**: Continuous enemy waves every 3-5 seconds - constant action, always something to fight
+**CALM PHASES**: Minimal sparse enemies - time to breathe and recover
 
-### Phase 9: Ghost Ambush (4:20 - 5:00)
-**Time 4:20 - 5:00 (40 seconds) - Ghost Wave**
-- 12 Ghost enemies
-- Phase in and out of visibility (2 second cycles)
-- Can only be damaged when visible
-- Appear behind player and from sides
-- Light but accurate firing
-- Points: 40 per enemy
 
-### Phase 10: Combined Arms (5:00 - 5:45)
-**Time 5:00 - 5:45 (45 seconds) - Multi-Type Assault**
-- Combination wave:
-  - 5 Tanks (front line, heavy fire)
-  - 10 Speeders (flanking maneuvers)
-  - 15 Grunts (support fire from behind)
-- Coordinated attack patterns
-- Increasing difficulty as wave progresses
-- Points: Variable by type
 
-### Phase 11: Mini-Boss (5:45 - 6:30)
-**Time 5:45 - 6:30 (45 seconds) - Boss Encounter**
-- 1 Boss enemy appears
-- Large sprite, intimidating presence
-- Multiple attack patterns:
-  - Spread shot (5 projectiles in arc)
-  - Laser beam (continuous for 2 seconds)
-  - Summons 3 Grunt minions every 10 seconds
-- Very high health (500 hits to destroy)
-- Has regenerating shield (100 hits to break, regenerates after 5 seconds if not hit)
-- Points: 10000
+### Warm-Up (0-55s) 🟢 CALM
+- **20 Grunts** in 5 waves (8s, 18s, 28s, 38s, 48s)
+- **No firing** - Safe tutorial
+- Purpose: Learn controls
 
-### Phase 12: Recovery (6:30 - 7:00)
-**Time 6:30 - 7:00 (30 seconds) - Swarm Recovery**
-- Light wave of 20 Swarm enemies
-- Give player chance to recover after boss
-- Simple patterns, low health
-- Moderate firing
-- Points: 15 per enemy
+### First Combat (55-85s) 🟢 CALM
+- **3 Grunts** (58s)
+- **4 Swarms** (70s)
+- **Firing enabled** from here
+- Purpose: Gentle intro to combat
 
-### Phase 13: Elite & Shield Combo (7:00 - 7:40)
-**Time 7:00 - 7:40 (40 seconds) - Advanced Formation**
-- 4 Elite enemies protected by 6 Shield enemies
-- Shield enemies form protective barrier
-- Elites fire from behind shields
-- Must destroy shields to reach elites
-- Points: Shields 75, Elites 100
+### 🔴 INTENSE: Tank Assault (87-110s)
+**Continuous waves every 5 seconds - no breaks:**
+- 87s: **2 Tanks** 🎯 (assault pattern)
+- 92s: **3 Speeders** (zigzag)
+- 97s: **4 Grunts**
+- 102s: **5 Swarms**
+- 107s: **3 Speeders**
+- **Purpose**: Non-stop action, tanks + support
 
-### Phase 14: Zigzag & Ghost Mix (7:40 - 8:20)
-**Time 7:40 - 8:20 (40 seconds) - Evasive Maneuvers**
-- 10 Zigzag enemies with erratic patterns
-- 8 Ghost enemies phasing in/out
-- Creates confusion and requires quick reflexes
-- Mixed firing patterns
-- Points: Zigzag 20, Ghost 40
+### Calm (110-125s) 🟢 RECOVERY
+- 118s: **3 Swarms** only
+- Purpose: Breathe after intense assault
 
-### Phase 15: Bomber & Tank Assault (8:20 - 9:00)
-**Time 8:20 - 9:00 (40 seconds) - Heavy Assault**
-- 4 Bombers dropping explosives
-- 6 Tanks providing suppressing fire
-- Slow but dangerous wave
-- High damage potential
-- Points: Bombers 60, Tanks 50
+### 🔴 INTENSE: Swarm Assault (125-150s)
+**6 waves of swarms every 4 seconds:**
+- 127s, 131s, 135s, 139s, 143s, 147s: **5 Swarms** each wave
+- **Purpose**: Constant dodging, non-stop movement
 
-### Phase 16: Final Wave (9:00 - 9:50)
-**Time 9:00 - 9:50 (50 seconds) - Ultimate Challenge**
-- All enemy types appear in sequence:
-  - 0:00-0:10: 15 Grunts (warm-up)
-  - 0:10-0:20: 10 Speeders + 5 Zigzags
-  - 0:20-0:30: 4 Tanks + 4 Shields
-  - 0:30-0:40: 3 Elites + 3 Bombers + 6 Ghosts
-  - 0:40-0:50: 20 Swarm enemies (final rush)
-- Increasing intensity
-- Maximum challenge before ending
-- Points: Variable by type
+### Calm (150-165s) 🟢 RECOVERY
+- 157s: **3 Grunts** only
+- Purpose: Recovery after swarms
 
-### Phase 17: Victory Lap (9:50 - 10:00)
-**Time 9:50 - 10:00 (10 seconds) - Clear Screen**
-- No new enemies spawn
-- Player can destroy remaining enemies
-- Prepare for score tally or next level
-- Celebration moment
+### 🔴 INTENSE: Mixed Assault (165-195s)
+**6 waves every 5 seconds - varied enemy types:**
+- 167s: **4 Speeders**
+- 172s: **4 Zigzags**
+- 177s: **4 Grunts**
+- 182s: **3 Speeders**
+- 187s: **6 Swarms**
+- 192s: **3 Zigzags**
+- **Purpose**: Constant variety, test all skills
 
-## Summary Statistics
-- **Total Duration**: 10 minutes (600 seconds)
-- **Total Phases**: 17
-- **Enemy Types Used**: All 10 types (Grunt, Tank, Swarm, Speeder, Elite, Zigzag, Shield, Bomber, Ghost, Boss)
-- **Approximate Enemy Count**: ~280 enemies
-- **Difficulty Curve**: Gradual increase with recovery periods
-- **Boss Encounters**: 1 mini-boss at midpoint
-- **Maximum Possible Score**: ~25,000 points (with Boss bonus)
+### Calm (195-215s) 🟢 RECOVERY
+- 205s: **3 Swarms** only
+- Purpose: Breathe after intense mix
 
-## Notes
-- Times are approximate and can be adjusted based on playtesting
-- Enemy health and firing rates should be balanced based on player weapon strength
-- Consider adding power-ups between phases for weapon upgrades or health
-- Background music intensity should match phase intensity
-- Save checkpoints after major phases (e.g., after boss fight)
+### 🔴 INTENSE: Elite Encounter (218-245s)
+**5 waves every 5 seconds - with elite centerpiece:**
+- 220s: **2 Elites** (advance to center) ⭐
+- 225s: **4 Speeders** (support)
+- 230s: **5 Swarms**
+- 235s: **4 Grunts**
+- 240s: **3 Zigzags**
+- **Purpose**: Elite at center, constant support waves
+
+### Calm (245-265s) 🟢 RECOVERY
+- 255s: **3 Swarms** only
+- Purpose: Recovery after elites
+
+### 🔴 INTENSE: Shield Assault (265-295s)
+**6 waves every 5 seconds:**
+- 267s: **2 Shields**
+- 272s: **4 Speeders**
+- 277s: **5 Grunts**
+- 282s: **4 Zigzags**
+- 287s: **6 Swarms**
+- 292s: **3 Speeders**
+- **Purpose**: Defensive enemies + constant pressure
+
+### Calm (295-310s) 🟢 RECOVERY
+- 302s: **3 Swarms** only
+- Purpose: Breathe before tanks
+
+### 🔴 INTENSE: Tank Assault #2 (310-345s)
+**7 waves every 5-6 seconds - maximum pressure:**
+- 312s: **2 Tanks** 🎯 (assault pattern)
+- 318s: **4 Zigzags**
+- 323s: **5 Speeders**
+- 328s: **2 Bombers**
+- 333s: **5 Grunts**
+- 338s: **6 Swarms**
+- 343s: **4 Speeders**
+- **Purpose**: Longest intense phase, tanks + variety
+
+### Calm (345-365s) 🟢 RECOVERY
+- 355s: **3 Grunts** only
+- Purpose: Major recovery before elites
+
+### 🔴 INTENSE: Elite Assault (368-398s)
+**6 waves every 5 seconds - high difficulty:**
+- 370s: **2 Elites** ⭐ (to center)
+- 375s: **2 Shields**
+- 380s: **4 Zigzags**
+- 385s: **4 Speeders**
+- 390s: **2 Bombers**
+- 395s: **4 Grunts**
+- **Purpose**: Elites + varied threats
+
+### Calm (398-415s) 🟢 RECOVERY
+- 407s: **4 Swarms** only
+- Purpose: Final recovery before boss
+
+### 🔴 INTENSE: Pre-Boss Build (415-427s)
+**2 waves building intensity:**
+- 417s: **4 Zigzags**
+- 422s: **4 Speeders**
+- **Purpose**: Build tension before boss
+
+### 🔥 BOSS BATTLE (427-455s)
+- 427s: **BOSS** spawns
+- 432s, 440s, 448s: **3 Grunts** support waves
+- **Purpose**: Epic finale
+
+### Calm (455-475s) 🟢 RECOVERY
+- 462s: **4 Swarms** only
+- Purpose: Celebrate boss victory
+
+### 🔴 INTENSE: Final Push (475-510s)
+**6 waves every 5 seconds - last challenge:**
+- 477s: **2 Elites** ⭐
+- 483s: **5 Speeders**
+- 488s: **2 Bombers**
+- 493s: **4 Zigzags**
+- 498s: **4 Grunts**
+- 503s: **5 Swarms**
+- 508s: **3 Speeders**
+- **Purpose**: Final intense combat
+
+### Calm: Victory Lap (510-550s) 🟢 EASY
+- 520s: **3 Grunts**
+- 535s: **4 Swarms**
+- **Purpose**: Easy finish
+
+## Wave Design Features
+
+### Tank Assault Waves 🎯
+Only 2 tank encounters in the entire game (92s, 303s):
+- **2 Tanks** spawn in formation
+- **150px vertical spacing** (no collision)
+- **Tactical pattern**: Advance → Pause (5-10s) → Retreat
+- **20 health each** - requires sustained focus
+- **3 missiles per tank** (6 total per wave)
+- Always followed by recovery period
+
+### Difficulty Pattern
+The game now follows a rhythm:
+```
+🔴 CHALLENGE → 🟢 RECOVERY → 🔴 CHALLENGE → 🟢 RECOVERY
+```
+- After every intense phase comes a calm recovery period
+- Recovery uses only Swarms/Grunts (easy enemies)
+- 10-20 seconds of calm between challenges
+- Allows players to catch their breath
+
+## Boss Mechanics
+
+### Boss Appearance
+- **Spawn Time**: 427 seconds (7min 7s)
+- **Active Window**: 427-451 seconds (24 seconds)
+- **Position**: Right side, center screen
+- **Movement**: Hover pattern with slow approach
+- **Minions**: 3 Grunts every 15 seconds
+
+## Gameplay Statistics
+
+- **Total Spawn Events**: ~100+ predetermined encounters
+- **Total Enemies**: ~150-200 across all waves
+- **Tank Encounters**: 6 (87s, 180s, 275s, 325s, 400s, 505s)
+- **Boss Encounters**: 1 (427s)
+- **Peak Difficulty**: 360-425s (pre-boss build) and 427-451s (boss)
+
+## Design Philosophy
+
+This static wave system creates a **consistent, skillful experience**:
+
+1. **Designed**: Every wave is intentionally crafted
+2. **Learnable**: Same waves allow skill improvement
+3. **Balanced**: Difficulty curve is carefully tuned
+4. **Fair**: No randomness means consistent challenge
+5. **Replayable**: Master the exact enemy patterns
+
+## Editing Waves
+
+To modify enemy waves, edit `src/systems/static_waves.c`:
+
+```c
+events[index++] = (SpawnEvent){
+    .time = 87.0f,              // When to spawn
+    .type = ENEMY_TANK,          // Enemy type
+    .x = SCREEN_WIDTH + 50,      // X position
+    .y = 225,                    // Y position (center for formations)
+    .count = 2,                  // Number of enemies
+    .interval = 150,             // Vertical spacing (pixels)
+    .pattern = "tank_assault"    // Movement pattern
+};
+```
+
+Recompile after editing: `make clean && make`
+

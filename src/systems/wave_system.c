@@ -7,305 +7,69 @@
 #include <math.h>
 #include <stdio.h>
 
-// Helper function to create spawn events
-static void AddSpawnEvent(SpawnEvent* events, int* count, float time, EnemyType type, 
-                          float x, float y, int num, float interval, const char* pattern) {
-    events[*count] = (SpawnEvent){
-        .time = time,
-        .type = type,
-        .x = x,
-        .y = y,
-        .count = num,
-        .interval = interval,
-        .pattern = pattern
-    };
-    (*count)++;
-}
-
 void InitWaveSystem(WaveSystem* waveSystem) {
     // Initialize enemy types first
     InitEnemyTypes();
     
-    // Setup phases based on Flight Plan
-    waveSystem->phaseCount = 17;
-    waveSystem->phases = (WavePhase*)malloc(sizeof(WavePhase) * waveSystem->phaseCount);
-    
-    // Phase definitions from Flight Plan
-    waveSystem->phases[0] = (WavePhase){0, "Warm-Up", 0, 5, 5, false, false};
-    waveSystem->phases[1] = (WavePhase){1, "First Wave", 5, 35, 30, false, false};
-    waveSystem->phases[2] = (WavePhase){2, "Tank Squadron", 35, 55, 20, false, false};
-    waveSystem->phases[3] = (WavePhase){3, "Swarm Attack", 55, 85, 30, false, false};
-    waveSystem->phases[4] = (WavePhase){4, "Mixed Assault", 85, 120, 35, false, false};
-    waveSystem->phases[5] = (WavePhase){5, "Elite Squadron", 120, 150, 30, false, false};
-    waveSystem->phases[6] = (WavePhase){6, "Zigzag Chaos", 150, 180, 30, false, false};
-    waveSystem->phases[7] = (WavePhase){7, "Shield Wall", 180, 220, 40, false, false};
-    waveSystem->phases[8] = (WavePhase){8, "Bomber Run", 220, 260, 40, false, false};
-    waveSystem->phases[9] = (WavePhase){9, "Ghost Ambush", 260, 300, 40, false, false};
-    waveSystem->phases[10] = (WavePhase){10, "Combined Arms", 300, 345, 45, false, false};
-    waveSystem->phases[11] = (WavePhase){11, "Mini-Boss", 345, 390, 45, false, false};
-    waveSystem->phases[12] = (WavePhase){12, "Recovery", 390, 420, 30, false, false};
-    waveSystem->phases[13] = (WavePhase){13, "Elite & Shield", 420, 460, 40, false, false};
-    waveSystem->phases[14] = (WavePhase){14, "Evasive Maneuvers", 460, 500, 40, false, false};
-    waveSystem->phases[15] = (WavePhase){15, "Heavy Assault", 500, 540, 40, false, false};
-    waveSystem->phases[16] = (WavePhase){16, "Final Wave", 540, 590, 50, false, false};
-    
-    // Allocate spawn events (estimate ~500 events for all phases)
-    waveSystem->spawnEvents = (SpawnEvent*)malloc(sizeof(SpawnEvent) * 500);
-    waveSystem->eventCount = 0;
-    
-    // Phase 1: Warm-Up (0-5 seconds) - No enemies
-    
-    // Phase 2: First Wave (5-35 seconds) - 40 Grunts in 5 lines
-    for (int line = 0; line < 5; line++) {
-        for (int i = 0; i < 8; i++) {
-            float spawnTime = 5.0f + line * 5.0f + i * 0.5f;
-            float y = 100 + line * 120;
-            AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                         spawnTime, ENEMY_GRUNT, SCREEN_WIDTH + 50, y, 1, 0, "straight");
-        }
-    }
-    
-    // Phase 3: Tank Squadron (35-55 seconds) - 5 Tanks
-    for (int i = 0; i < 5; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     35.0f + i * 3.0f, ENEMY_TANK, SCREEN_WIDTH + 50, 
-                     150 + i * 100, 1, 0, "slow_advance");
-    }
-    
-    // Phase 4: Swarm Attack (55-85 seconds) - 30 Swarm in groups
-    for (int group = 0; group < 5; group++) {
-        float groupTime = 55.0f + group * 5.0f;
-        float startY = (group % 2 == 0) ? 100 : SCREEN_HEIGHT - 100;
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     groupTime, ENEMY_SWARM, SCREEN_WIDTH + 50, startY, 
-                     6, 0.2f, "v_formation");
-    }
-    
-    // Phase 5: Mixed Assault (85-120 seconds) - Speeders and Grunts
-    for (int i = 0; i < 10; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     85.0f + i * 3.0f, ENEMY_SPEEDER, SCREEN_WIDTH + 50,
-                     GetRandomValue(100, SCREEN_HEIGHT - 100), 1, 0, "zigzag");
-    }
-    for (int i = 0; i < 15; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     90.0f + i * 2.0f, ENEMY_GRUNT, SCREEN_WIDTH + 50,
-                     GetRandomValue(100, SCREEN_HEIGHT - 100), 1, 0, "straight");
-    }
-    
-    // Phase 6: Elite Squadron (120-150 seconds) - 3 Elites
-    AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                 120.0f, ENEMY_ELITE, SCREEN_WIDTH + 50, SCREEN_HEIGHT/2 - 100, 1, 0, "hover");
-    AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                 120.0f, ENEMY_ELITE, SCREEN_WIDTH + 50, SCREEN_HEIGHT/2, 1, 0, "hover");
-    AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                 120.0f, ENEMY_ELITE, SCREEN_WIDTH + 50, SCREEN_HEIGHT/2 + 100, 1, 0, "hover");
-    
-    // Phase 7: Zigzag Chaos (150-180 seconds) - 20 Zigzag enemies
-    for (int i = 0; i < 20; i++) {
-        float side = GetRandomValue(0, 3);
-        float x = SCREEN_WIDTH + 50;
-        float y = GetRandomValue(50, SCREEN_HEIGHT - 50);
-        
-        if (side == 1) { // Top
-            x = GetRandomValue(100, SCREEN_WIDTH - 100);
-            y = -50;
-        } else if (side == 2) { // Bottom
-            x = GetRandomValue(100, SCREEN_WIDTH - 100);
-            y = SCREEN_HEIGHT + 50;
-        }
-        
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     150.0f + i * 1.5f, ENEMY_ZIGZAG, x, y, 1, 0, "erratic");
-    }
-    
-    // Phase 8: Shield Wall (180-220 seconds) - 8 Shield enemies
-    for (int i = 0; i < 8; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     180.0f + (i/4) * 10.0f, ENEMY_SHIELD, SCREEN_WIDTH + 50,
-                     200 + (i % 4) * 80, 1, 0, "formation");
-    }
-    
-    // Phase 9: Bomber Run (220-260 seconds) - 6 Bombers
-    for (int i = 0; i < 6; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     220.0f + i * 6.5f, ENEMY_BOMBER, SCREEN_WIDTH + 50,
-                     100 + (i % 3) * 200, 1, 0, "horizontal");
-    }
-    
-    // Phase 10: Ghost Ambush (260-300 seconds) - 12 Ghosts
-    for (int i = 0; i < 12; i++) {
-        float x = (i % 2 == 0) ? SCREEN_WIDTH + 50 : GetRandomValue(100, SCREEN_WIDTH/2);
-        float y = GetRandomValue(100, SCREEN_HEIGHT - 100);
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     260.0f + i * 3.0f, ENEMY_GHOST, x, y, 1, 0, "phasing");
-    }
-    
-    // Phase 11: Combined Arms (300-345 seconds)
-    // Tanks
-    for (int i = 0; i < 5; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     300.0f + i * 4.0f, ENEMY_TANK, SCREEN_WIDTH + 50,
-                     200 + i * 60, 1, 0, "front_line");
-    }
-    // Speeders
-    for (int i = 0; i < 10; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     305.0f + i * 2.5f, ENEMY_SPEEDER, SCREEN_WIDTH + 50,
-                     GetRandomValue(50, SCREEN_HEIGHT - 50), 1, 0, "flanking");
-    }
-    // Grunts
-    for (int i = 0; i < 15; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     310.0f + i * 2.0f, ENEMY_GRUNT, SCREEN_WIDTH + 100,
-                     GetRandomValue(100, SCREEN_HEIGHT - 100), 1, 0, "support");
-    }
-    
-    // Phase 12: Mini-Boss (345-390 seconds)
-    AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                 345.0f, ENEMY_BOSS, SCREEN_WIDTH + 100, SCREEN_HEIGHT/2, 1, 0, "boss");
-    // Boss summons grunts every 10 seconds
-    for (int i = 0; i < 4; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     355.0f + i * 10.0f, ENEMY_GRUNT, SCREEN_WIDTH + 50,
-                     SCREEN_HEIGHT/2 + GetRandomValue(-100, 100), 3, 1.0f, "minion");
-    }
-    
-    // Phase 13: Recovery (390-420 seconds) - 20 Swarm
-    for (int i = 0; i < 20; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     390.0f + i * 1.5f, ENEMY_SWARM, SCREEN_WIDTH + 50,
-                     GetRandomValue(100, SCREEN_HEIGHT - 100), 1, 0, "simple");
-    }
-    
-    // Phase 14: Elite & Shield Combo (420-460 seconds)
-    // Shields first
-    for (int i = 0; i < 6; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     420.0f, ENEMY_SHIELD, SCREEN_WIDTH + 50,
-                     150 + i * 80, 1, 0, "barrier");
-    }
-    // Then Elites
-    for (int i = 0; i < 4; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     425.0f, ENEMY_ELITE, SCREEN_WIDTH + 150,
-                     200 + i * 100, 1, 0, "protected");
-    }
-    
-    // Phase 15: Evasive Maneuvers (460-500 seconds)
-    // Zigzag enemies
-    for (int i = 0; i < 10; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     460.0f + i * 3.0f, ENEMY_ZIGZAG, SCREEN_WIDTH + 50,
-                     GetRandomValue(50, SCREEN_HEIGHT - 50), 1, 0, "erratic");
-    }
-    // Ghost enemies
-    for (int i = 0; i < 8; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     465.0f + i * 4.0f, ENEMY_GHOST, SCREEN_WIDTH + 50,
-                     GetRandomValue(100, SCREEN_HEIGHT - 100), 1, 0, "phasing");
-    }
-    
-    // Phase 16: Heavy Assault (500-540 seconds)
-    // Bombers
-    for (int i = 0; i < 4; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     500.0f + i * 8.0f, ENEMY_BOMBER, SCREEN_WIDTH + 50,
-                     150 + i * 120, 1, 0, "bombing_run");
-    }
-    // Tanks
-    for (int i = 0; i < 6; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     505.0f + i * 5.0f, ENEMY_TANK, SCREEN_WIDTH + 50,
-                     100 + i * 80, 1, 0, "suppressing");
-    }
-    
-    // Phase 17: Final Wave (540-590 seconds)
-    // 0:00-0:10: 15 Grunts
-    for (int i = 0; i < 15; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     540.0f + i * 0.6f, ENEMY_GRUNT, SCREEN_WIDTH + 50,
-                     GetRandomValue(50, SCREEN_HEIGHT - 50), 1, 0, "straight");
-    }
-    // 0:10-0:20: 10 Speeders + 5 Zigzags
-    for (int i = 0; i < 10; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     550.0f + i * 0.8f, ENEMY_SPEEDER, SCREEN_WIDTH + 50,
-                     GetRandomValue(50, SCREEN_HEIGHT - 50), 1, 0, "fast");
-    }
-    for (int i = 0; i < 5; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     552.0f + i * 1.5f, ENEMY_ZIGZAG, SCREEN_WIDTH + 50,
-                     GetRandomValue(100, SCREEN_HEIGHT - 100), 1, 0, "erratic");
-    }
-    // 0:20-0:30: 4 Tanks + 4 Shields
-    for (int i = 0; i < 4; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     560.0f + i * 2.0f, ENEMY_TANK, SCREEN_WIDTH + 50,
-                     150 + i * 100, 1, 0, "heavy");
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     561.0f + i * 2.0f, ENEMY_SHIELD, SCREEN_WIDTH + 100,
-                     200 + i * 100, 1, 0, "formation");
-    }
-    // 0:30-0:40: 3 Elites + 3 Bombers + 6 Ghosts
-    for (int i = 0; i < 3; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     570.0f + i * 2.0f, ENEMY_ELITE, SCREEN_WIDTH + 50,
-                     200 + i * 150, 1, 0, "elite");
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     571.0f + i * 2.0f, ENEMY_BOMBER, SCREEN_WIDTH + 100,
-                     150 + i * 150, 1, 0, "bombing");
-    }
-    for (int i = 0; i < 6; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     572.0f + i * 1.5f, ENEMY_GHOST, SCREEN_WIDTH + 50,
-                     GetRandomValue(50, SCREEN_HEIGHT - 50), 1, 0, "phasing");
-    }
-    // 0:40-0:50: 20 Swarm (final rush)
-    for (int i = 0; i < 20; i++) {
-        AddSpawnEvent(waveSystem->spawnEvents, &waveSystem->eventCount,
-                     580.0f + i * 0.4f, ENEMY_SWARM, SCREEN_WIDTH + 50,
-                     GetRandomValue(50, SCREEN_HEIGHT - 50), 1, 0, "rush");
-    }
-    
-    // Initialize state
+    // No predefined phases - tracking is based on spawn events
+    waveSystem->phaseCount = 0;
+    waveSystem->phases = NULL;
     waveSystem->currentPhase = 0;
+    
+    // Load static spawn events
+    waveSystem->spawnEvents = CreateStaticWaveplan(&waveSystem->eventCount);
     waveSystem->nextEventIndex = 0;
-    waveSystem->waveTimer = 0;
-    waveSystem->totalDuration = 600.0f; // 10 minutes
+    
+    printf("[WAVE SYSTEM] Loaded %d static spawn events\n", waveSystem->eventCount);
+    
+    // Apply DEBUG_START_PHASE to set starting time
+    float startTime = 0.0f;
+    if (DEBUG_START_PHASE > 0 && DEBUG_START_PHASE <= 17) {
+        // Phase timing mapping based on documentation
+        const float phaseTimes[] = {
+            0.0f,    // Phase 0: Normal start
+            0.0f,    // Phase 1: Warm-Up (0-5s)
+            5.0f,    // Phase 2: First Wave (5-35s)
+            35.0f,   // Phase 3: Tank Squadron (35-55s)
+            55.0f,   // Phase 4: Swarm Attack (55-85s)
+            85.0f,   // Phase 5: Mixed Assault (85-120s)
+            120.0f,  // Phase 6: Elite Squadron (120-150s)
+            150.0f,  // Phase 7: Zigzag Chaos (150-180s)
+            180.0f,  // Phase 8: Shield Wall (180-220s)
+            220.0f,  // Phase 9: Bomber Run (220-260s)
+            260.0f,  // Phase 10: Ghost Ambush (260-300s)
+            300.0f,  // Phase 11: Combined Arms (300-345s)
+            345.0f,  // Phase 12: Mini-Boss (345-390s)
+            390.0f,  // Phase 13: Recovery (390-420s)
+            420.0f,  // Phase 14: Elite & Shield (420-460s)
+            460.0f,  // Phase 15: Evasive Maneuvers (460-500s)
+            500.0f,  // Phase 16: Heavy Assault (500-540s)
+            540.0f   // Phase 17: Final Wave (540-590s)
+        };
+        startTime = phaseTimes[DEBUG_START_PHASE];
+    }
+    
+    // Initialize state with debug start time
+    waveSystem->waveTimer = startTime;
+    waveSystem->totalDuration = 553.82f; // Level duration from audio analysis
     waveSystem->isComplete = false;
-    waveSystem->lastSpawnTime = 0;
+    waveSystem->lastSpawnTime = startTime;
     waveSystem->totalEnemiesSpawned = 0;
     waveSystem->totalEnemiesKilled = 0;
     
-    // Debug: Start at specific phase if requested
-    if (DEBUG_START_PHASE > 0 && DEBUG_START_PHASE <= waveSystem->phaseCount) {
-        // DEBUG_START_PHASE uses 1-based indexing for user convenience
-        // But internally phases are 0-indexed, so we need to subtract 1
-        int targetPhaseIndex = DEBUG_START_PHASE - 1;
-        
-        // Validate the phase index
-        if (targetPhaseIndex >= 0 && targetPhaseIndex < waveSystem->phaseCount) {
-            // Mark all previous phases as completed
-            for (int i = 0; i < targetPhaseIndex; i++) {
-                waveSystem->phases[i].completed = true;
-                waveSystem->phases[i].active = false;
-            }
-            
-            // Set the wave timer to the start of the target phase
-            waveSystem->waveTimer = waveSystem->phases[targetPhaseIndex].startTime;
-            waveSystem->currentPhase = targetPhaseIndex;
-            
-            // Skip spawn events that occur before this phase
-            while (waveSystem->nextEventIndex < waveSystem->eventCount && 
-                   waveSystem->spawnEvents[waveSystem->nextEventIndex].time < waveSystem->waveTimer) {
-                waveSystem->nextEventIndex++;
-            }
-            
-            printf("[DEBUG] Starting at phase %d: %s (time: %.1f)\n", 
-                   DEBUG_START_PHASE, waveSystem->phases[targetPhaseIndex].name, waveSystem->waveTimer);
+    // Skip spawn events that are before the debug start time
+    if (startTime > 0) {
+        while (waveSystem->nextEventIndex < waveSystem->eventCount &&
+               waveSystem->spawnEvents[waveSystem->nextEventIndex].time < startTime) {
+            waveSystem->nextEventIndex++;
         }
+        printf("[WAVE SYSTEM] DEBUG: Starting at phase %d (%.1f seconds), skipped %d events\n", 
+               DEBUG_START_PHASE, startTime, waveSystem->nextEventIndex);
     }
+    
+    printf("[WAVE SYSTEM] Initialized STATIC wave system (%.1f seconds)\n", 
+            waveSystem->totalDuration);
+    printf("[WAVE SYSTEM] Total spawn events: %d\n", waveSystem->eventCount);
 }
 
 void UpdateWaveSystem(WaveSystem* waveSystem, struct Game* game, float deltaTime) {
@@ -314,75 +78,48 @@ void UpdateWaveSystem(WaveSystem* waveSystem, struct Game* game, float deltaTime
     // Update timer
     waveSystem->waveTimer += deltaTime;
     
-    // Check for phase transitions
-    for (int i = 0; i < waveSystem->phaseCount; i++) {
-        WavePhase* phase = &waveSystem->phases[i];
+    // Process all spawn events that should trigger now
+    while (waveSystem->nextEventIndex < waveSystem->eventCount &&
+           waveSystem->spawnEvents[waveSystem->nextEventIndex].time <= waveSystem->waveTimer) {
         
-        if (waveSystem->waveTimer >= phase->startTime && !phase->active && !phase->completed) {
-            // Activate phase
-            phase->active = true;
-            waveSystem->currentPhase = i;
-            LogEvent(game, "[%.2f] Phase %d started: %s", 
-                    waveSystem->waveTimer, i + 1, phase->name);
-        }
-        
-        if (waveSystem->waveTimer >= phase->endTime && phase->active && !phase->completed) {
-            // Complete phase
-            phase->active = false;
-            phase->completed = true;
-            LogEvent(game, "[%.2f] Phase %d completed: %s", 
-                    waveSystem->waveTimer, i + 1, phase->name);
-        }
-    }
-    
-    // Process spawn events
-    static int eventSpawnCounts[500] = {0}; // Track how many enemies spawned per event
-    
-    while (waveSystem->nextEventIndex < waveSystem->eventCount) {
         SpawnEvent* event = &waveSystem->spawnEvents[waveSystem->nextEventIndex];
-        int eventIdx = waveSystem->nextEventIndex;
         
-        // Check if it's time to process this event
-        if (waveSystem->waveTimer < event->time) {
-            break; // Not time for this event yet
-        }
-        
-        // Check how many enemies we've spawned for this event
-        int spawnedCount = eventSpawnCounts[eventIdx];
-        
-        // If all enemies have been spawned, move to next event
-        if (spawnedCount >= event->count) {
-            waveSystem->nextEventIndex++;
-            continue;
-        }
-        
-        // Calculate when the next enemy should spawn
-        float nextSpawnTime = event->time + spawnedCount * event->interval;
-        
-        // Check if it's time to spawn the next enemy
-        if (waveSystem->waveTimer >= nextSpawnTime) {
-            // Calculate Y position for this enemy
-            float y = event->y;
-            if (event->count > 1) {
-                y = event->y + spawnedCount * 30;
-            }
-            
-            // Spawn the enemy
-            SpawnWaveEnemy(game, event->type, event->x, y, event->pattern);
+        // Handle spawn event based on count
+        if (event->count == 1) {
+            // Single enemy spawn
+            SpawnWaveEnemy(game, event->type, event->x, event->y, event->pattern);
             waveSystem->totalEnemiesSpawned++;
-            eventSpawnCounts[eventIdx]++;
             
-            // If this was the last enemy for this event, move to next event
-            if (eventSpawnCounts[eventIdx] >= event->count) {
-                waveSystem->nextEventIndex++;
+            LogEvent(game, "[%.2f] Spawn: %s at (%.0f, %.0f)", 
+                    waveSystem->waveTimer, GetEnemyTypeName(event->type),
+                    event->x, event->y);
+                    
+        } else if (event->count > 1) {
+            // Multiple enemies - spawn with vertical spacing
+            float spacing = event->interval;
+            float totalHeight = (event->count - 1) * spacing;
+            float startY = event->y - (totalHeight / 2.0f);  // Center around specified Y
+            
+            for (int i = 0; i < event->count; i++) {
+                float spawnY = startY + (i * spacing);
+                
+                // Clamp to screen bounds
+                if (spawnY < 80) spawnY = 80;
+                if (spawnY > SCREEN_HEIGHT - 80) spawnY = SCREEN_HEIGHT - 80;
+                
+                SpawnWaveEnemy(game, event->type, event->x, spawnY, event->pattern);
+                waveSystem->totalEnemiesSpawned++;
             }
+            
+            LogEvent(game, "[%.2f] Spawn: %d x %s in formation", 
+                    waveSystem->waveTimer, event->count, GetEnemyTypeName(event->type));
         }
         
-        // Don't process next event until this one is done
-        break;
+        // Move to next event
+        waveSystem->nextEventIndex++;
     }
     
-    // Check for wave completion
+    // Wave completion check
     if (waveSystem->waveTimer >= waveSystem->totalDuration) {
         waveSystem->isComplete = true;
         LogEvent(game, "[%.2f] Wave completed! Total enemies spawned: %d", 
@@ -398,18 +135,12 @@ void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const c
             game->enemies[i].id = game->nextEnemyId++;
             ApplyMovementPattern(&game->enemies[i], pattern);
             
-            // Check if this is the first wave (Phase 2) with Grunt enemies
-            // According to flight plan: "No firing, passive movement only"
-            // Use wave timer instead of game time to handle debug phase starts correctly
-            WaveSystem* ws = game->waveSystem;
-            if (ws && ws->waveTimer >= 5.0f && ws->waveTimer <= 35.0f && type == ENEMY_GRUNT) {
-                game->enemies[i].can_fire = false;
-            }
+            // Enemies can fire after the warm-up period (first 55 seconds)
+            game->enemies[i].can_fire = (game->waveSystem->waveTimer >= 55.0f);
             
-            LogEvent(game, "[%.2f] Enemy spawned - Type:%s ID:%d Pattern:%s Pos:(%.0f,%.0f) CanFire:%s", 
+            LogEvent(game, "[%.2f] Enemy spawned - Type:%s ID:%d Pattern:%s Pos:(%.0f,%.0f)", 
                     game->gameTime, GetEnemyTypeName(type), game->enemies[i].id, 
-                    pattern ? pattern : "default", x, y, 
-                    game->enemies[i].can_fire ? "Yes" : "No");
+                    pattern ? pattern : "default", x, y);
             break;
         }
     }
@@ -454,18 +185,48 @@ void ApplyMovementPattern(EnemyEx* enemy, const char* pattern) {
         enemy->speedX = enemy->speed * 0.4f;
         enemy->speedY = 0;
         enemy->targetY = SCREEN_HEIGHT/2;
+    } else if (strcmp(pattern, "minion") == 0) {
+        enemy->speedX = enemy->speed * 1.2f;
+        enemy->speedY = GetRandomValue(-2, 2);
     } else if (strcmp(pattern, "rush") == 0) {
         enemy->speedX = enemy->speed * 2.0f;
         enemy->speedY = GetRandomValue(-1, 1);
+    } else if (strcmp(pattern, "tank_assault") == 0) {
+        // Tank assault pattern: advance, pause, retreat
+        // Each tank has different speed and pause timing
+        float speedVariation = 0.5f + (GetRandomValue(0, 50) / 100.0f);  // 0.5x to 1.0x speed
+        enemy->speedX = enemy->speed * speedVariation;  // Speed for advancing (positive value)
+        enemy->speedY = 0;
+        
+        // Set random stop position (not reaching last left third of screen)
+        // Screen is 1200 wide, last third is 400, so stop between 400 and 900
+        float stopX = GetRandomValue(450, 900);
+        enemy->targetY = stopX;  // Using targetY to store stop X position
+        
+        // Set random pause duration (5-10 seconds)
+        enemy->specialTimer = 5.0f + (GetRandomValue(0, 50) / 10.0f);  // 5.0 to 10.0 seconds
+        
+        // Use moveTimer to track state: 0=advancing, 1=paused, 2=retreating
+        enemy->moveTimer = 0;  // Start in advancing state
+    } else if (strcmp(pattern, "elite_retreat") == 0) {
+        // Elite retreat pattern: advance to center, pause briefly, retreat
+        enemy->speedX = enemy->speed * 1.2f;  // Slightly faster than normal
+        enemy->speedY = 0;
+        
+        // Set stop position at screen center
+        float stopX = SCREEN_WIDTH / 2;  // Center of screen
+        enemy->targetY = stopX;  // Using targetY to store stop X position
+        
+        // Set pause duration (3-5 seconds, shorter than tanks)
+        enemy->specialTimer = 3.0f + (GetRandomValue(0, 20) / 10.0f);  // 3.0 to 5.0 seconds
+        
+        // Use moveTimer to track state: 0=advancing, 1=paused, 2=retreating
+        enemy->moveTimer = 0;  // Start in advancing state
     }
 }
 
 void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
     if (!enemy->active) return;
-    
-    // Update position
-    enemy->position.x -= enemy->speedX;
-    enemy->position.y += enemy->speedY;
     
     // Update animation timer
     enemy->animationTimer += deltaTime;
@@ -475,6 +236,9 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
         case ENEMY_ZIGZAG:
             // Zigzag pattern
             enemy->speedY = sinf(enemy->animationTimer * 3.0f) * 4.0f;
+            // Apply default movement
+            enemy->position.x -= enemy->speedX;
+            enemy->position.y += enemy->speedY;
             break;
             
         case ENEMY_GHOST:
@@ -484,47 +248,190 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
                 enemy->isVisible = !enemy->isVisible;
                 enemy->specialTimer = 0;
             }
+            // Apply default movement
+            enemy->position.x -= enemy->speedX;
+            enemy->position.y += enemy->speedY;
             break;
             
         case ENEMY_SHIELD:
             // Rotate shield
             enemy->shieldAngle += 60.0f * deltaTime;
             if (enemy->shieldAngle >= 360.0f) enemy->shieldAngle -= 360.0f;
+            // Apply default movement
+            enemy->position.x -= enemy->speedX;
+            enemy->position.y += enemy->speedY;
             break;
             
         case ENEMY_SPEEDER:
             // Extra fast with slight wobble
+            enemy->position.x -= enemy->speedX;
+            enemy->position.y += enemy->speedY;
             enemy->position.y += sinf(enemy->animationTimer * 10.0f) * 1.5f;
             break;
             
         case ENEMY_SWARM:
             // Slight circular motion
+            enemy->position.x -= enemy->speedX;
+            enemy->position.y += enemy->speedY;
             enemy->position.y += sinf(enemy->animationTimer * 5.0f + enemy->id) * 2.0f;
             break;
             
-        case ENEMY_BOSS:
-            // Hover at target position with slight movement
-            if (fabs(enemy->position.y - enemy->targetY) > 5.0f) {
-                float diff = enemy->targetY - enemy->position.y;
-                enemy->position.y += (diff > 0 ? 1 : -1) * 2.0f;
+        case ENEMY_TANK:
+            // Tank assault pattern: advance, pause, retreat
+            // moveTimer: 0=advancing, 1=paused, 2=retreating, 3+=normal movement
+            if (enemy->moveTimer < 3.0f) {  // Tank assault behavior active
+                if (enemy->moveTimer == 0) {
+                    // State 0: Advancing to stop position (moving LEFT toward player)
+                    // targetY stores the stop X position
+                    // Move the tank left (subtract from X)
+                    enemy->position.x -= enemy->speedX;
+                    
+                    if (enemy->position.x <= enemy->targetY) {
+                        // Reached stop position, transition to pause
+                        enemy->position.x = enemy->targetY;  // Snap to exact position
+                        enemy->speedX = 0;
+                        enemy->speedY = 0;
+                        enemy->moveTimer = 1;  // Transition to paused state
+                        // specialTimer already set to pause duration (5-10 seconds)
+                    }
+                } else if (enemy->moveTimer == 1) {
+                    // State 1: Paused - countdown pause timer
+                    // DO NOT MOVE - stay at current position
+                    enemy->specialTimer -= deltaTime;
+                    if (enemy->specialTimer <= 0) {
+                        // Pause finished, start retreating
+                        enemy->speedX = enemy->speed;  // Set speed for retreating
+                        enemy->speedY = 0;
+                        enemy->moveTimer = 2;  // Transition to retreating state
+                    }
+                } else if (enemy->moveTimer == 2) {
+                    // State 2: Retreating back to right edge (moving RIGHT away from player)
+                    // Move the tank right (add to X)
+                    enemy->position.x += enemy->speedX;
+                    
+                    if (enemy->position.x >= SCREEN_WIDTH + 100) {
+                        // Reached right edge, deactivate
+                        enemy->active = false;
+                    }
+                }
             } else {
-                enemy->position.y += sinf(enemy->animationTimer * 2.0f) * 2.0f;
+                // Normal tank movement (for non-assault patterns)
+                enemy->position.x -= enemy->speedX;
+                enemy->position.y += enemy->speedY;
             }
-            
-            // Shield regeneration logic
-            if (enemy->shieldAngle <= 0) {
-                enemy->specialTimer += deltaTime;
-                if (enemy->specialTimer >= BOSS_SHIELD_REGEN_TIME) {
-                    enemy->shieldAngle = BOSS_SHIELD_HEALTH;
-                    enemy->specialTimer = 0;
-                    // Log shield regeneration (assuming LogEvent is available)
-                    // LogEvent(game, "[%.2f] Boss shield REGENERATED!", game->gameTime);
+            break;
+        
+        case ENEMY_ELITE:
+            // Elite retreat pattern: advance to center, pause, retreat
+            // moveTimer: 0=advancing, 1=paused, 2=retreating, 3+=normal movement
+            if (enemy->moveTimer < 3.0f) {  // Elite retreat behavior active
+                if (enemy->moveTimer == 0) {
+                    // State 0: Advancing to screen center
+                    enemy->position.x -= enemy->speedX;
+                    
+                    if (enemy->position.x <= enemy->targetY) {
+                        // Reached center, transition to pause
+                        enemy->position.x = enemy->targetY;
+                        enemy->speedX = 0;
+                        enemy->speedY = 0;
+                        enemy->moveTimer = 1;
+                        // specialTimer already set to pause duration (3-5 seconds)
+                    }
+                } else if (enemy->moveTimer == 1) {
+                    // State 1: Paused at center
+                    enemy->specialTimer -= deltaTime;
+                    if (enemy->specialTimer <= 0) {
+                        // Pause finished, start retreating
+                        enemy->speedX = enemy->speed * 1.3f;  // Slightly faster retreat
+                        enemy->speedY = 0;
+                        enemy->moveTimer = 2;
+                    }
+                } else if (enemy->moveTimer == 2) {
+                    // State 2: Retreating back to right edge
+                    enemy->position.x += enemy->speedX;
+                    
+                    if (enemy->position.x >= SCREEN_WIDTH + 100) {
+                        // Reached right edge, deactivate
+                        enemy->active = false;
+                    }
+                }
+            } else {
+                // Normal elite movement
+                enemy->position.x -= enemy->speedX;
+                enemy->position.y += enemy->speedY;
+            }
+            break;
+        
+        case ENEMY_BOSS:
+            {
+                // Define the last third boundary (right side of screen where boss enters)
+                float lastThirdStart = (SCREEN_WIDTH * 2) / 3.0f;  // 800 pixels (start of last third)
+                float minBossX = lastThirdStart + 20.0f;  // 820 pixels (stay in last third)
+                float maxBossX = SCREEN_WIDTH - 80.0f;  // 1120 pixels (don't go off right edge)
+                
+                // State 0: Boss entering - move into last third zone
+                if (enemy->moveTimer == 0) {
+                    enemy->position.x -= enemy->speedX;
+                    
+                    // Once in the last third, switch to hovering mode
+                    if (enemy->position.x <= maxBossX) {
+                        enemy->moveTimer = 1;  // Switch to hovering state
+                        enemy->specialTimer = 0;  // Reset for movement timer
+                        // Set initial target in safe zone (last third of screen)
+                        enemy->targetY = GetRandomValue(100, SCREEN_HEIGHT - 100);
+                        enemy->speedX = GetRandomValue(minBossX + 30, maxBossX - 30);  // Initial target X
+                    }
+                } else {
+                    // State 1: Boss hovering in last third with controlled random movement
+                    
+                    // Update movement timer for random direction changes
+                    enemy->specialTimer += deltaTime;
+                    
+                    // Change direction every 2-3 seconds for smooth, non-chaotic movement
+                    if (enemy->specialTimer >= 2.5f) {
+                        enemy->specialTimer = 0;
+                        
+                        // Set new random target within last third bounds
+                        enemy->targetY = GetRandomValue(100, SCREEN_HEIGHT - 100);
+                        // speedX repurposed for horizontal target position in this mode
+                        enemy->speedX = GetRandomValue(minBossX, maxBossX);
+                    }
+                    
+                    // Smooth movement toward target Y (up/down)
+                    float verticalSpeed = 1.5f;
+                    if (fabs(enemy->position.y - enemy->targetY) > 5.0f) {
+                        float diff = enemy->targetY - enemy->position.y;
+                        enemy->position.y += (diff > 0 ? 1 : -1) * verticalSpeed;
+                    }
+                    
+                    // Smooth movement toward target X (left/right within safe zone)
+                    float horizontalSpeed = 1.2f;
+                    float targetX = enemy->speedX;  // Using speedX as target storage
+                    if (fabs(enemy->position.x - targetX) > 5.0f) {
+                        float diff = targetX - enemy->position.x;
+                        enemy->position.x += (diff > 0 ? 1 : -1) * horizontalSpeed;
+                    }
+                    
+                    // Add subtle floating motion for visual interest
+                    enemy->position.y += sinf(enemy->animationTimer * 1.5f) * 0.8f;
+                    enemy->position.x += cosf(enemy->animationTimer * 1.2f) * 0.5f;
+                    
+                    // Enforce boundaries strictly - keep boss in safe zone
+                    if (enemy->position.x < minBossX) {
+                        enemy->position.x = minBossX;
+                    }
+                    if (enemy->position.x > maxBossX) {
+                        enemy->position.x = maxBossX;
+                    }
                 }
             }
             break;
             
         default:
             // Basic movement for others
+            enemy->position.x -= enemy->speedX;
+            enemy->position.y += enemy->speedY;
+            
             if (enemy->targetY != 0 && fabs(enemy->position.y - enemy->targetY) > 10.0f) {
                 float diff = enemy->targetY - enemy->position.y;
                 enemy->position.y += (diff > 0 ? 1 : -1) * 1.5f;
@@ -566,10 +473,28 @@ void CleanupWaveSystem(WaveSystem* waveSystem) {
 }
 
 const char* GetCurrentPhaseName(const WaveSystem* waveSystem) {
-    if (waveSystem->currentPhase >= 0 && waveSystem->currentPhase < waveSystem->phaseCount) {
-        return waveSystem->phases[waveSystem->currentPhase].name;
+    // Return phase name based on current time
+    float time = waveSystem->waveTimer;
+    
+    if (time < 55.0f) {
+        return "Warm-Up";
+    } else if (time >= 427.0f && time <= 451.0f) {
+        return "BOSS BATTLE";
+    } else if (time < 90.0f) {
+        return "Opening Assault";
+    } else if (time < 150.0f) {
+        return "Building Intensity";
+    } else if (time < 260.0f) {
+        return "Mixed Combat";
+    } else if (time < 345.0f) {
+        return "Heavy Assault";
+    } else if (time < 420.0f) {
+        return "Elite Encounters";
+    } else if (time < 510.0f) {
+        return "Final Push";
+    } else {
+        return "Victory Lap";
     }
-    return "Unknown";
 }
 
 float GetWaveProgress(const WaveSystem* waveSystem) {
@@ -579,3 +504,32 @@ float GetWaveProgress(const WaveSystem* waveSystem) {
 bool IsWaveComplete(const WaveSystem* waveSystem) {
     return waveSystem->isComplete;
 }
+
+int GetCurrentPhaseNumber(const WaveSystem* waveSystem) {
+    // Return the phase number based on current time
+    // This maps to DEBUG_START_PHASE values
+    float time = waveSystem->waveTimer;
+    
+    if (time < 5.0f) return 1;
+    else if (time < 55.0f) return 2;
+    else if (time < 90.0f) return 3;
+    else if (time < 110.0f) return 4;  // Tank assault
+    else if (time < 125.0f) return 5;  // Recovery
+    else if (time < 150.0f) return 6;  // Swarm attack
+    else if (time < 175.0f) return 7;  // Mixed
+    else if (time < 195.0f) return 8;  // Recovery
+    else if (time < 225.0f) return 9;  // Speeders
+    else if (time < 240.0f) return 10; // Elite
+    else if (time < 260.0f) return 11; // Recovery
+    else if (time < 295.0f) return 12; // Shield/Recovery
+    else if (time < 320.0f) return 13; // Tank #2
+    else if (time < 345.0f) return 14; // Recovery
+    else if (time < 380.0f) return 15; // Bombers
+    else if (time < 415.0f) return 16; // Elite #2/Recovery
+    else if (time < 427.0f) return 17; // Pre-boss
+    else if (time < 455.0f) return 18; // BOSS
+    else if (time < 480.0f) return 19; // Recovery
+    else if (time < 510.0f) return 20; // Final challenge
+    else return 21; // Victory lap
+}
+
