@@ -8,12 +8,23 @@ echo "Audio Spectrogram Demo - Bass Detection"
 echo "======================================"
 echo ""
 
-# Check if the audio file exists
-if [ ! -f "assets/audio/level1.mp3" ]; then
-    echo "Error: Audio file 'assets/audio/level1.mp3' not found!"
-    echo "Please ensure the audio file is in the correct location."
+# Check if the audio directory exists
+if [ ! -d "assets/audio" ]; then
+    echo "Error: Audio directory 'assets/audio' not found!"
+    echo "Please ensure the audio directory exists."
     exit 1
 fi
+
+# Check if there are any MP3 files
+mp3_count=$(find assets/audio -maxdepth 1 -name "*.mp3" | wc -l)
+if [ "$mp3_count" -eq 0 ]; then
+    echo "Error: No MP3 files found in 'assets/audio'!"
+    echo "Please add MP3 files to the audio directory."
+    exit 1
+fi
+
+echo "Found $mp3_count MP3 file(s) in assets/audio/"
+echo ""
 
 # Clean and build the audio demo
 echo "Building audio demo..."
@@ -28,7 +39,11 @@ fi
 echo ""
 echo "Starting audio demo..."
 echo "======================================"
-echo "Controls:"
+echo "File Selection:"
+echo "  Use UP/DOWN arrows or mouse to select"
+echo "  ENTER/SPACE to confirm selection"
+echo ""
+echo "During Playback:"
 echo "  SPACE - Pause/Resume playback"
 echo "  ESC   - Exit demo"
 echo "======================================"
@@ -38,6 +53,9 @@ echo "  LOW    - Energy > 0.15"
 echo "  MEDIUM - Energy > 0.35"
 echo "  HIGH   - Energy > 0.60"
 echo "======================================"
+echo ""
+echo "Note: Log files will be saved in assets/audio/ with the same name as the MP3 file."
+echo "      Existing log files will be backed up automatically."
 echo ""
 
 # Run the audio demo
