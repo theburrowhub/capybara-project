@@ -224,6 +224,9 @@ void InitializeEnemyFromType(EnemyEx* enemy, EnemyType type, float x, float y) {
     
     // Hit tracking
     enemy->hitsTaken = 0;
+    
+    // Boss escape behavior
+    enemy->isEscaping = false;
 }
 
 void DrawEnemyEx(const EnemyEx* enemy) {
