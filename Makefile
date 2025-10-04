@@ -179,6 +179,7 @@ clean:
 	rm -rf $(BIN_DIR)
 	rm -f $(TARGET)
 	rm -f *.log *.txt
+	rm -f bin/*.conf
 
 # Rebuild everything
 rebuild: clean all
