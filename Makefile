@@ -24,8 +24,8 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/projectile_types.c \
               $(SRC_DIR)/systems/explosion.c \
               $(SRC_DIR)/systems/combat_system.c \
-              $(SRC_DIR)/systems/projectile_manager.c
-              $(SRC_DIR)/systems/menu.c
+              $(SRC_DIR)/systems/projectile_manager.c \
+			  $(SRC_DIR)/systems/menu.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c
 
