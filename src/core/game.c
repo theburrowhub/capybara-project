@@ -7,6 +7,8 @@
 #include "weapon.h"
 #include "explosion.h"
 #include "combat_system.h"
+#include "projectile_manager.h"
+#include "collision.h"
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>
@@ -202,20 +204,16 @@ int CountActiveEnemies(const Game* game) {
 
 void UpdateProjectiles(Game* game) {
     float deltaTime = GetFrameTime();
-    Projectile* projectiles = (Projectile*)game->projectiles;
     
-    for (int i = 0; i < MAX_PROJECTILES; i++) {
-        if (projectiles[i].active) {
-            UpdateProjectile(&projectiles[i], deltaTime);
-            
-            // Remove projectiles that go off screen
-            Projectile* proj = &projectiles[i];
-            if (proj->position.x < -100 || proj->position.x > SCREEN_WIDTH + 100 ||
-                proj->position.y < -100 || proj->position.y > SCREEN_HEIGHT + 100) {
-                proj->active = false;
-            }
-        }
-    }
+    // Use projectile manager for cleaner code
+    ProjectileManager mgr = {
+        .projectiles = (Projectile*)game->projectiles,
+        .maxProjectiles = MAX_PROJECTILES,
+        .minX = -100, .maxX = SCREEN_WIDTH + 100,
+        .minY = -100, .maxY = SCREEN_HEIGHT + 100
+    };
+    
+    ProjectileManager_UpdateAll(&mgr, deltaTime);
 }
 
 void UpdateGame(Game* game) {

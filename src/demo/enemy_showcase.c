@@ -6,6 +6,7 @@
 #include "collision.h"
 #include "wave_system.h"
 #include "combat_system.h"
+#include "projectile_manager.h"
 #include "constants.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -112,10 +113,11 @@ void InitArenaState(ArenaState* state, EnemyType enemyType) {
     
     // Initialize projectiles array (enemy projectiles)
     state->projectiles = malloc(sizeof(Projectile) * MAX_PROJECTILES);
-    Projectile* projectiles = (Projectile*)state->projectiles;
-    for (int i = 0; i < MAX_PROJECTILES; i++) {
-        projectiles[i].active = false;
-    }
+    ProjectileManager mgr = {
+        .projectiles = (Projectile*)state->projectiles,
+        .maxProjectiles = MAX_PROJECTILES
+    };
+    ProjectileManager_InitAll(&mgr);
     
     state->activeEnemyCount = 0;
     state->spawnTimer = 0.0f;
@@ -365,51 +367,35 @@ void UpdateArenaState(ArenaState* state) {
         }
     }
     
-    // Update projectiles (same as main game)
-    Projectile* projectiles = (Projectile*)state->projectiles;
-    for (int i = 0; i < MAX_PROJECTILES; i++) {
-        if (projectiles[i].active) {
-            UpdateProjectile(&projectiles[i], deltaTime);
-            
-            // Deactivate if off screen
-            if (projectiles[i].position.x < -50 || projectiles[i].position.x > SHOWCASE_WIDTH + 50 ||
-                projectiles[i].position.y < -50 || projectiles[i].position.y > SHOWCASE_HEIGHT + 50) {
-                projectiles[i].active = false;
-            }
-        }
-    }
+    // Update projectiles using projectile manager
+    ProjectileManager projMgr = {
+        .projectiles = (Projectile*)state->projectiles,
+        .maxProjectiles = MAX_PROJECTILES,
+        .minX = -50, .maxX = SHOWCASE_WIDTH + 50,
+        .minY = -50, .maxY = SHOWCASE_HEIGHT + 50
+    };
+    ProjectileManager_UpdateAll(&projMgr, deltaTime);
     
-    // Check bullet-enemy collisions
-    for (int i = 0; i < MAX_BULLETS; i++) {
-        if (!state->bullets[i].active) continue;
-        
-        for (int j = 0; j < MAX_ENEMIES; j++) {
-            if (!state->enemies[j].active) continue;
-            
-            // Check collision
-            if (CheckCollisionRecs(state->bullets[i].bounds, state->enemies[j].bounds)) {
-                // Damage enemy
-                int damage = 1;
-                
-                // Apply resistance
-                float actualDamage = damage * (1.0f - state->enemies[j].resistance);
-                if (actualDamage < 1) actualDamage = 1;
-                
-                state->enemies[j].health -= (int)actualDamage;
-                state->enemies[j].hitsTaken++;
-                
-                // Deactivate bullet
-                state->bullets[i].active = false;
-                
-                // Check if enemy is destroyed
-                if (state->enemies[j].health <= 0) {
-                    state->enemies[j].active = false;
-                    state->activeEnemyCount--;
-                    state->enemiesKilled++;
-                }
-                
-                break;
-            }
+    // Check bullet-enemy collisions using generic collision system
+    CollisionContext collisionCtx = {
+        .bullets = state->bullets,
+        .maxBullets = MAX_BULLETS,
+        .enemies = state->enemies,
+        .maxEnemies = MAX_ENEMIES,
+        .explosionSystem = NULL,          // No explosions in showcase
+        .score = NULL,                    // No score in showcase
+        .enemiesKilled = &state->enemiesKilled,  // Track kills
+        .logContext = NULL,               // No logging in showcase
+        .onEnemyHit = NULL,
+        .onEnemyDestroyed = NULL
+    };
+    Collision_CheckBulletEnemyGeneric(&collisionCtx);
+    
+    // Update active enemy count after collisions
+    state->activeEnemyCount = 0;
+    for (int i = 0; i < MAX_ENEMIES; i++) {
+        if (state->enemies[i].active) {
+            state->activeEnemyCount++;
         }
     }
     
@@ -534,13 +520,12 @@ void DrawArenaState(const ArenaState* state) {
         }
     }
     
-    // Draw enemy projectiles (same as main game)
-    Projectile* projectiles = (Projectile*)state->projectiles;
-    for (int i = 0; i < MAX_PROJECTILES; i++) {
-        if (projectiles[i].active) {
-            DrawProjectile(&projectiles[i]);
-        }
-    }
+    // Draw enemy projectiles using projectile manager
+    ProjectileManager projMgr = {
+        .projectiles = (Projectile*)state->projectiles,
+        .maxProjectiles = MAX_PROJECTILES
+    };
+    ProjectileManager_DrawAll(&projMgr);
     
     // Draw HUD
     DrawRectangle(0, 0, SHOWCASE_WIDTH, 100, Fade(BLACK, 0.7f));

@@ -10,54 +10,112 @@
 #include <math.h>
 
 void CheckBulletEnemyCollisions(Game* game) {
-    for (int b = 0; b < MAX_BULLETS; b++) {
-        if (game->bullets[b].active) {
-            for (int e = 0; e < MAX_ENEMIES; e++) {
-                if (game->enemies[e].active) {
+    // Use generic collision system
+    CollisionContext ctx = {
+        .bullets = game->bullets,
+        .maxBullets = MAX_BULLETS,
+        .enemies = game->enemies,
+        .maxEnemies = MAX_ENEMIES,
+        .explosionSystem = game->explosionSystem,
+        .score = &game->score,
+        .enemiesKilled = NULL,  // Game doesn't track this separately
+        .logContext = game,
+        .onEnemyHit = NULL,
+        .onEnemyDestroyed = NULL
+    };
+    
+    Collision_CheckBulletEnemyGeneric(&ctx);
+}
+
+void Collision_CheckBulletEnemyGeneric(CollisionContext* ctx) {
+    for (int b = 0; b < ctx->maxBullets; b++) {
+        if (ctx->bullets[b].active) {
+            for (int e = 0; e < ctx->maxEnemies; e++) {
+                if (ctx->enemies[e].active) {
                     // Skip ghost enemies when they're not visible
-                    if (game->enemies[e].type == ENEMY_GHOST && !game->enemies[e].isVisible) {
+                    if (ctx->enemies[e].type == ENEMY_GHOST && !ctx->enemies[e].isVisible) {
                         continue;
                     }
                     
-                    if (CheckCollisionRecs(game->bullets[b].bounds, game->enemies[e].bounds)) {
-                        // Apply damage - always at least 1 damage even with resistance
+                    if (CheckCollisionRecs(ctx->bullets[b].bounds, ctx->enemies[e].bounds)) {
+                        // Calculate damage with resistance
                         float baseDamage = 1.0f;
-                        float effectiveDamage = baseDamage * (1.0f - game->enemies[e].resistance);
-                        int damageDealt = (int)fmaxf(1.0f, effectiveDamage);  // Always deal at least 1 damage
+                        float effectiveDamage = baseDamage * (1.0f - ctx->enemies[e].resistance);
+                        int damageDealt = (int)fmaxf(1.0f, effectiveDamage);  // At least 1 damage
                         
-                        game->bullets[b].active = false;
+                        // Deactivate bullet
+                        ctx->bullets[b].active = false;
                         
-                        // Boss shield handling
-                        if (game->enemies[e].type == ENEMY_BOSS && game->enemies[e].shieldAngle > 0) {
-                            game->enemies[e].shieldAngle -= damageDealt;
-                            game->enemies[e].specialTimer = 0;  // Reset shield regen timer
-                            if (game->enemies[e].shieldAngle <= 0) {
-                                game->enemies[e].shieldAngle = 0;
-                                LogEvent(game, "[%.2f] Boss shield BROKEN!", game->gameTime);
+                        // Boss shield handling (if applicable)
+                        if (ctx->enemies[e].type == ENEMY_BOSS && ctx->enemies[e].shieldAngle > 0) {
+                            ctx->enemies[e].shieldAngle -= damageDealt;
+                            ctx->enemies[e].specialTimer = 0;  // Reset shield regen timer
+                            
+                            if (ctx->enemies[e].shieldAngle <= 0) {
+                                ctx->enemies[e].shieldAngle = 0;
+                                // Log if logging is enabled
+                                if (ctx->logContext) {
+                                    Game* game = (Game*)ctx->logContext;
+                                    LogEvent(game, "[%.2f] Boss shield BROKEN!", game->gameTime);
+                                }
                             }
                         } else {
-                            game->enemies[e].health -= damageDealt;
+                            // Apply damage to health
+                            ctx->enemies[e].health -= damageDealt;
                         }
-                        game->enemies[e].hitsTaken++;
                         
-                        LogEvent(game, "[%.2f] Enemy hit - Type:%s ID:%d Health:%d/%d Hits:%d Damage:%d",
-                                game->gameTime, GetEnemyTypeName(game->enemies[e].type),
-                                game->enemies[e].id, game->enemies[e].health, game->enemies[e].maxHealth,
-                                game->enemies[e].hitsTaken, damageDealt);
+                        ctx->enemies[e].hitsTaken++;
                         
-                        if (game->enemies[e].health <= 0) {
-                            // Create explosion effect based on enemy type
-                            Color enemyColor = GetEnemyTypeColor(game->enemies[e].type);
-                            float enemySize = game->enemies[e].bounds.width;
-                            CreateEnemyExplosion(game->explosionSystem, game->enemies[e].position, enemyColor, enemySize);
+                        // Call hit callback if provided
+                        if (ctx->onEnemyHit) {
+                            ctx->onEnemyHit(ctx->logContext, &ctx->enemies[e], damageDealt);
+                        }
+                        
+                        // Log hit if logging is enabled
+                        if (ctx->logContext) {
+                            Game* game = (Game*)ctx->logContext;
+                            LogEvent(game, "[%.2f] Enemy hit - Type:%s ID:%d Health:%d/%d Hits:%d Damage:%d",
+                                    game->gameTime, GetEnemyTypeName(ctx->enemies[e].type),
+                                    ctx->enemies[e].id, ctx->enemies[e].health, ctx->enemies[e].maxHealth,
+                                    ctx->enemies[e].hitsTaken, damageDealt);
+                        }
+                        
+                        // Check if enemy is destroyed
+                        if (ctx->enemies[e].health <= 0) {
+                            // Create explosion if system is provided
+                            if (ctx->explosionSystem) {
+                                Color enemyColor = GetEnemyTypeColor(ctx->enemies[e].type);
+                                float enemySize = ctx->enemies[e].bounds.width;
+                                CreateEnemyExplosion(ctx->explosionSystem, ctx->enemies[e].position, 
+                                                   enemyColor, enemySize);
+                            }
                             
-                            game->enemies[e].active = false;
-                            // Score based on enemy power (difficulty)
-                            game->score += game->enemies[e].power * 2;
+                            // Add score if score pointer is provided
+                            if (ctx->score) {
+                                *ctx->score += ctx->enemies[e].power * 2;
+                            }
                             
-                            LogEvent(game, "[%.2f] Enemy DESTROYED - Type:%s ID:%d TotalHits:%d Score:+%d",
-                                    game->gameTime, GetEnemyTypeName(game->enemies[e].type),
-                                    game->enemies[e].id, game->enemies[e].hitsTaken, game->enemies[e].power * 2);
+                            // Track kills if counter is provided
+                            if (ctx->enemiesKilled) {
+                                (*ctx->enemiesKilled)++;
+                            }
+                            
+                            // Deactivate enemy
+                            ctx->enemies[e].active = false;
+                            
+                            // Call destroyed callback if provided
+                            if (ctx->onEnemyDestroyed) {
+                                ctx->onEnemyDestroyed(ctx->logContext, &ctx->enemies[e]);
+                            }
+                            
+                            // Log destruction if logging is enabled
+                            if (ctx->logContext) {
+                                Game* game = (Game*)ctx->logContext;
+                                LogEvent(game, "[%.2f] Enemy DESTROYED - Type:%s ID:%d TotalHits:%d Score:+%d",
+                                        game->gameTime, GetEnemyTypeName(ctx->enemies[e].type),
+                                        ctx->enemies[e].id, ctx->enemies[e].hitsTaken, 
+                                        ctx->enemies[e].power * 2);
+                            }
                         }
                     }
                 }
@@ -65,7 +123,6 @@ void CheckBulletEnemyCollisions(Game* game) {
         }
     }
 }
-
 
 void CheckPlayerEnemyCollisions(Game* game) {
     for (int e = 0; e < MAX_ENEMIES; e++) {
