@@ -364,12 +364,43 @@ void CreateExplosion(ExplosionSystem* system, Vector2 position, ExplosionType ty
 }
 
 void CreateEnemyExplosion(ExplosionSystem* system, Vector2 position, Color enemyColor, float size) {
-    // Determine explosion type based on size
+    // Boss-class enemies (120+) get special multi-explosion sequence!
+    if (size > 100) {
+        CreateBossExplosion(system, position, enemyColor);
+        return;
+    }
+    
+    // Determine explosion type based on enemy size for spectacular scaling
+    // Enemy sizes: Swarm(20) Speeder(24) Grunt(32) Zigzag(40) Ghost(44) 
+    //              Shield(48) Elite(52) Bomber(60) Tank(80)
     ExplosionType type = EXPLOSION_SMALL;
-    if (size > 60) {
+    float sizeMultiplier = 1.0f;
+    int extraParticles = 0;
+    
+    if (size > 70) {
+        // Tank-class enemies (80+) - Large explosion
         type = EXPLOSION_LARGE;
-    } else if (size > 30) {
+        sizeMultiplier = 1.0f;
+        extraParticles = 10;
+        TriggerScreenShake(system, 8.0f, 0.4f);  // Medium shake
+    } else if (size > 50) {
+        // Elite/Bomber class (52-60) - Upper medium explosion
         type = EXPLOSION_MEDIUM;
+        sizeMultiplier = 1.2f;  // 20% bigger
+        extraParticles = 5;
+        TriggerScreenShake(system, 4.0f, 0.25f);  // Light shake
+    } else if (size > 35) {
+        // Shield/Zigzag class (40-48) - Standard medium explosion
+        type = EXPLOSION_MEDIUM;
+        sizeMultiplier = 1.0f;
+        extraParticles = 0;
+        TriggerScreenShake(system, 2.0f, 0.15f);  // Very light shake
+    } else {
+        // Small enemies (20-32) - Small explosion
+        type = EXPLOSION_SMALL;
+        sizeMultiplier = 1.0f;
+        extraParticles = 0;
+        // No screen shake for small enemies
     }
     
     // Find an inactive explosion slot
@@ -386,16 +417,34 @@ void CreateEnemyExplosion(ExplosionSystem* system, Vector2 position, Color enemy
     // Create base explosion
     CreateExplosion(system, position, type);
     
+    // Apply size multiplier for extra spectacle
+    exp->maxRadius *= sizeMultiplier;
+    exp->expandSpeed *= sizeMultiplier;
+    
     // Customize colors based on enemy color
     exp->outerColor = enemyColor;
     exp->innerColor = WHITE;
     
-    // Add some enemy-specific particles
-    for (int i = 0; i < exp->particleCount; i++) {
-        if (rand() % 2) {
-            exp->particles[i].color = enemyColor;
-        }
+    // Add extra particles for larger enemies
+    int totalParticles = exp->particleCount + extraParticles;
+    if (totalParticles > MAX_PARTICLES_PER_EXPLOSION) {
+        totalParticles = MAX_PARTICLES_PER_EXPLOSION;
     }
+    
+    // Create extra particles
+    for (int i = exp->particleCount; i < totalParticles; i++) {
+        Vector2 dir = RandomDirection();
+        float speed = RandomFloat(50, 150);
+        
+        exp->particles[i].position = exp->position;
+        exp->particles[i].velocity = (Vector2){dir.x * speed, dir.y * speed};
+        exp->particles[i].color = enemyColor;
+        exp->particles[i].size = RandomFloat(2, 6);
+        exp->particles[i].life = 1.0f;
+        exp->particles[i].fadeRate = RandomFloat(0.8f, 1.2f);
+        exp->particles[i].active = true;
+    }
+    exp->particleCount = totalParticles;
 }
 
 void CreatePlayerExplosion(ExplosionSystem* system, Vector2 position) {
@@ -431,6 +480,108 @@ void CreateShockwaveExplosion(ExplosionSystem* system, Vector2 position, float f
             break;
         }
     }
+}
+
+void CreateBossExplosion(ExplosionSystem* system, Vector2 position, Color bossColor) {
+    // Create spectacular multi-explosion sequence for boss death
+    // This creates 1 main explosion + 8 secondary explosions in a circle pattern
+    
+    // Main explosion - very large with extended lifetime
+    Explosion* mainExp = NULL;
+    for (int i = 0; i < MAX_EXPLOSIONS; i++) {
+        if (!system->explosions[i].active) {
+            mainExp = &system->explosions[i];
+            break;
+        }
+    }
+    
+    if (!mainExp) return;
+    
+    // Initialize main boss explosion
+    memset(mainExp, 0, sizeof(Explosion));
+    mainExp->position = position;
+    mainExp->type = EXPLOSION_LARGE;
+    mainExp->active = true;
+    mainExp->life = 3.0f;  // 3× longer lifetime - lasts on screen!
+    mainExp->radius = 15.0f;
+    mainExp->maxRadius = 180.0f;  // Massive radius
+    mainExp->expandSpeed = 350.0f;
+    mainExp->innerColor = WHITE;
+    mainExp->outerColor = bossColor;
+    mainExp->intensity = 2.0f;  // Extra bright
+    mainExp->hasShockwave = true;
+    mainExp->shockwaveSpeed = 600.0f;
+    system->activeCount++;
+    
+    // Create 50 particles for main explosion
+    mainExp->particleCount = MAX_PARTICLES_PER_EXPLOSION;
+    for (int i = 0; i < mainExp->particleCount; i++) {
+        Vector2 dir = RandomDirection();
+        float speed = RandomFloat(120, 300);
+        
+        mainExp->particles[i].position = position;
+        mainExp->particles[i].velocity = (Vector2){dir.x * speed, dir.y * speed};
+        mainExp->particles[i].color = (i % 2 == 0) ? WHITE : bossColor;
+        mainExp->particles[i].size = RandomFloat(4, 10);  // Larger particles
+        mainExp->particles[i].life = RandomFloat(2.0f, 3.5f);  // Very long life
+        mainExp->particles[i].fadeRate = 0.4f;  // Very slow fade
+        mainExp->particles[i].active = true;
+    }
+    
+    // Create 8 secondary explosions in a circle around boss (chain reaction!)
+    for (int sec = 0; sec < 8; sec++) {
+        Explosion* secExp = NULL;
+        for (int i = 0; i < MAX_EXPLOSIONS; i++) {
+            if (!system->explosions[i].active) {
+                secExp = &system->explosions[i];
+                break;
+            }
+        }
+        
+        if (!secExp) break;
+        
+        // Position in circle pattern around boss
+        float angle = (sec * 45.0f) * DEG2RAD;  // 8 explosions, 45° apart
+        float distance = 60.0f + RandomFloat(-15, 15);
+        Vector2 secPos = {
+            position.x + cosf(angle) * distance,
+            position.y + sinf(angle) * distance
+        };
+        
+        // Initialize secondary explosion
+        memset(secExp, 0, sizeof(Explosion));
+        secExp->position = secPos;
+        secExp->type = (sec % 2 == 0) ? EXPLOSION_LARGE : EXPLOSION_MEDIUM;
+        secExp->active = true;
+        secExp->life = 2.0f;  // Long lifetime
+        secExp->radius = 8.0f;
+        secExp->maxRadius = (sec % 2 == 0) ? 90.0f : 65.0f;
+        secExp->expandSpeed = 320.0f;
+        secExp->innerColor = (sec % 3 == 0) ? bossColor : WHITE;
+        secExp->outerColor = bossColor;
+        secExp->intensity = 1.2f;
+        secExp->hasShockwave = true;
+        secExp->shockwaveSpeed = 400.0f;
+        system->activeCount++;
+        
+        // Add particles to secondary explosions
+        secExp->particleCount = 20;
+        for (int i = 0; i < secExp->particleCount; i++) {
+            Vector2 dir = RandomDirection();
+            float speed = RandomFloat(80, 180);
+            
+            secExp->particles[i].position = secPos;
+            secExp->particles[i].velocity = (Vector2){dir.x * speed, dir.y * speed};
+            secExp->particles[i].color = (i % 2 == 0) ? bossColor : Fade(WHITE, 0.9f);
+            secExp->particles[i].size = RandomFloat(3, 7);
+            secExp->particles[i].life = RandomFloat(1.5f, 2.5f);
+            secExp->particles[i].fadeRate = 0.6f;
+            secExp->particles[i].active = true;
+        }
+    }
+    
+    // Trigger massive screen shake
+    TriggerScreenShake(system, 25.0f, 1.2f);  // Very intense and long!
 }
 
 Vector2 GetScreenShakeOffset(const ExplosionSystem* system) {
