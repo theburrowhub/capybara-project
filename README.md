@@ -14,7 +14,8 @@ Complete documentation is available in the [`docs/`](docs/INDEX.md) folder:
 
 ### Game Content
 - [Enemies and Sprites](docs/ENEMIES_AND_SPRITES.md) - All 10 enemy types and sprite designs
-- [Weapons and Projectiles](docs/WEAPONS_AND_PROJECTILES.md) - Weapon system and projectile types
+- [Weapons and Damage](docs/WEAPONS_AND_DAMAGE.md) - Comprehensive weapon systems, damage mechanics, and projectile types
+- [Powerup System](docs/POWERUPS.md) - 4 powerup types with drop mechanics
 - [Flight Plan](docs/FLIGHT_PLAN.md) - Wave system and phase progression
 
 ### Development
@@ -44,6 +45,7 @@ make run
 - 🔫 **Heat Management**: Weapon overheats with continuous fire
 - 👾 **10 Enemy Types**: Each with unique behaviors and attack patterns
 - 🌊 **Wave System**: 17 phases with progressive difficulty
+- ⭐ **Powerup System**: 4 types (energy, shield, hull, weapon) with smart drop mechanics
 - 📊 **Score System**: Points for destroying enemies
 - 🐛 **Debug Mode**: Invulnerability, phase selection, and hitbox visualization
 
