@@ -13,6 +13,10 @@ shootemup
 *.log
 *.txt
 
+# Configuration files
+audio_analysis.conf
+*.conf
+
 # IDE and editor files
 .vscode/
 .idea/

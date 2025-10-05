@@ -202,7 +202,7 @@ void printUsage(const char *programName) {
 }
 
 int main(int argc, char *argv[]) {
-    printf("=== Audio Bass Analyzer (Console Mode - Fast Silent Analysis) ===\n\n");
+    printf("=== Audio Analysis CLI (Silent Background Analysis) ===\n\n");
     
     const char *audioDir = "assets/audio";
     char audioFile[512] = {0};
