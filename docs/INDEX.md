@@ -5,14 +5,17 @@ Welcome to the Capybara Shoot'em Up documentation!
 ## 📖 Documentation Overview
 
 ### Getting Started
+- **[USER MANUAL (PDF)](USER_MANUAL.pdf)** - 📖 Complete illustrated player guide (compile with `make manual`)
 - **[BUILD.md](BUILD.md)** - Installation, compilation, and platform-specific setup
 - **[GAMEPLAY.md](GAMEPLAY.md)** - How to play, controls, and game mechanics
 
 ### Game Content
 - **[ENEMIES_AND_SPRITES.md](ENEMIES_AND_SPRITES.md)** - All 10 enemy types, behaviors, and sprite designs
-- **[WEAPONS_AND_PROJECTILES.md](WEAPONS_AND_PROJECTILES.md)** - Weapon systems, projectile types, and combat mechanics
-- **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** - Bass-driven wave orchestration and phase progression
-- **[BASS_DRIVEN_GAMEPLAY.md](BASS_DRIVEN_GAMEPLAY.md)** - 🎵 Music-reactive enemy spawning system
+- **[WEAPONS_AND_DAMAGE.md](WEAPONS_AND_DAMAGE.md)** - Comprehensive weapon systems, damage mechanics, projectile types, and combat
+- **[POWERUPS.md](POWERUPS.md)** - ⭐ Complete powerup system with types, drop mechanics, visual design, and integration
+- **[PLAYER_SHIP.md](PLAYER_SHIP.md)** - Player ship design, systems, and capabilities
+- **[ENERGY_MODE_SYSTEM.md](ENERGY_MODE_SYSTEM.md)** - Offensive/Defensive energy modes and special abilities
+- **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** - Wave orchestration and phase progression
 
 ### Technical Documentation
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Project structure, design patterns, and module organization
@@ -58,6 +61,7 @@ capybara-project/
 - **🎵 Bass-Driven Gameplay**: Enemy waves sync with music bass patterns
 - **10 Enemy Types**: Each with unique behaviors and attack patterns
 - **4 Projectile Types**: Laser, Plasma, Missile, and Energy Orb
+- **⭐ Powerup System**: 4 types (energy, shield, hull, weapon) with smart drop mechanics
 - **Music-Reactive Spawning**: Difficulty adapts to audio intensity in real-time
 - **Epic Boss Battle**: Timed to appear at musical climax (427s)
 - **Heat Management**: Weapon overheating system

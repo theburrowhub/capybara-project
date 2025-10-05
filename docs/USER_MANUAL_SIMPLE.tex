@@ -1,0 +1,589 @@
+% Capybara Shoot'em Up - User Manual (Simplified Version)
+% Compile with: pdflatex USER_MANUAL_SIMPLE.tex
+% Requires only basic LaTeX packages
+
+\documentclass[11pt,a4paper]{article}
+
+% Minimal packages
+\usepackage[utf8]{inputenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{multicol}
+
+% Colors
+\definecolor{primarycolor}{RGB}{41,128,185}
+\definecolor{warningcolor}{RGB}{231,76,60}
+\definecolor{successcolor}{RGB}{46,204,113}
+\definecolor{infocolor}{RGB}{241,196,15}
+\definecolor{darkgray}{RGB}{52,73,94}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\textcolor{primarycolor}{\textbf{Capybara Shoot'em Up}}}
+\fancyhead[R]{\textcolor{darkgray}{User Manual}}
+\fancyfoot[C]{\thepage}
+
+% Custom box command (simple)
+\newcommand{\infobox}[2]{%
+    \vspace{0.3cm}
+    \noindent\colorbox{#1!10}{%
+        \parbox{\dimexpr\textwidth-2\fboxsep}{%
+            \textcolor{#1}{\textbf{#2}}
+        }
+    }
+    \vspace{0.3cm}
+}
+
+\title{
+    \Huge\textbf{\textcolor{primarycolor}{Capybara Shoot'em Up}}\\
+    \vspace{0.5cm}
+    \Large\textcolor{darkgray}{User Manual \& Strategy Guide}\\
+    \vspace{0.3cm}
+    \large\textit{Music-Reactive Space Combat}
+}
+
+\author{Version 0.9}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\begin{center}
+\Large\textit{Navigate through waves of enemies in this\\
+music-synchronized shoot'em up adventure!}
+
+\vspace{1cm}
+
+\infobox{infocolor}{\textbf{Quick Start}\\
+1. Build: \texttt{make}\\
+2. Run: \texttt{./bin/shootemup}\\
+3. Move: \textbf{WASD} or \textbf{Arrow Keys}\\
+4. Shoot: \textbf{Space}\\
+5. Pause: \textbf{P}}
+\end{center}
+
+\newpage
+\tableofcontents
+\newpage
+
+%===========================================
+\section{Introduction}
+%===========================================
+
+Welcome to \textbf{Capybara Shoot'em Up}, a thrilling music-reactive space combat game where gameplay intensity synchronizes with bass patterns in the soundtrack.
+
+\subsection{Game Features}
+
+\begin{itemize}
+    \item \textbf{Music-Reactive Gameplay}: Enemy waves spawn based on bass patterns
+    \item \textbf{10 Unique Enemy Types}: Each with distinct behaviors
+    \item \textbf{6 Weapon Modes}: Single, Double, Spread, Rapid, Dual, Charge
+    \item \textbf{4 Powerup Types}: Energy, Shield, Hull, Weapon upgrades
+    \item \textbf{Energy Mode System}: Offensive and Defensive modes
+    \item \textbf{Boss Battles}: Epic encounters with complex patterns
+    \item \textbf{Progressive Difficulty}: 9 challenging phases
+\end{itemize}
+
+\subsection{System Requirements}
+
+\textbf{Minimum Requirements:}
+\begin{itemize}
+    \item \textbf{OS}: macOS 10.14+, Linux (Ubuntu 20.04+), Windows 10+
+    \item \textbf{Processor}: 2.0 GHz dual-core
+    \item \textbf{Memory}: 2 GB RAM
+    \item \textbf{Graphics}: OpenGL 3.3 compatible
+    \item \textbf{Storage}: 50 MB available space
+\end{itemize}
+
+%===========================================
+\section{Installation}
+%===========================================
+
+\subsection{macOS}
+\begin{verbatim}
+brew install raylib
+make
+./bin/shootemup
+\end{verbatim}
+
+\subsection{Linux}
+\begin{verbatim}
+sudo apt install libraylib-dev
+make
+./bin/shootemup
+\end{verbatim}
+
+%===========================================
+\section{Controls}
+%===========================================
+
+\subsection{Basic Controls}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Key} & \textbf{Action} \\
+\hline
+\textbf{W} / Up Arrow & Move up \\
+\hline
+\textbf{S} / Down Arrow & Move down \\
+\hline
+\textbf{A} / Left Arrow & Move left \\
+\hline
+\textbf{D} / Right Arrow & Move right \\
+\hline
+\textbf{Space} & Shoot (hold for continuous fire) \\
+\hline
+\textbf{P} & Pause/Unpause \\
+\hline
+\textbf{ESC} & Quit game \\
+\hline
+\end{tabularx}
+\caption{Basic Movement and Combat Controls}
+\end{table}
+
+\subsection{Advanced Controls}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Key} & \textbf{Action} \\
+\hline
+\textbf{1-6} & Cycle through weapon modes \\
+\hline
+\textbf{R} & Toggle Energy Mode (Offensive/Defensive) \\
+\hline
+\textbf{E} (hold) & Use special ability \\
+\hline
+\textbf{Hold Space} & Charge weapon (Charge mode only) \\
+\hline
+\end{tabularx}
+\caption{Advanced Combat Controls}
+\end{table}
+
+\infobox{infocolor}{\textbf{Pro Tip:} Hold Space to fire continuously! Watch your heat indicator to avoid overheating.}
+
+%===========================================
+\section{HUD (Heads-Up Display)}
+%===========================================
+
+\subsection{Top HUD (Phase Information)}
+\begin{itemize}
+    \item \textbf{Phase Name}: Current wave phase
+    \item \textbf{Progress Bar}: Visual progress through phase
+    \item \textbf{Game Time}: Elapsed time (MM:SS format)
+    \item \textbf{Enemy Count}: Number of active enemies
+\end{itemize}
+
+\subsection{Bottom HUD (Ship Status)}
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|c|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Indicator} & \textbf{Color} & \textbf{Description} \\
+\hline
+Hull & \textcolor{red}{Red} & Ship health. No regeneration. \\
+\hline
+Shield & \textcolor{cyan}{Cyan} & Auto-regenerates after 3 seconds. \\
+\hline
+Energy & \textcolor{yellow}{Yellow} & Powers special abilities. \\
+\hline
+Mode & Orange/Cyan & Current energy mode with bonuses. \\
+\hline
+\end{tabularx}
+\caption{Ship Status Indicators}
+\end{table}
+
+\subsection{Weapon Information}
+\begin{itemize}
+    \item \textbf{Weapon Mode}: Current firing mode
+    \item \textbf{Power Level}: 0-3 weapon powerup level
+    \item \textbf{Damage Per Bullet}: Color-coded damage value
+    \item \textbf{Active Multipliers}: Shows bonus multipliers
+\end{itemize}
+
+%===========================================
+\section{Gameplay Mechanics}
+%===========================================
+
+\subsection{Ship Systems}
+
+\textbf{Hull Integrity}
+\begin{itemize}
+    \item Maximum: 100 HP
+    \item No regeneration (use Hull powerups only)
+    \item Permanent damage
+\end{itemize}
+
+\textbf{Energy Shield}
+\begin{itemize}
+    \item Maximum: 100 points
+    \item Regenerates 2 points/second after 3-second delay
+    \item Enhanced regen in Defensive mode (4 points/sec when energy full)
+\end{itemize}
+
+\textbf{Energy System}
+\begin{itemize}
+    \item Maximum: 100 points
+    \item Regenerates 10 points/second
+    \item Powers special abilities
+\end{itemize}
+
+\subsection{Energy Modes}
+
+\textbf{Offensive Mode (Orange)}
+\begin{itemize}
+    \item \textbf{When Energy Full}: +100\% weapon damage (2× multiplier)
+    \item \textbf{Special Ability (Hold E)}: Devastating Attack - continuous spread of bullets
+\end{itemize}
+
+\textbf{Defensive Mode (Cyan)}
+\begin{itemize}
+    \item \textbf{When Energy Full}: +100\% shield regeneration (4 points/sec)
+    \item \textbf{Special Ability (Hold E)}: Enhanced Shield - larger shield, 50\% damage reduction
+\end{itemize}
+
+\infobox{successcolor}{\textbf{Strategy:} Switch modes with \textbf{R} based on situation! Offensive when healthy, Defensive when low on hull.}
+
+\subsection{Weapon Heat Management}
+
+\begin{itemize}
+    \item \textbf{Heat Generation}: 8\% per shot
+    \item \textbf{Cooling Rate}: 30\% per second
+    \item \textbf{Overheat Penalty}: 3-second cooldown (cannot shoot)
+\end{itemize}
+
+\textbf{Heat Indicators:}
+\begin{itemize}
+    \item \textcolor{successcolor}{0-25\%}: Safe (Green)
+    \item \textcolor{infocolor}{25-75\%}: Warning (Yellow/Orange)
+    \item \textcolor{warningcolor}{75-100\%}: Critical (Red)
+    \item \textcolor{darkgray}{100\%}: OVERHEATED (Purple)
+\end{itemize}
+
+\infobox{warningcolor}{\textbf{Warning:} Don't overheat! You'll be defenseless for 3 seconds. Fire in bursts!}
+
+%===========================================
+\section{Weapon Systems}
+%===========================================
+
+\subsection{Weapon Modes}
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabularx}{\textwidth}{|l|c|c|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Mode} & \textbf{Key} & \textbf{Bullets} & \textbf{Best For} \\
+\hline
+Single & 1 & 1 & High damage, precision shots \\
+\hline
+Double & 2 & 2 & Balanced, general purpose \\
+\hline
+Spread & 3 & 3 & Wide coverage, multiple targets \\
+\hline
+Rapid & 4 & 1 & High DPS, 2× fire rate \\
+\hline
+Dual & 5 & 2 & Consistent parallel hits \\
+\hline
+Charge & 6 & Varies & Burst damage, hold to charge \\
+\hline
+\end{tabularx}
+\caption{Weapon Modes}
+\end{table}
+
+\subsection{Damage Calculation}
+
+\begin{center}
+\large
+\textbf{Damage Per Bullet} = Base Damage × Weapon Multiplier × Offensive Bonus
+\end{center}
+
+\textbf{Base Damage by Mode:}
+\begin{itemize}
+    \item Single: 3.0 per bullet
+    \item Double: 1.5 per bullet (3.0 total)
+    \item Spread: 1.0 per bullet (3.0 total)
+    \item Rapid: 1.5 per bullet (2× fire rate)
+    \item Dual: 1.5 per bullet (3.0 total)
+\end{itemize}
+
+\textbf{Weapon Powerup Multipliers:}
+\begin{itemize}
+    \item Level 0: 1.0× (standard)
+    \item Level 1: 1.5× (+50\% damage)
+    \item Level 2: 2.0× (double damage)
+    \item Level 3: 2.5× (2.5× damage)
+\end{itemize}
+
+\textbf{Offensive Mode Bonus:}
+\begin{itemize}
+    \item 2.0× when energy is FULL in Offensive mode
+\end{itemize}
+
+\textbf{Maximum Damage:} Single × 2.5× powerup × 2× offensive = \textbf{15.0 damage per bullet!}
+
+%===========================================
+\section{Powerup System}
+%===========================================
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|c|X|c|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Type} & \textbf{Color} & \textbf{Effect} & \textbf{Rarity} \\
+\hline
+Energy & \textcolor{yellow}{Yellow} & Restores 20\% energy & Common \\
+\hline
+Shield & \textcolor{cyan}{Cyan} & Fully restores shield (100\%) & Uncommon \\
+\hline
+Hull & \textcolor{red}{Red} & Repairs 20\% hull & Very Rare \\
+\hline
+Weapon & \textcolor{orange}{Orange} & Increases weapon level & Rare \\
+\hline
+\end{tabularx}
+\caption{Powerup Types}
+\end{table}
+
+\subsection{Powerup Behavior}
+\begin{itemize}
+    \item Drift left at 25 pixels/second
+    \item \textbf{Magnetic attraction} within 80 pixels
+    \item 15-second lifetime before despawning
+    \item +50 score bonus per powerup
+\end{itemize}
+
+\subsection{Weapon Powerup Revival System}
+
+\infobox{successcolor}{\textbf{Extra Lives!} Each weapon powerup level acts as an extra life!\\
+When hull reaches 0:\\
+• One weapon level consumed\\
+• Hull restored to 33\%\\
+• Shield restored to 50\%\\
+• Golden revival aura for 2 seconds\\
+\\
+With 3 weapon powerups = \textbf{4 total lives!}}
+
+%===========================================
+\section{Enemy Types}
+%===========================================
+
+\begin{table}[h]
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{|l|c|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Enemy} & \textbf{Difficulty} & \textbf{Behavior} \\
+\hline
+Grunt & ★ & Basic straight movement \\
+\hline
+Swarm & ★ & Small, fast, numerous \\
+\hline
+Speeder & ★★ & Fast zig-zag movement \\
+\hline
+Zigzag & ★★ & Unpredictable patterns \\
+\hline
+Bomber & ★★★ & Area attacks \\
+\hline
+Tank & ★★★ & Heavy armor, missile barrages \\
+\hline
+Shield & ★★★ & Rotating shield protection \\
+\hline
+Ghost & ★★★ & Phase in/out ability \\
+\hline
+Elite & ★★★★ & Advanced AI, multiple attacks \\
+\hline
+Boss & ★★★★★ & Complex patterns, massive health \\
+\hline
+\end{tabularx}
+\caption{Enemy Types and Difficulty}
+\end{table}
+
+\infobox{warningcolor}{\textbf{Watch Out!} Tank enemies fire 3 homing missiles in a spread pattern. Multiple Tanks create overwhelming barrages. Prioritize Tanks!}
+
+%===========================================
+\section{Strategy Guide}
+%===========================================
+
+\subsection{Beginner Tips}
+
+\begin{enumerate}
+    \item \textbf{Fire in bursts} to avoid overheating
+    \item \textbf{Let shield regenerate} between waves
+    \item \textbf{Collect all powerups} - they drift away quickly!
+    \item \textbf{Learn enemy patterns} - each type is predictable
+    \item \textbf{Prioritize threats} - kill Tanks and Bombers first
+    \item \textbf{Save weapon powerups} - they're extra lives!
+    \item \textbf{Switch energy modes} based on situation
+    \item \textbf{Use Spread mode} for beginners (wide coverage)
+\end{enumerate}
+
+\subsection{Advanced Strategies}
+
+\textbf{Weapon Mode Selection:}
+\begin{itemize}
+    \item \textbf{Single}: Maximum damage vs bosses and tanks
+    \item \textbf{Spread}: Best for Swarm enemies
+    \item \textbf{Rapid}: Consistent DPS against medium enemies
+    \item \textbf{Charge}: Burst damage for clearing groups
+\end{itemize}
+
+\textbf{Energy Mode Tactics:}
+\begin{itemize}
+    \item \textbf{Offensive}: Keep energy full for 2× damage. Use when healthy.
+    \item \textbf{Defensive}: Use when low on health. Enhanced shield buys time.
+\end{itemize}
+
+\textbf{Powerup Priority:}
+\begin{enumerate}
+    \item \textcolor{red}{Hull} - Only way to restore hull!
+    \item \textcolor{orange}{Weapon} - Extra lives + damage
+    \item \textcolor{cyan}{Shield} - Instant protection
+    \item \textcolor{yellow}{Energy} - Common, get if convenient
+\end{enumerate}
+
+\subsection{Boss Fight Strategy}
+
+\begin{enumerate}
+    \item Stock up on powerups before boss
+    \item Use Single mode for maximum damage
+    \item Stay in Offensive mode (keep energy full)
+    \item Circle strafe to avoid radial attacks
+    \item Focus fire - don't stop shooting!
+    \item Save special ability for emergencies
+\end{enumerate}
+
+\subsection{Survival Tips}
+
+\infobox{successcolor}{\textbf{Stay Alive!}\\
+• Dodge first, shoot second\\
+• Use the full play zone - don't corner yourself\\
+• Learn projectile patterns\\
+• Let shield regenerate when low\\
+• Don't waste weapon powerups - they're extra lives!\\
+• Pause (P) when overwhelmed}
+
+%===========================================
+\section{Scoring}
+%===========================================
+
+\begin{table}[h]
+\centering
+\begin{tabularx}{\textwidth}{|l|c|X|}
+\hline
+\rowcolor{primarycolor!20}
+\textbf{Action} & \textbf{Points} & \textbf{Notes} \\
+\hline
+Grunt destroyed & ~10 & Basic enemy \\
+\hline
+Tank destroyed & ~20 & Heavy enemy \\
+\hline
+Elite destroyed & ~30 & Advanced enemy \\
+\hline
+Boss destroyed & ~100 & Major achievement \\
+\hline
+Powerup collected & +50 & Any type \\
+\hline
+\end{tabularx}
+\caption{Scoring System}
+\end{table}
+
+%===========================================
+\section{Troubleshooting}
+%===========================================
+
+\subsection{Game Won't Build}
+
+\textbf{Error:} \texttt{raylib.h not found}
+
+\textbf{Solution:}
+\begin{verbatim}
+# macOS
+brew reinstall raylib
+
+# Linux
+sudo apt install --reinstall libraylib-dev
+\end{verbatim}
+
+\subsection{Low Frame Rate}
+
+\begin{itemize}
+    \item Close other applications
+    \item Update graphics drivers
+    \item Target: 60 FPS constant
+\end{itemize}
+
+%===========================================
+\section{Quick Reference}
+%===========================================
+
+\begin{multicols}{2}
+\textbf{Movement:}
+\begin{itemize}[nosep]
+    \item WASD / Arrow Keys
+\end{itemize}
+
+\textbf{Combat:}
+\begin{itemize}[nosep]
+    \item Space: Shoot
+    \item 1-6: Weapon modes
+    \item R: Energy mode
+    \item E: Special ability
+\end{itemize}
+
+\textbf{System:}
+\begin{itemize}[nosep]
+    \item P: Pause
+    \item ESC: Quit
+\end{itemize}
+
+\columnbreak
+
+\textbf{Powerups:}
+\begin{itemize}[nosep]
+    \item \textcolor{yellow}{Yellow}: Energy (+20\%)
+    \item \textcolor{cyan}{Cyan}: Shield (Full)
+    \item \textcolor{red}{Red}: Hull (+20\%)
+    \item \textcolor{orange}{Orange}: Weapon (+Level)
+\end{itemize}
+
+\textbf{Strategy:}
+\begin{itemize}[nosep]
+    \item Dodge > Shoot
+    \item Collect everything
+    \item Watch heat
+    \item Use full screen
+    \item Switch modes
+\end{itemize}
+\end{multicols}
+
+%===========================================
+
+\vfill
+
+\begin{center}
+\Large
+\textbf{Good Luck, Pilot!}\\
+\vspace{0.5cm}
+\normalsize
+May your aim be true and your powerups plentiful!
+\end{center}
+
+\end{document}

@@ -118,7 +118,7 @@ The game includes 10 different enemy types:
 - **Plasma**: Medium speed with homing
 - **Missile**: Slow but high damage with strong homing
 - **Energy Orb**: Area damage with piercing
-- See [Weapons and Projectiles](WEAPONS_AND_PROJECTILES.md) for details
+- See [Weapons and Damage](WEAPONS_AND_DAMAGE.md) for details
 
 ## Planned Features
 
