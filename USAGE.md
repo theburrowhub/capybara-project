@@ -5,7 +5,8 @@
 ### Build and Run
 
 ```bash
-make              # Build everything
+make              # Build all binaries (default)
+make game         # Build only the main game
 make run          # Build and run the game
 make showcase     # Build and run enemy showcase
 ```

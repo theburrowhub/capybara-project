@@ -127,8 +127,11 @@ ifeq ($(UNAME_S),Darwin)
     LIBS += -framework OpenGL -framework Cocoa -framework IOKit -framework CoreVideo
 endif
 
-# Default target
-all: directories $(TARGET) $(SHOWCASE_TARGET)
+# Default target - build all binaries
+all: directories $(TARGET) $(SHOWCASE_TARGET) $(SPRITE_SHOWCASE_TARGET) $(SPRITE_GEN_TARGET) $(SPACESHIP_GEN_TARGET) $(PROJECTILE_GEN_TARGET) $(PROJECTILE_SHOWCASE_TARGET) $(PLAYER_SHOWCASE_TARGET) $(PLAYER_GEN_TARGET) $(AUDIO_GUI_TARGET) $(AUDIO_CLI_TARGET)
+
+# Build only the main game
+game: directories $(TARGET)
 
 # Create build and bin directories
 directories:
@@ -200,7 +203,7 @@ clean:
 rebuild: clean all
 
 # Run the game
-run: $(TARGET)
+run: game
 	./$(TARGET)
 
 # Run the enemy showcase
@@ -275,23 +278,41 @@ release: all
 # Show help
 help:
 	@echo "Available targets:"
-	@echo "  all              - Build both game and showcase (default)"
-	@echo "  enemy_showcase   - Build only the enemy showcase"
-	@echo "  generate_sprites - Generate enemy sprite images"
-	@echo "  showcase_sprites - Run sprite-based enemy showcase"
-	@echo "  sprites          - Generate sprites and run sprite showcase"
-	@echo "  player           - Generate player sprite and run player showcase"
-	@echo "  player_showcase  - Run the player ship showcase"
-	@echo "  audio_gui        - Build the audio analysis GUI"
-	@echo "  audio_cli        - Build the audio analysis CLI"
-	@echo "  run_audio_gui    - Build and run the audio analysis GUI"
-	@echo "  run_audio_cli    - Build and run the audio analysis CLI"
-	@echo "  clean            - Remove build artifacts"
-	@echo "  rebuild          - Clean and rebuild"
+	@echo ""
+	@echo "MAIN TARGETS:"
+	@echo "  all              - Build all binaries (default)"
+	@echo "  game             - Build only the main game"
 	@echo "  run              - Build and run the game"
-	@echo "  showcase         - Build and run the enemy showcase"
-	@echo "  debug            - Build with debug symbols"
-	@echo "  release          - Build with optimizations"
+	@echo "  clean            - Remove build artifacts"
+	@echo "  rebuild          - Clean and rebuild all"
+	@echo "  debug            - Build all with debug symbols"
+	@echo "  release          - Build all with optimizations"
+	@echo ""
+	@echo "SHOWCASE TARGETS:"
+	@echo "  showcase         - Build and run enemy showcase"
+	@echo "  enemy_showcase   - Build only the enemy showcase"
+	@echo "  player_showcase  - Build player ship showcase"
+	@echo "  showcase_sprites - Run sprite-based enemy showcase"
+	@echo ""
+	@echo "AUDIO TARGETS:"
+	@echo "  audio_gui        - Build audio analysis GUI"
+	@echo "  audio_cli        - Build audio analysis CLI"
+	@echo "  run_audio_gui    - Build and run audio analysis GUI"
+	@echo "  run_audio_cli    - Build and run audio analysis CLI"
+	@echo ""
+	@echo "GENERATOR TARGETS:"
+	@echo "  generate_sprites     - Generate enemy sprites"
+	@echo "  generate_spaceships  - Generate spaceship sprites"
+	@echo "  generate_projectiles - Generate projectile sprites"
+	@echo "  generate_player      - Generate player sprite"
+	@echo ""
+	@echo "COMBO TARGETS:"
+	@echo "  sprites          - Generate sprites and run sprite showcase"
+	@echo "  spaceships       - Generate spaceships and run showcase"
+	@echo "  projectiles      - Generate projectiles and run showcase"
+	@echo "  player           - Generate player sprite and run showcase"
+	@echo ""
+	@echo "OTHER:"
 	@echo "  help             - Show this help message"
 
-.PHONY: all clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli
+.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player
