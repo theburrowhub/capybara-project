@@ -22,7 +22,8 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/wave_system.c \
               $(SRC_DIR)/systems/static_waves.c \
               $(SRC_DIR)/systems/projectile_types.c \
-              $(SRC_DIR)/systems/explosion.c
+              $(SRC_DIR)/systems/explosion.c \
+              $(SRC_DIR)/systems/menu.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c
 

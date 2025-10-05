@@ -56,6 +56,7 @@ struct Game {
     // Audio
     Music backgroundMusic;
     bool musicLoaded;
+    float musicVolume;
 };
 
 #endif // TYPES_H
