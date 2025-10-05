@@ -81,6 +81,10 @@ void InitGame(Game* game) {
     game->backgroundX = 0;
     game->gameOver = false;
     game->gamePaused = false;
+    game->bossEnemyIndex = -1;        // No boss initially
+    game->bossEscapeTriggered = false;
+    game->bossEscapeTimer = 0.0f;
+    game->bossEscapePhase = 0;
     
     // Apply DEBUG_START_PHASE to set starting time
     float startTime = 0.0f;
@@ -228,6 +232,17 @@ void UpdateEnemies(Game* game) {
             }
         }
     }
+    
+    // Check if boss has escaped or been destroyed
+    if (game->bossEnemyIndex >= 0 && game->bossEnemyIndex < MAX_ENEMIES) {
+        if (!game->enemies[game->bossEnemyIndex].active) {
+            // Boss is no longer active - check if it escaped
+            if (game->bossEscapeTriggered) {
+                LogEvent(game, "[%.2f] Boss successfully escaped!", game->gameTime);
+            }
+            game->bossEnemyIndex = -1;  // Clear boss tracking
+        }
+    }
 }
 
 void DrawEnemies(const Game* game, bool showHitbox) {
@@ -335,14 +350,123 @@ void UpdateGame(Game* game) {
             // Update score from player ship
             game->score = game->playerShip->score;
             
+            // Boss escape sequence - 30 seconds before level end (523.82s)
+            // DRAMATIC PHASED SEQUENCE
+            if (!game->bossEscapeTriggered && game->gameTime >= 523.82f) {
+                // Check if boss is still active
+                if (game->bossEnemyIndex >= 0 && 
+                    game->bossEnemyIndex < MAX_ENEMIES && 
+                    game->enemies[game->bossEnemyIndex].active &&
+                    game->enemies[game->bossEnemyIndex].type == ENEMY_BOSS) {
+                    
+                    game->bossEscapeTriggered = true;
+                    game->bossEscapePhase = 1;  // Start destruction phase
+                    game->bossEscapeTimer = 0.0f;
+                    game->enemies[game->bossEnemyIndex].isEscaping = true;
+                    
+                    LogEvent(game, "[%.2f] BOSS DOOMSDAY - Escape sequence initiated!", 
+                            game->gameTime, game->enemies[game->bossEnemyIndex].id);
+                }
+            }
+            
+            // Handle dramatic boss escape phases
+            if (game->bossEscapeTriggered && game->bossEscapePhase > 0) {
+                game->bossEscapeTimer += deltaTime;
+                
+                // PHASE 1: DESTRUCTION (0-2.5 seconds) - Staggered explosions
+                if (game->bossEscapePhase == 1) {
+                    // Destroy bullets immediately at start
+                    if (game->bossEscapeTimer < 0.1f) {
+                        for (int i = 0; i < MAX_BULLETS; i++) {
+                            if (game->bullets[i].active) {
+                                CreateExplosion(game->explosionSystem, game->bullets[i].position, EXPLOSION_SMALL);
+                                game->bullets[i].active = false;
+                            }
+                        }
+                    }
+                    
+                    // Destroy projectiles at 0.3s
+                    if (game->bossEscapeTimer >= 0.3f && game->bossEscapeTimer < 0.4f) {
+                        Projectile* projectiles = (Projectile*)game->projectiles;
+                        for (int i = 0; i < MAX_PROJECTILES; i++) {
+                            if (projectiles[i].active) {
+                                CreateExplosion(game->explosionSystem, projectiles[i].position, EXPLOSION_SMALL);
+                                projectiles[i].active = false;
+                            }
+                        }
+                    }
+                    
+                    // Destroy enemies in waves (0.5s - 2.0s)
+                    if (game->bossEscapeTimer >= 0.5f && game->bossEscapeTimer < 2.0f) {
+                        // Destroy a few enemies each frame for dramatic effect
+                        int destroyCount = 0;
+                        for (int i = 0; i < MAX_ENEMIES && destroyCount < 2; i++) {
+                            if (game->enemies[i].active && i != game->bossEnemyIndex) {
+                                Color enemyColor = GetEnemyTypeColor(game->enemies[i].type);
+                                CreateEnemyExplosion(game->explosionSystem, game->enemies[i].position, 
+                                                   enemyColor, game->enemies[i].bounds.width);
+                                game->enemies[i].active = false;
+                                destroyCount++;
+                            }
+                        }
+                    }
+                    
+                    // OBLITERATE THE PLAYER at 1.5s
+                    if (game->bossEscapeTimer >= 1.5f && game->bossEscapeTimer < 1.6f) {
+                        CreatePlayerExplosion(game->explosionSystem, game->playerShip->position);
+                        game->playerShip->health = 0;
+                        game->playerShip->maxHealth = 0;
+                        game->playerShip->isVisible = false;  // Remove player ship from screen
+                        LogEvent(game, "[%.2f] PLAYER OBLITERATED by boss doomsday attack!", game->gameTime);
+                    }
+                    
+                    // Move to phase 2 after 2.5 seconds
+                    if (game->bossEscapeTimer >= 2.5f) {
+                        game->bossEscapePhase = 2;
+                        game->bossEscapeTimer = 0.0f;
+                        LogEvent(game, "[%.2f] Boss escaping through the chaos...", game->gameTime);
+                    }
+                }
+                
+                // PHASE 2: BOSS ESCAPE (2.5s - until boss off screen)
+                else if (game->bossEscapePhase == 2) {
+                    // Check if boss has escaped off screen
+                    if (game->bossEnemyIndex >= 0 && game->bossEnemyIndex < MAX_ENEMIES) {
+                        EnemyEx* boss = &game->enemies[game->bossEnemyIndex];
+                        
+                        if (!boss->active || boss->position.x > SCREEN_WIDTH + 150) {
+                            // Boss has escaped!
+                            game->bossEscapePhase = 3;
+                            game->bossEscapeTimer = 0.0f;
+                            LogEvent(game, "[%.2f] Boss successfully escaped! Preparing final message...", game->gameTime);
+                        }
+                    } else {
+                        // Boss was destroyed somehow during escape, move to phase 3
+                        game->bossEscapePhase = 3;
+                        game->bossEscapeTimer = 0.0f;
+                    }
+                }
+                
+                // PHASE 3: SHOW GAME OVER (after 1 second delay)
+                else if (game->bossEscapePhase == 3) {
+                    if (game->bossEscapeTimer >= 1.0f) {
+                        // NOW show game over
+                        game->gameOver = true;
+                        strcpy(game->deathCause, "DEFEAT! The Boss escaped and obliterated everything!");
+                        LogEvent(game, "[%.2f] GAME OVER - Boss escape complete", game->gameTime);
+                        game->bossEscapePhase = 4;  // Mark as complete
+                    }
+                }
+            }
+            
             // Check if level time limit reached (9 minutes 13 seconds)
-            if (game->gameTime >= 553.0f) {
+            if (game->gameTime >= 553.0f && !game->bossEscapeTriggered) {
                 game->gameOver = true;
                 strcpy(game->deathCause, "Victory! You survived the entire level!");
             }
             
-            // Game over check
-            if (game->playerShip->health <= 0) {
+            // Game over check (but not during boss escape sequence - that handles its own game over)
+            if (game->playerShip->health <= 0 && !game->bossEscapeTriggered) {
                 // Create dramatic player explosion
                 CreatePlayerExplosion(game->explosionSystem, game->playerShip->position);
                 game->gameOver = true;

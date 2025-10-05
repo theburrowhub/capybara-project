@@ -71,6 +71,9 @@ typedef struct EnemyEx {
     
     // Hit tracking
     int hitsTaken;        // Number of hits taken before dying
+    
+    // Boss-specific escape behavior
+    bool isEscaping;      // Boss is escaping off screen
 } EnemyEx;
 
 // Function declarations
