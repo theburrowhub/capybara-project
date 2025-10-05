@@ -5,6 +5,7 @@
 #include "weapon.h"
 #include "collision.h"
 #include "wave_system.h"
+#include "combat_system.h"
 #include "constants.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -143,67 +144,17 @@ void CleanupArenaState(ArenaState* state) {
     }
 }
 
-// Fire enemy projectile (reuses main game logic)
+// Fire enemy projectile (uses generic combat system)
 void FireEnemyProjectileArena(ArenaState* state, EnemyEx* enemy) {
-    const EnemyWeaponConfig* config = GetEnemyWeaponConfig(enemy->type);
-    Vector2 playerPos = state->playerShip->position;
-    Projectile* projectiles = (Projectile*)state->projectiles;
+    CombatContext ctx = {
+        .playerPosition = state->playerShip->position,
+        .projectiles = (Projectile*)state->projectiles,
+        .maxProjectiles = MAX_PROJECTILES,
+        .screenWidth = SHOWCASE_WIDTH,
+        .screenHeight = SHOWCASE_HEIGHT
+    };
     
-    // Fire burst pattern (same as main game)
-    for (int burst = 0; burst < config->burstCount; burst++) {
-        float angle = 0;
-        
-        if (config->spreadAngle > 0 && config->burstCount > 1) {
-            if (config->spreadAngle >= 360) {
-                // Full circle spread
-                angle = (360.0f / config->burstCount) * burst;
-            } else {
-                // Arc spread
-                float startAngle = -config->spreadAngle / 2.0f;
-                float angleStep = config->spreadAngle / (config->burstCount - 1);
-                angle = startAngle + angleStep * burst;
-            }
-        }
-        
-        // Calculate target direction
-        Vector2 direction = {
-            playerPos.x - enemy->position.x,
-            playerPos.y - enemy->position.y
-        };
-        float dist = sqrtf(direction.x * direction.x + direction.y * direction.y);
-        if (dist > 0) {
-            direction.x /= dist;
-            direction.y /= dist;
-        }
-        
-        // Apply angle rotation
-        float radAngle = angle * DEG2RAD;
-        float cosA = cosf(radAngle);
-        float sinA = sinf(radAngle);
-        Vector2 rotatedDir = {
-            direction.x * cosA - direction.y * sinA,
-            direction.x * sinA + direction.y * cosA
-        };
-        
-        Vector2 target = {
-            enemy->position.x + rotatedDir.x * 1000,
-            enemy->position.y + rotatedDir.y * 1000
-        };
-        
-        // Find free projectile slot
-        for (int i = 0; i < MAX_PROJECTILES; i++) {
-            if (!projectiles[i].active) {
-                // Alternate between primary and secondary projectiles
-                ProjectileType projType = (burst % 2 == 0) ? 
-                    config->primaryProjectile : config->secondaryProjectile;
-                
-                InitializeProjectile(&projectiles[i], projType, 
-                                   enemy->position, target, false);
-                projectiles[i].enemyId = enemy->id;
-                break;
-            }
-        }
-    }
+    Combat_FireEnemyProjectile(&ctx, enemy);
 }
 
 // Spawn an enemy in the arena with standard attack pattern
@@ -381,9 +332,17 @@ void UpdateArenaState(ArenaState* state) {
         }
     }
     
-    // Update enemies (with firing logic same as main game)
+    // Update enemies (using generic combat system)
     state->activeEnemyCount = 0;
-    Projectile* projectiles = (Projectile*)state->projectiles;
+    
+    // Create combat context
+    CombatContext ctx = {
+        .playerPosition = state->playerShip->position,
+        .projectiles = (Projectile*)state->projectiles,
+        .maxProjectiles = MAX_PROJECTILES,
+        .screenWidth = SHOWCASE_WIDTH,
+        .screenHeight = SHOWCASE_HEIGHT
+    };
     
     for (int i = 0; i < MAX_ENEMIES; i++) {
         if (state->enemies[i].active) {
@@ -393,26 +352,10 @@ void UpdateArenaState(ArenaState* state) {
             UpdateEnemyMovement(enemy, deltaTime);
             state->activeEnemyCount++;
             
-            // Update firing timer (same as main game)
-            enemy->fireTimer += deltaTime;
-            
-            // Check if enemy should fire
-            const EnemyWeaponConfig* config = GetEnemyWeaponConfig(enemy->type);
-            float fireInterval = 1.0f / config->fireRate;
-            
-            if (enemy->fireTimer >= fireInterval && enemy->can_fire) {
-                // Only fire if enemy is on screen and in playable area
-                if (enemy->position.x > 0 && enemy->position.x < SHOWCASE_WIDTH &&
-                    enemy->position.y > ARENA_PLAY_TOP && enemy->position.y < ARENA_PLAY_BOTTOM) {
-                    
-                    // Ghost enemies only fire when visible
-                    if (enemy->type != ENEMY_GHOST || enemy->isVisible) {
-                        // Fire projectile using same logic as main game
-                        FireEnemyProjectileArena(state, enemy);
-                        enemy->fireTimer = 0;
-                    }
-                }
-            }
+            // Update firing using generic combat system
+            Combat_UpdateEnemyFiring(enemy, &ctx, deltaTime,
+                                     0, SHOWCASE_WIDTH,
+                                     ARENA_PLAY_TOP, ARENA_PLAY_BOTTOM);
             
             // Check if enemy is off screen (left side or after retreat)
             if (enemy->position.x < -100 || !enemy->active) {
@@ -423,6 +366,7 @@ void UpdateArenaState(ArenaState* state) {
     }
     
     // Update projectiles (same as main game)
+    Projectile* projectiles = (Projectile*)state->projectiles;
     for (int i = 0; i < MAX_PROJECTILES; i++) {
         if (projectiles[i].active) {
             UpdateProjectile(&projectiles[i], deltaTime);
