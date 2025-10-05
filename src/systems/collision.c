@@ -108,6 +108,12 @@ void Collision_CheckBulletEnemyGeneric(CollisionContext* ctx) {
                                 ctx->onEnemyDestroyed(ctx->logContext, &ctx->enemies[e]);
                             }
                             
+                            // Clear boss tracking if this was the boss
+                            if (game->enemies[e].type == ENEMY_BOSS && game->bossEnemyIndex == e) {
+                                game->bossEnemyIndex = -1;
+                                LogEvent(game, "[%.2f] BOSS DEFEATED!", game->gameTime);
+                            }
+                          
                             // Log destruction if logging is enabled
                             if (ctx->logContext) {
                                 Game* game = (Game*)ctx->logContext;
@@ -267,6 +273,12 @@ void CheckProjectileEnemyCollision(Game* game) {
                             
                             game->enemies[e].active = false;
                             game->score += game->enemies[e].power * 2;
+                            
+                            // Clear boss tracking if this was the boss
+                            if (game->enemies[e].type == ENEMY_BOSS && game->bossEnemyIndex == e) {
+                                game->bossEnemyIndex = -1;
+                                LogEvent(game, "[%.2f] BOSS DEFEATED!", game->gameTime);
+                            }
                             
                             LogEvent(game, "[%.2f] Enemy DESTROYED by %s - Type:%s ID:%d TotalHits:%d Score:+%d",
                                     game->gameTime, def->name, GetEnemyTypeName(game->enemies[e].type),

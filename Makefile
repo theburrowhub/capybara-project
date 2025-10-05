@@ -25,8 +25,13 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/explosion.c \
               $(SRC_DIR)/systems/combat_system.c \
               $(SRC_DIR)/systems/projectile_manager.c
+              $(SRC_DIR)/systems/menu.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c
+
+# Shared audio analysis utilities
+AUDIO_ANALYSIS_SRCS = $(SRC_DIR)/utils/audio_analysis.c
+AUDIO_ANALYSIS_OBJS = $(AUDIO_ANALYSIS_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # All source files for main game
 SRCS = $(CORE_SRCS) $(ENTITY_SRCS) $(SYSTEM_SRCS) $(UTIL_SRCS)
@@ -82,11 +87,11 @@ PLAYER_SHOWCASE_SRCS = $(SRC_DIR)/demo/player_ship_showcase.c \
 # Player sprite generator source files
 PLAYER_GEN_SRCS = $(SRC_DIR)/tools/generate_player_sprite.c
 
-# Audio spectrogram demo source files
-AUDIO_DEMO_SRCS = $(SRC_DIR)/demo/audio_spectrogram.c
+# Audio analysis GUI source files
+AUDIO_GUI_SRCS = $(SRC_DIR)/demo/audio_analysis_gui.c
 
-# Audio bass analyzer (console) source files  
-AUDIO_ANALYZER_SRCS = $(SRC_DIR)/demo/audio_bass_analyzer.c
+# Audio analysis CLI source files  
+AUDIO_CLI_SRCS = $(SRC_DIR)/demo/audio_analysis_cli.c
 
 # Object files for showcases
 SHOWCASE_OBJS = $(SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
@@ -97,8 +102,8 @@ PROJECTILE_GEN_OBJS = $(PROJECTILE_GEN_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PROJECTILE_SHOWCASE_OBJS = $(PROJECTILE_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PLAYER_SHOWCASE_OBJS = $(PLAYER_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PLAYER_GEN_OBJS = $(PLAYER_GEN_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
-AUDIO_DEMO_OBJS = $(AUDIO_DEMO_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
-AUDIO_ANALYZER_OBJS = $(AUDIO_ANALYZER_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+AUDIO_GUI_OBJS = $(AUDIO_GUI_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+AUDIO_CLI_OBJS = $(AUDIO_CLI_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # Executable names
 TARGET = $(BIN_DIR)/shootemup
@@ -110,8 +115,8 @@ PROJECTILE_GEN_TARGET = $(BIN_DIR)/generate_projectile_sprites
 PROJECTILE_SHOWCASE_TARGET = $(BIN_DIR)/projectile_showcase
 PLAYER_SHOWCASE_TARGET = $(BIN_DIR)/player_showcase
 PLAYER_GEN_TARGET = $(BIN_DIR)/generate_player_sprite
-AUDIO_DEMO_TARGET = $(BIN_DIR)/audio_spectrogram
-AUDIO_ANALYZER_TARGET = $(BIN_DIR)/audio_bass_analyzer
+AUDIO_GUI_TARGET = $(BIN_DIR)/audio_analysis_gui
+AUDIO_CLI_TARGET = $(BIN_DIR)/audio_analysis_cli
 
 # Platform-specific settings
 UNAME_S := $(shell uname -s)
@@ -172,19 +177,19 @@ $(PLAYER_SHOWCASE_TARGET): $(PLAYER_SHOWCASE_OBJS)
 $(PLAYER_GEN_TARGET): $(PLAYER_GEN_OBJS)
 	$(CC) $(PLAYER_GEN_OBJS) -o $@ $(LIBS)
 
-# Link the audio demo executable
-$(AUDIO_DEMO_TARGET): $(AUDIO_DEMO_OBJS)
-	$(CC) $(AUDIO_DEMO_OBJS) -o $@ $(LIBS) -lm
+# Link the audio analysis GUI executable
+$(AUDIO_GUI_TARGET): $(AUDIO_GUI_OBJS) $(AUDIO_ANALYSIS_OBJS)
+	$(CC) $(AUDIO_GUI_OBJS) $(AUDIO_ANALYSIS_OBJS) -o $@ $(LIBS) -lm
 
-# Link the audio analyzer executable
-$(AUDIO_ANALYZER_TARGET): $(AUDIO_ANALYZER_OBJS)
-	$(CC) $(AUDIO_ANALYZER_OBJS) -o $@ $(LIBS) -lm
+# Link the audio analysis CLI executable
+$(AUDIO_CLI_TARGET): $(AUDIO_CLI_OBJS) $(AUDIO_ANALYSIS_OBJS)
+	$(CC) $(AUDIO_CLI_OBJS) $(AUDIO_ANALYSIS_OBJS) -o $@ $(LIBS) -lm
 
 # Compile source files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) -c $< -o $@
 
-# Clean build artifacts
+# Clean build artifacts (preserves config files)
 clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(BIN_DIR)
@@ -245,19 +250,19 @@ player_showcase: directories $(PLAYER_SHOWCASE_TARGET)
 # Build and run player demo
 player: generate_player player_showcase
 
-# Build audio demo
-audio_demo: directories $(AUDIO_DEMO_TARGET)
+# Build audio analysis GUI
+audio_gui: directories $(AUDIO_GUI_TARGET)
 
-# Run audio demo
-run_audio: audio_demo
-	./$(AUDIO_DEMO_TARGET)
+# Run audio analysis GUI
+run_audio_gui: audio_gui
+	./$(AUDIO_GUI_TARGET)
 
-# Build audio analyzer (console version)
-audio_analyzer: directories $(AUDIO_ANALYZER_TARGET)
+# Build audio analysis CLI
+audio_cli: directories $(AUDIO_CLI_TARGET)
 
-# Run audio analyzer
-run_analyzer: audio_analyzer
-	./$(AUDIO_ANALYZER_TARGET)
+# Run audio analysis CLI
+run_audio_cli: audio_cli
+	./$(AUDIO_CLI_TARGET)
 
 # Debug build
 debug: CFLAGS += -g -DDEBUG
@@ -277,8 +282,10 @@ help:
 	@echo "  sprites          - Generate sprites and run sprite showcase"
 	@echo "  player           - Generate player sprite and run player showcase"
 	@echo "  player_showcase  - Run the player ship showcase"
-	@echo "  audio_demo       - Build the audio spectrogram demo"
-	@echo "  run_audio        - Build and run the audio spectrogram demo"
+	@echo "  audio_gui        - Build the audio analysis GUI"
+	@echo "  audio_cli        - Build the audio analysis CLI"
+	@echo "  run_audio_gui    - Build and run the audio analysis GUI"
+	@echo "  run_audio_cli    - Build and run the audio analysis CLI"
 	@echo "  clean            - Remove build artifacts"
 	@echo "  rebuild          - Clean and rebuild"
 	@echo "  run              - Build and run the game"
@@ -287,4 +294,4 @@ help:
 	@echo "  release          - Build with optimizations"
 	@echo "  help             - Show this help message"
 
-.PHONY: all clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories
+.PHONY: all clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli
