@@ -14,7 +14,7 @@ shootemup
 *.txt
 
 # Configuration files
-audio_analysis.conf
+.audio_analysis.conf
 *.conf
 
 # IDE and editor files

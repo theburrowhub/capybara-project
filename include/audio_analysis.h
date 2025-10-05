@@ -19,7 +19,7 @@
 #define PEAK_DEBOUNCE_TIME 0.5f       // Minimum time between peak detections (seconds)
 
 // Default configuration file path (in repo root)
-#define CONFIG_FILE_DEFAULT "audio_analysis.conf"
+#define CONFIG_FILE_DEFAULT ".audio_analysis.conf"
 
 // Configuration structure
 typedef struct {

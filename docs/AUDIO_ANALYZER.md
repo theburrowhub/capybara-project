@@ -266,7 +266,7 @@ make run_audio_cli
 
 Both programs use persistent configuration files:
 
-- **Default location**: `audio_analysis.conf` (in repository root)
+- **Default location**: `.audio_analysis.conf` (hidden file in repository root)
 - **Custom location**: Can be specified via `--config` option
 - **Preserved**: Not deleted by `make clean`
 - **Git-ignored**: Config files won't be committed to repository
@@ -306,7 +306,7 @@ peak_threshold=0.200
 
 Options:
   -f, --file <filename>    Specify MP3 file (relative to assets/audio/)
-  -c, --config <path>      Specify configuration file path (default: audio_analysis.conf)
+  -c, --config <path>      Specify configuration file path (default: .audio_analysis.conf)
   -t, --time <seconds>     Limit analysis to first N seconds (default: full song)
   -v, --verbose            Show all energy readings every 0.5s (for debugging)
   --low <value>            Set LOW threshold (default: 0.15)
@@ -321,7 +321,7 @@ Options:
 **CLI Examples:**
 
 ```bash
-# Use default config (audio_analysis.conf in repo root)
+# Use default config (.audio_analysis.conf in repo root)
 ./bin/audio_analysis_cli -f level1.mp3
 
 # Use custom config file
@@ -349,7 +349,7 @@ Options:
 ./bin/audio_analysis_gui [OPTIONS]
 
 Options:
-  -c, --config <path>   Specify configuration file path (default: audio_analysis.conf)
+  -c, --config <path>   Specify configuration file path (default: .audio_analysis.conf)
   -h, --help            Show this help message
 ```
 
@@ -369,7 +369,7 @@ Options:
 ### Configuration Behavior
 
 **Default Behavior (No --config specified):**
-- Looks for `audio_analysis.conf` in the current directory (repo root)
+- Looks for `.audio_analysis.conf` in the current directory (repo root)
 - If not found, uses built-in defaults
 - No error if config file doesn't exist
 
@@ -398,13 +398,13 @@ You can maintain different configurations for different music genres:
 
 ```bash
 # View current default config
-cat audio_analysis.conf
+cat .audio_analysis.conf
 
 # View specific config
 cat my_config.conf
 
 # Manual editing (any text editor)
-nano audio_analysis.conf
+nano .audio_analysis.conf
 
 # Create default config with your settings
 ./bin/audio_analysis_cli -f song.mp3 --low 0.10 --medium 0.25 --save-config
@@ -744,7 +744,7 @@ make clean          # Remove binaries and build artifacts (preserves config file
 **Generated Files:**
 - `bin/audio_analysis_gui` - GUI binary
 - `bin/audio_analysis_cli` - CLI binary
-- `audio_analysis.conf` - Default configuration file (in repo root)
+- `.audio_analysis.conf` - Default configuration file (hidden file in repo root)
 - `assets/audio/*.log` - Analysis logs
 - `assets/audio/*_backup_*.log` - Automatic log backups
 
