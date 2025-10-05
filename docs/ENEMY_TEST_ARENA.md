@@ -130,6 +130,44 @@ Ensure complex movement patterns (tank assault, elite retreat, boss hover) work 
 - Test particle effects and colors
 - Observe shockwave rings (medium/large enemies)
 - Experience screen shake effects
+- **Test boss multi-explosion** (9 simultaneous explosions, 3-second duration)
+
+## Quick Testing Guide
+
+### Essential Tests (5 minutes)
+
+1. **Basic Functionality**
+   ```bash
+   ./bin/enemy_showcase
+   ```
+   - Click **Grunt** → Shoot → Verify small explosion appears
+
+2. **Enemy Firing (Critical)**
+   - Click **Shield** → Verify it fires **6 projectiles in 360° circle**
+   - Click **Tank** → Verify it fires **3-missile spread** when paused
+   - Click **Ghost** → Verify it **only fires when visible** (not when phased)
+
+3. **Boss Explosion (Spectacular)**
+   - Click **Boss** → Shoot ~150 times → Watch for **9 simultaneous explosions**
+   - Should create massive chain reaction lasting 3 seconds
+   - Very strong screen shake
+
+### Full Test (15 minutes)
+
+Test all 10 enemy types:
+- Verify each enemy fires projectiles
+- Verify explosion size matches enemy size
+- Check that behaviors match main game
+
+### What to Report
+
+If something doesn't work:
+```
+ENEMY: [which enemy]
+ISSUE: [what's wrong]
+EXPECTED: [what should happen]
+ACTUAL: [what happened]
+```
 
 ## Implementation Details
 

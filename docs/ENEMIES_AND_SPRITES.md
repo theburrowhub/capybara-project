@@ -95,10 +95,12 @@ The game features 10 distinct enemy types, each with unique characteristics:
 
 ### 10. Boss (✦) - Massive Battleship
 - **Role**: Major threat
-- **Behavior**: Complex attack patterns (future implementation)
+- **Health**: 150 hits + shield
+- **Behavior**: Hovers in last third of screen with random movement, heavy weapon barrage
 - **Strategy**: Requires sustained fire and pattern recognition
 - **Visual Design**: Large multi-hull dreadnought
 - **Sprite Features**: Complex hull design, multiple weapon turrets, command bridge
+- **Death Effect**: Spectacular multi-explosion sequence (9 simultaneous explosions, 3-second duration)
 
 ## Enemy Properties Explained
 
@@ -108,7 +110,7 @@ The game features 10 distinct enemy types, each with unique characteristics:
 
 ### Health
 - Number of hits required to destroy
-- Range: 1 (basic enemies) to 10 (Boss)
+- Range: 1 (basic enemies) to 150 (Boss)
 
 ### Speed Multiplier
 - Movement speed relative to base speed
@@ -121,6 +123,31 @@ The game features 10 distinct enemy types, each with unique characteristics:
 ### Damage Resistance
 - Percentage of damage reduced
 - Range: 0% (no resistance) to 70% (Shield)
+
+## Explosion Effects
+
+When enemies are destroyed, they create spectacular explosions that scale with their size:
+
+### Explosion Tiers
+
+| Enemy Size | Enemies | Explosion Type | Radius | Particles | Shockwave | Screen Shake |
+|------------|---------|----------------|--------|-----------|-----------|--------------|
+| **Small** (20-35px) | Swarm, Speeder, Grunt | Small | 30px | 10 | ❌ | ❌ |
+| **Medium** (36-50px) | Zigzag, Ghost, Shield | Medium | 50px | 20 | ✅ | Light |
+| **Medium+** (51-70px) | Elite, Bomber | Medium+ | 60px | 25 | ✅ | Medium |
+| **Large** (71-100px) | Tank | Large | 80px | 40 | ✅ | Strong |
+| **Boss** (100+px) | Boss | **Multi-Explosion** | 180px | 50 | ✅ | Very Strong |
+
+### Special Boss Explosion
+
+When the boss is destroyed, a spectacular **multi-stage explosion** occurs:
+- **Main explosion**: 180px radius, 50 particles, lasts 3 seconds
+- **8 secondary explosions**: Arranged in circle pattern (45° apart)
+- **Chain reaction effect**: Multiple shockwave rings
+- **Intense screen shake**: 25.0 intensity for 1.2 seconds
+- **Total explosions**: 9 simultaneous (1 main + 8 secondary)
+
+This creates the most spectacular death effect in the game!
 
 ## Sprite System
 
