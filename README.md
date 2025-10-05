@@ -32,10 +32,10 @@ cd capybara-project
 make
 
 # Run the game
-./bin/shootemup
+make run
 
-# Run with debug info (optional)
-./test_debug.sh
+# For advanced debugging (invulnerability, phase selection, etc.)
+./run_debug_game.sh --help
 ```
 
 ## Key Features
@@ -81,10 +81,10 @@ sudo dnf install raylib-devel
 
 ## Demo & Testing Tools
 
-### Enemy Test Arena
+### Enemy Showcase
 Interactive showcase for testing enemy behavior:
 ```bash
-./run_enemy_test_arena.sh
+make showcase
 ```
 - Click any enemy to test it in a combat arena
 - Invincible player ship for safe testing
@@ -92,10 +92,10 @@ Interactive showcase for testing enemy behavior:
 - Continuous spawning for behavior observation
 - See [Enemy Test Arena Documentation](docs/ENEMY_TEST_ARENA.md)
 
-### Other Showcases
+### Audio Analysis Tools
 ```bash
-./run_showcase.sh        # Enemy sprite showcase
-./run_player_showcase.sh # Player ship showcase
+make run_audio_gui   # Audio analysis GUI
+make run_audio_cli   # Audio analysis CLI
 ```
 
 ## Debug Features

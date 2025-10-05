@@ -11,10 +11,10 @@ The Enemy Test Arena is a two-mode showcase system that allows you to:
 ## How to Run
 
 ```bash
-./run_enemy_test_arena.sh
+make showcase
 ```
 
-Or manually:
+Or build and run manually:
 ```bash
 make enemy_showcase
 ./bin/enemy_showcase

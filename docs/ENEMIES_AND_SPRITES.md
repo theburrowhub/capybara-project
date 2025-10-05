@@ -194,14 +194,8 @@ The sprite designs follow these principles:
 
 ### Build and Run
 ```bash
-# Build and run the showcase
+# Build and run the enemy showcase
 make showcase
-
-# Or run the dedicated script
-./run_showcase.sh
-
-# For sprite showcase specifically
-make showcase_sprites
 ```
 
 ### Showcase Controls

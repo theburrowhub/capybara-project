@@ -57,11 +57,11 @@ See **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** for the current static wave system desi
 #### Step 1: Analyze Your Music Track
 
 ```bash
-# Start the analyzer
-./run_audio_demo.sh
+# Start the analyzer GUI
+make run_audio_gui
 
 # Or use CLI for batch processing
-./bin/audio_analysis_cli -f level2.mp3
+make run_audio_cli
 ```
 
 **Adjust thresholds to match your track's character:**
@@ -195,10 +195,6 @@ make
 ### GUI Version (Recommended)
 
 ```bash
-# Build and run with automated script
-./run_audio_demo.sh
-
-# Or use make
 make run_audio_gui
 ```
 
@@ -734,10 +730,6 @@ make audio_cli       # Build CLI version
 # Run tools
 make run_audio_gui   # Build and run GUI
 make run_audio_cli   # Build and run CLI
-
-# Scripts
-./run_audio_demo.sh  # Automated GUI launcher
-./test_audio.sh      # Quick CLI test
 
 # Cleanup
 make clean          # Remove binaries and build artifacts (preserves config files)

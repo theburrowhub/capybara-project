@@ -130,14 +130,19 @@ Debug constants are defined in `include/constants.h` and can be modified to chan
 #define DEBUG_START_PHASE 0  // Play from start with invulnerability
 ```
 
-## Quick Test Script
+## Debug Script
 
-A test script is provided for convenience:
+For advanced debugging with command-line options:
 ```bash
-./test_debug.sh
+./run_debug_game.sh --help
 ```
 
-This script displays information about the current debug settings and launches the game.
+This script allows you to launch the game with:
+- Invulnerability mode
+- Start at any specific phase
+- Enable weapon overheating
+- Debug logging
+- And more options
 
 ## Important Notes
 
