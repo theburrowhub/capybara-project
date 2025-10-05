@@ -6,6 +6,9 @@
 #include "wave_system.h"
 #include "weapon.h"
 #include "explosion.h"
+#include "combat_system.h"
+#include "projectile_manager.h"
+#include "collision.h"
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>
@@ -139,69 +142,29 @@ void UpdateGameSpeed(Game* game) {
 }
 
 void FireEnemyProjectile(Game* game, EnemyEx* enemy) {
-    const EnemyWeaponConfig* config = GetEnemyWeaponConfig(enemy->type);
-    Vector2 playerPos = game->playerShip->position;
+    // Use generic combat system
+    CombatContext ctx = {
+        .playerPosition = game->playerShip->position,
+        .projectiles = (Projectile*)game->projectiles,
+        .maxProjectiles = MAX_PROJECTILES,
+        .screenWidth = SCREEN_WIDTH,
+        .screenHeight = SCREEN_HEIGHT
+    };
     
-    // Fire burst pattern
-    for (int burst = 0; burst < config->burstCount; burst++) {
-        float angle = 0;
-        
-        if (config->spreadAngle > 0 && config->burstCount > 1) {
-            if (config->spreadAngle >= 360) {
-                // Full circle spread
-                angle = (360.0f / config->burstCount) * burst;
-            } else {
-                // Arc spread
-                float startAngle = -config->spreadAngle / 2.0f;
-                float angleStep = config->spreadAngle / (config->burstCount - 1);
-                angle = startAngle + angleStep * burst;
-            }
-        }
-        
-        // Calculate target direction
-        Vector2 direction = {
-            playerPos.x - enemy->position.x,
-            playerPos.y - enemy->position.y
-        };
-        float dist = sqrtf(direction.x * direction.x + direction.y * direction.y);
-        if (dist > 0) {
-            direction.x /= dist;
-            direction.y /= dist;
-        }
-        
-        // Apply angle rotation
-        float radAngle = angle * DEG2RAD;
-        float cosA = cosf(radAngle);
-        float sinA = sinf(radAngle);
-        Vector2 rotatedDir = {
-            direction.x * cosA - direction.y * sinA,
-            direction.x * sinA + direction.y * cosA
-        };
-        
-        Vector2 target = {
-            enemy->position.x + rotatedDir.x * 1000,
-            enemy->position.y + rotatedDir.y * 1000
-        };
-        
-        // Find free projectile slot
-        Projectile* projectiles = (Projectile*)game->projectiles;
-        for (int i = 0; i < MAX_PROJECTILES; i++) {
-            if (!projectiles[i].active) {
-                // Alternate between primary and secondary projectiles
-                ProjectileType projType = (burst % 2 == 0) ? 
-                    config->primaryProjectile : config->secondaryProjectile;
-                
-                InitializeProjectile(&projectiles[i], projType, 
-                                   enemy->position, target, false);
-                projectiles[i].enemyId = enemy->id;
-                break;
-            }
-        }
-    }
+    Combat_FireEnemyProjectile(&ctx, enemy);
 }
 
 void UpdateEnemies(Game* game) {
     float deltaTime = GetFrameTime();
+    
+    // Create combat context for enemy firing
+    CombatContext ctx = {
+        .playerPosition = game->playerShip->position,
+        .projectiles = (Projectile*)game->projectiles,
+        .maxProjectiles = MAX_PROJECTILES,
+        .screenWidth = SCREEN_WIDTH,
+        .screenHeight = SCREEN_HEIGHT
+    };
     
     // Update all active enemies
     for (int i = 0; i < MAX_ENEMIES; i++) {
@@ -211,25 +174,10 @@ void UpdateEnemies(Game* game) {
             // Update movement
             UpdateEnemyMovement(enemy, deltaTime);
             
-            // Update firing timer
-            enemy->fireTimer += deltaTime;
-            
-            // Check if enemy should fire
-            const EnemyWeaponConfig* config = GetEnemyWeaponConfig(enemy->type);
-            float fireInterval = 1.0f / config->fireRate;
-            
-            if (enemy->fireTimer >= fireInterval && enemy->can_fire) {
-                // Only fire if enemy is on screen and facing player
-                if (enemy->position.x > 0 && enemy->position.x < SCREEN_WIDTH &&
-                    enemy->position.y > 0 && enemy->position.y < SCREEN_HEIGHT) {
-                    
-                    // Ghost enemies only fire when visible
-                    if (enemy->type != ENEMY_GHOST || enemy->isVisible) {
-                        FireEnemyProjectile(game, enemy);
-                        enemy->fireTimer = 0;
-                    }
-                }
-            }
+            // Update firing using generic combat system
+            Combat_UpdateEnemyFiring(enemy, &ctx, deltaTime, 
+                                     0, SCREEN_WIDTH, 
+                                     0, SCREEN_HEIGHT);
         }
     }
     
@@ -272,20 +220,16 @@ int CountActiveEnemies(const Game* game) {
 
 void UpdateProjectiles(Game* game) {
     float deltaTime = GetFrameTime();
-    Projectile* projectiles = (Projectile*)game->projectiles;
     
-    for (int i = 0; i < MAX_PROJECTILES; i++) {
-        if (projectiles[i].active) {
-            UpdateProjectile(&projectiles[i], deltaTime);
-            
-            // Remove projectiles that go off screen
-            Projectile* proj = &projectiles[i];
-            if (proj->position.x < -100 || proj->position.x > SCREEN_WIDTH + 100 ||
-                proj->position.y < -100 || proj->position.y > SCREEN_HEIGHT + 100) {
-                proj->active = false;
-            }
-        }
-    }
+    // Use projectile manager for cleaner code
+    ProjectileManager mgr = {
+        .projectiles = (Projectile*)game->projectiles,
+        .maxProjectiles = MAX_PROJECTILES,
+        .minX = -100, .maxX = SCREEN_WIDTH + 100,
+        .minY = -100, .maxY = SCREEN_HEIGHT + 100
+    };
+    
+    ProjectileManager_UpdateAll(&mgr, deltaTime);
 }
 
 void UpdateGame(Game* game) {

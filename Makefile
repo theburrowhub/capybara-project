@@ -23,7 +23,9 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/static_waves.c \
               $(SRC_DIR)/systems/projectile_types.c \
               $(SRC_DIR)/systems/explosion.c \
-              $(SRC_DIR)/systems/menu.c
+              $(SRC_DIR)/systems/combat_system.c \
+              $(SRC_DIR)/systems/projectile_manager.c \
+			  $(SRC_DIR)/systems/menu.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c
 
@@ -40,7 +42,16 @@ OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 # Enemy showcase source files
 SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/entities/enemy_types.c \
-                $(SRC_DIR)/systems/projectile_types.c
+                $(SRC_DIR)/entities/player_ship.c \
+                $(SRC_DIR)/systems/projectile_types.c \
+                $(SRC_DIR)/systems/weapon.c \
+                $(SRC_DIR)/systems/wave_system.c \
+                $(SRC_DIR)/systems/static_waves.c \
+                $(SRC_DIR)/systems/combat_system.c \
+                $(SRC_DIR)/systems/projectile_manager.c \
+                $(SRC_DIR)/systems/collision.c \
+                $(SRC_DIR)/systems/explosion.c \
+                $(SRC_DIR)/utils/logger.c
 
 # Sprite showcase source files
 SPRITE_SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase_sprites.c \

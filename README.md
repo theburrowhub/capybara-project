@@ -79,6 +79,25 @@ sudo apt install libraylib-dev
 sudo dnf install raylib-devel
 ```
 
+## Demo & Testing Tools
+
+### Enemy Test Arena
+Interactive showcase for testing enemy behavior:
+```bash
+./run_enemy_test_arena.sh
+```
+- Click any enemy to test it in a combat arena
+- Invincible player ship for safe testing
+- Enemies use their standard attack patterns
+- Continuous spawning for behavior observation
+- See [Enemy Test Arena Documentation](docs/ENEMY_TEST_ARENA.md)
+
+### Other Showcases
+```bash
+./run_showcase.sh        # Enemy sprite showcase
+./run_player_showcase.sh # Player ship showcase
+```
+
 ## Debug Features
 
 The game includes several debug features for testing and development:

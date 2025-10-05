@@ -97,6 +97,7 @@ void CreateExplosion(ExplosionSystem* system, Vector2 position, ExplosionType ty
 void CreateEnemyExplosion(ExplosionSystem* system, Vector2 position, Color enemyColor, float size);
 void CreatePlayerExplosion(ExplosionSystem* system, Vector2 position);
 void CreateShockwaveExplosion(ExplosionSystem* system, Vector2 position, float force);
+void CreateBossExplosion(ExplosionSystem* system, Vector2 position, Color bossColor);
 
 // Screen shake
 Vector2 GetScreenShakeOffset(const ExplosionSystem* system);
