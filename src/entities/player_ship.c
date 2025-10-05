@@ -16,31 +16,11 @@ static const ShipConfig DEFAULT_SHIP_CONFIG = {
     .baseDamage = 10
 };
 
-// Ability configurations
-static const float ABILITY_COSTS[ABILITY_COUNT] = {
-    [ABILITY_BOOST] = 20.0f,
-    [ABILITY_SHIELD_BURST] = 40.0f,
-    [ABILITY_EMP_BLAST] = 60.0f,
-    [ABILITY_OVERDRIVE] = 80.0f
-};
-
-static const float ABILITY_COOLDOWNS[ABILITY_COUNT] = {
-    [ABILITY_BOOST] = 3.0f,
-    [ABILITY_SHIELD_BURST] = 10.0f,
-    [ABILITY_EMP_BLAST] = 15.0f,
-    [ABILITY_OVERDRIVE] = 20.0f
-};
-
-static const float ABILITY_DURATIONS[ABILITY_COUNT] = {
-    [ABILITY_BOOST] = 2.0f,
-    [ABILITY_SHIELD_BURST] = 3.0f,
-    [ABILITY_EMP_BLAST] = 0.5f,
-    [ABILITY_OVERDRIVE] = 5.0f
-};
+// Ability system removed - keeping gameplay simple
 
 void InitPlayerShip(PlayerShip* ship) {
-    // Position and physics
-    ship->position = (Vector2){150, SCREEN_HEIGHT/2};
+    // Position and physics (centered in play zone, not full screen)
+    ship->position = (Vector2){150, PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2};
     ship->velocity = (Vector2){0, 0};
     ship->bounds = (Rectangle){
         ship->position.x - 25,
@@ -62,34 +42,18 @@ void InitPlayerShip(PlayerShip* ship) {
     // Energy system
     ship->maxEnergy = DEFAULT_SHIP_CONFIG.baseEnergy;
     ship->energy = ship->maxEnergy;
-    ship->energyRegenRate = 10.0f; // Energy per second
+    ship->energyRegenRate = 2.0f; // Very slow energy regen - 2 per second (takes 50 seconds to fully recharge)
     
-    // Weapon system
+    // Weapon system (simplified - no heat, no charging)
     ship->weaponMode = WEAPON_MODE_SINGLE;
-    ship->weaponHeat = 0.0f;
-    ship->maxHeat = 100.0f;
-    ship->overheated = false;
-    ship->cooldownTime = 0.0f;
     ship->fireTimer = 0.0f;
-    ship->chargeLevel = 0.0f;
-    ship->isCharging = false;
     
-    // Movement
+    // Movement (simplified - no boost)
     ship->baseSpeed = DEFAULT_SHIP_CONFIG.baseSpeed;
     ship->currentSpeed = ship->baseSpeed;
     ship->acceleration = 15.0f;
-    ship->maxSpeed = ship->baseSpeed * 2.0f;
-    ship->boostSpeed = ship->baseSpeed * 3.0f;
-    ship->isBoosting = false;
-    ship->boostDuration = 0.0f;
-    ship->boostCooldown = 0.0f;
     
-    // Abilities
-    for (int i = 0; i < ABILITY_COUNT; i++) {
-        ship->abilityCooldowns[i] = 0.0f;
-        ship->abilityActive[i] = false;
-        ship->abilityDurations[i] = 0.0f;
-    }
+    // Abilities removed
     
     // Visual effects
     ship->engineGlow = 0.8f;
@@ -117,6 +81,19 @@ void InitPlayerShip(PlayerShip* ship) {
     ship->upgrades.engineLevel = 1;
     ship->upgrades.energyLevel = 1;
     
+    // Powerup tracking
+    ship->weaponPowerupCount = 0;  // No weapon powerups collected yet
+    
+    // Energy mode system
+    ship->energyMode = ENERGY_MODE_OFFENSIVE;  // Start in offensive mode
+    ship->specialAbilityActive = false;
+    ship->specialAbilityTimer = 0.0f;
+    ship->specialAbilityHoldTimer = 0.0f;
+    ship->energyFull = false;
+    ship->energyDrainRate = 20.0f;  // Drains 20 energy per second (5 seconds to drain full bar)
+    ship->lastEnergyDepletionTime = -10.0f;  // Start ready to use
+    ship->energyRegenDelay = 5.0f;  // 5 second delay after depletion
+    
     // Stats
     ship->score = 0;
     ship->enemiesDestroyed = 0;
@@ -124,11 +101,24 @@ void InitPlayerShip(PlayerShip* ship) {
     
     // Visibility
     ship->isVisible = true;
+    
+    // Revive tracking
+    ship->justRevived = false;
+    ship->reviveEffectTimer = 0.0f;
 }
 
 void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
     // Update survival time
     ship->survivalTime += deltaTime;
+    
+    // Update revive effect timer
+    if (ship->reviveEffectTimer > 0.0f) {
+        ship->reviveEffectTimer -= deltaTime;
+        if (ship->reviveEffectTimer <= 0.0f) {
+            ship->reviveEffectTimer = 0.0f;
+            ship->justRevived = false;
+        }
+    }
     
     // Handle input
     HandlePlayerInput(ship);
@@ -136,17 +126,40 @@ void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
     // Update physics
     UpdateShipPhysics(ship, deltaTime);
     
-    // Update abilities
-    UpdateShipAbilities(ship, deltaTime);
-    
     // Update visual effects
     UpdateShipEffects(ship, deltaTime);
     
-    // Shield regeneration
+    // Check if energy is full
+    ship->energyFull = (ship->energy >= ship->maxEnergy);
+    
+    // Drain energy while special ability is active
+    if (ship->specialAbilityActive) {
+        // Offensive mode drains energy faster than defensive
+        float drainRate = ship->energyDrainRate;
+        if (ship->energyMode == ENERGY_MODE_OFFENSIVE) {
+            drainRate *= 2.0f;  // Offensive drains 2x faster (40 per second = 2.5 seconds for full bar)
+        }
+        
+        ship->energy -= drainRate * deltaTime;
+        if (ship->energy <= 0) {
+            ship->energy = 0;
+            ship->specialAbilityActive = false;
+            ship->lastEnergyDepletionTime = GetTime();  // Mark when energy was depleted
+        }
+    }
+    
+    // Shield regeneration (affected by energy mode)
     if (ship->shield < ship->maxShield) {
         float timeSinceDamage = GetTime() - ship->lastDamageTime;
         if (timeSinceDamage > ship->shieldRegenDelay) {
-            ship->shield += ship->shieldRegenRate * deltaTime;
+            float regenRate = ship->shieldRegenRate;
+            
+            // Defensive mode with FULL energy: faster shield regen bonus
+            if (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->energyFull) {
+                regenRate *= 2.0f;  // 2x faster shield regen bonus only when energy is FULL
+            }
+            
+            ship->shield += regenRate * deltaTime;
             if (ship->shield > ship->maxShield) {
                 ship->shield = ship->maxShield;
             }
@@ -154,11 +167,16 @@ void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
         }
     }
     
-    // Energy regeneration
+    // Energy regeneration with delay after depletion
     if (ship->energy < ship->maxEnergy) {
-        ship->energy += ship->energyRegenRate * deltaTime;
-        if (ship->energy > ship->maxEnergy) {
-            ship->energy = ship->maxEnergy;
+        float timeSinceDepletion = GetTime() - ship->lastEnergyDepletionTime;
+        
+        // Only regenerate if 5 seconds have passed since last depletion
+        if (timeSinceDepletion > ship->energyRegenDelay) {
+            ship->energy += ship->energyRegenRate * deltaTime;
+            if (ship->energy > ship->maxEnergy) {
+                ship->energy = ship->maxEnergy;
+            }
         }
     }
     
@@ -169,6 +187,44 @@ void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
 
 void HandlePlayerInput(PlayerShip* ship) {
     Vector2 inputDir = {0, 0};
+    
+    // Weapon mode switching with number keys 1-6
+    if (IsKeyPressed(KEY_ONE)) {
+        ship->weaponMode = WEAPON_MODE_SINGLE;
+    } else if (IsKeyPressed(KEY_TWO)) {
+        ship->weaponMode = WEAPON_MODE_DOUBLE;
+    } else if (IsKeyPressed(KEY_THREE)) {
+        ship->weaponMode = WEAPON_MODE_SPREAD;
+    } else if (IsKeyPressed(KEY_FOUR)) {
+        ship->weaponMode = WEAPON_MODE_RAPID;
+    } else if (IsKeyPressed(KEY_FIVE)) {
+        ship->weaponMode = WEAPON_MODE_CHARGE;
+    } else if (IsKeyPressed(KEY_SIX)) {
+        ship->weaponMode = WEAPON_MODE_DUAL;
+    } else if (IsKeyPressed(KEY_R)) {
+        // Cycle through weapon modes in order with R key
+        ship->weaponMode = (WeaponMode)((ship->weaponMode + 1) % WEAPON_MODE_COUNT);
+    }
+    
+    // Energy mode switching with Q key
+    if (IsKeyPressed(KEY_Q)) {
+        if (ship->energyMode == ENERGY_MODE_OFFENSIVE) {
+            ship->energyMode = ENERGY_MODE_DEFENSIVE;
+        } else {
+            ship->energyMode = ENERGY_MODE_OFFENSIVE;
+        }
+    }
+    
+    // Special ability activation by holding E key - works with any amount of energy
+    if (IsKeyDown(KEY_E) && ship->energy > 0) {
+        // Activate special ability while E is held and energy is available
+        ship->specialAbilityActive = true;
+    } else {
+        // Deactivate when E is released or energy runs out
+        if (ship->specialAbilityActive) {
+            ship->specialAbilityActive = false;
+        }
+    }
     
     // Movement input
     if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
@@ -206,29 +262,7 @@ void HandlePlayerInput(PlayerShip* ship) {
         }
     }
     
-    // Boost ability (SHIFT key)
-    if (IsKeyDown(KEY_LEFT_SHIFT) && ship->abilityCooldowns[ABILITY_BOOST] <= 0 && ship->energy >= ABILITY_COSTS[ABILITY_BOOST]) {
-        ActivateAbility(ship, ABILITY_BOOST);
-    }
-    
-    // Shield burst (E key)
-    if (IsKeyPressed(KEY_E) && ship->abilityCooldowns[ABILITY_SHIELD_BURST] <= 0 && ship->energy >= ABILITY_COSTS[ABILITY_SHIELD_BURST]) {
-        ActivateAbility(ship, ABILITY_SHIELD_BURST);
-    }
-    
-    // EMP blast (Q key)
-    if (IsKeyPressed(KEY_Q) && ship->abilityCooldowns[ABILITY_EMP_BLAST] <= 0 && ship->energy >= ABILITY_COSTS[ABILITY_EMP_BLAST]) {
-        ActivateAbility(ship, ABILITY_EMP_BLAST);
-    }
-    
-    // Overdrive (R key)
-    if (IsKeyPressed(KEY_R) && ship->abilityCooldowns[ABILITY_OVERDRIVE] <= 0 && ship->energy >= ABILITY_COSTS[ABILITY_OVERDRIVE]) {
-        ActivateAbility(ship, ABILITY_OVERDRIVE);
-    }
-    
-    // Weapon mode switching disabled - always use single mode
-    // Keep weapon mode as SINGLE always
-    ship->weaponMode = WEAPON_MODE_SINGLE;
+    // No boost, no weapon mode switching - simple movement
     
     // Charge beam disabled - no special weapon modes
 }
@@ -238,12 +272,12 @@ void UpdateShipPhysics(PlayerShip* ship, float deltaTime) {
     ship->position.x += ship->velocity.x;
     ship->position.y += ship->velocity.y;
     
-    // Keep ship on screen
+    // Keep ship on screen - constrained to play zone (above HUD)
     float margin = 30.0f;
     if (ship->position.x < margin) ship->position.x = margin;
     if (ship->position.x > SCREEN_WIDTH - margin) ship->position.x = SCREEN_WIDTH - margin;  // Allow reaching right border
-    if (ship->position.y < margin) ship->position.y = margin;
-    if (ship->position.y > SCREEN_HEIGHT - margin) ship->position.y = SCREEN_HEIGHT - margin;
+    if (ship->position.y < PLAY_ZONE_TOP + margin) ship->position.y = PLAY_ZONE_TOP + margin;
+    if (ship->position.y > PLAY_ZONE_BOTTOM - margin) ship->position.y = PLAY_ZONE_BOTTOM - margin;
     
     // Update bounds
     ship->bounds.x = ship->position.x - 25;
@@ -275,46 +309,7 @@ void UpdateShipPhysics(PlayerShip* ship, float deltaTime) {
     }
 }
 
-void UpdateShipAbilities(PlayerShip* ship, float deltaTime) {
-    // Update ability cooldowns
-    for (int i = 0; i < ABILITY_COUNT; i++) {
-        if (ship->abilityCooldowns[i] > 0) {
-            ship->abilityCooldowns[i] -= deltaTime;
-        }
-        
-        // Update active ability durations
-        if (ship->abilityActive[i]) {
-            ship->abilityDurations[i] -= deltaTime;
-            if (ship->abilityDurations[i] <= 0) {
-                ship->abilityActive[i] = false;
-                
-                // Deactivate ability effects
-                switch (i) {
-                    case ABILITY_BOOST:
-                        ship->isBoosting = false;
-                        ship->currentSpeed = ship->baseSpeed;
-                        break;
-                    case ABILITY_SHIELD_BURST:
-                        ship->shieldGlow = 0.0f;
-                        break;
-                    case ABILITY_OVERDRIVE:
-                        // Reset fire rate
-                        break;
-                }
-            }
-        }
-    }
-    
-    // Apply active ability effects
-    if (ship->abilityActive[ABILITY_BOOST]) {
-        ship->currentSpeed = ship->boostSpeed;
-        ship->isBoosting = true;
-    }
-    
-    if (ship->abilityActive[ABILITY_SHIELD_BURST]) {
-        ship->shieldGlow = (sinf(ship->animTime * 10.0f) + 1.0f) * 0.5f;
-    }
-}
+// Abilities system removed - keeping gameplay simple for now
 
 void UpdateShipEffects(PlayerShip* ship, float deltaTime) {
     // Update shield glow when damaged
@@ -322,16 +317,7 @@ void UpdateShipEffects(PlayerShip* ship, float deltaTime) {
         ship->shieldGlow = (sinf(ship->animTime * 8.0f) + 1.0f) * 0.25f;
     }
     
-    // Update weapon heat cooldown
-    if (!ship->overheated) {
-        ship->weaponHeat = fmaxf(0, ship->weaponHeat - 30.0f * deltaTime);
-    } else {
-        ship->cooldownTime -= deltaTime;
-        if (ship->cooldownTime <= 0) {
-            ship->overheated = false;
-            ship->weaponHeat = 0;
-        }
-    }
+    // Weapon heat system removed - no overheating
     
     // Update fire timer
     ship->fireTimer = fmaxf(0, ship->fireTimer - deltaTime);
@@ -394,32 +380,72 @@ void DrawPlayerShip(const PlayerShip* ship) {
     // Single weapon port only (no weapon modes)
     DrawCircle(ship->position.x + 15, ship->position.y, 2, ship->secondaryColor);
     
-    // Draw shield effect
-    if (ship->shield > 0 || ship->abilityActive[ABILITY_SHIELD_BURST]) {
+    // Draw shield effect - always show when:
+    // 1. Shield is active, or
+    // 2. Defensive mode with special ability, or
+    // 3. Just revived (shows golden aura)
+    if (ship->shield > 0 || 
+        (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->specialAbilityActive) ||
+        ship->reviveEffectTimer > 0.0f) {
         DrawShieldEffect(ship);
     }
     
-    // Draw EMP blast effect
-    if (ship->abilityActive[ABILITY_EMP_BLAST]) {
-        float blastRadius = (1.0f - (ship->abilityDurations[ABILITY_EMP_BLAST] / ABILITY_DURATIONS[ABILITY_EMP_BLAST])) * 200.0f;
-        DrawCircleLines(ship->position.x, ship->position.y, blastRadius, Fade(SKYBLUE, 0.5f));
-        DrawCircleLines(ship->position.x, ship->position.y, blastRadius * 0.8f, Fade(WHITE, 0.3f));
-    }
+    // Ability effects removed
 }
 
 void DrawShieldEffect(const PlayerShip* ship) {
     float shieldRadius = 40.0f;
     Color shieldColor = ship->shieldColor;
     
-    if (ship->abilityActive[ABILITY_SHIELD_BURST]) {
-        // Enhanced shield during burst
-        shieldRadius = 45.0f + sinf(ship->animTime * 10.0f) * 5.0f;
-        shieldColor = (Color){0, 255, 255, 150};
-        DrawCircle(ship->position.x, ship->position.y, shieldRadius, Fade(shieldColor, 0.2f));
+    // REVIVE EFFECT - Special golden aura when just revived
+    if (ship->reviveEffectTimer > 0.0f) {
+        float reviveIntensity = ship->reviveEffectTimer / 2.0f;  // Fades over 2 seconds
+        Color goldColor = (Color){255, 215, 0, 255};  // Golden color
+        
+        // Expanding rings effect
+        float pulse = (sinf(ship->animTime * 10.0f) + 1.0f) * 0.5f;
+        float ringRadius1 = 50.0f + pulse * 20.0f;
+        float ringRadius2 = 70.0f + pulse * 15.0f;
+        
+        DrawCircle(ship->position.x, ship->position.y, ringRadius1, 
+                  Fade(goldColor, 0.3f * reviveIntensity));
+        DrawCircleLines(ship->position.x, ship->position.y, ringRadius1, 
+                       Fade(goldColor, 0.8f * reviveIntensity));
+        DrawCircleLines(ship->position.x, ship->position.y, ringRadius2, 
+                       Fade(goldColor, 0.5f * reviveIntensity));
+        
+        // Energy particles swirling around
+        for (int i = 0; i < 8; i++) {
+            float particleAngle = ship->animTime * 3.0f + (i * PI * 2.0f / 8.0f);
+            float particleRadius = 45.0f + sinf(ship->animTime * 5.0f + i) * 10.0f;
+            Vector2 particlePos = {
+                ship->position.x + cosf(particleAngle) * particleRadius,
+                ship->position.y + sinf(particleAngle) * particleRadius
+            };
+            DrawCircle(particlePos.x, particlePos.y, 3.0f, 
+                      Fade(goldColor, 0.9f * reviveIntensity));
+        }
+        
+        shieldRadius = 50.0f;  // Larger shield during revive
+        shieldColor = (Color){255, 215, 100, 220};  // Golden shield tint
+    }
+    // Enhanced shield in defensive mode - bigger and brighter
+    else if (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->specialAbilityActive) {
+        shieldRadius = 60.0f;  // Much bigger shield
+        shieldColor = (Color){100, 255, 255, 200};  // Brighter cyan
+        
+        // Extra outer ring for enhanced shield
+        DrawCircleLines(ship->position.x, ship->position.y, shieldRadius + 5, Fade(shieldColor, 0.7f));
+        DrawCircleLines(ship->position.x, ship->position.y, shieldRadius + 10, Fade(shieldColor, 0.4f));
+        
+        // Pulsing effect
+        float pulse = (sinf(ship->animTime * 8.0f) + 1.0f) * 0.5f;
+        DrawCircle(ship->position.x, ship->position.y, shieldRadius, Fade(shieldColor, 0.2f + pulse * 0.1f));
     }
     
     // Hexagonal shield pattern
     float angle = ship->animTime * 2.0f;
+    float lineThickness = (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->specialAbilityActive) ? 3.0f : 2.0f;
     for (int i = 0; i < 6; i++) {
         float a1 = angle + (i * PI * 2.0f / 6.0f);
         float a2 = angle + ((i + 1) * PI * 2.0f / 6.0f);
@@ -431,18 +457,22 @@ void DrawShieldEffect(const PlayerShip* ship) {
             ship->position.x + cosf(a2) * shieldRadius,
             ship->position.y + sinf(a2) * shieldRadius
         };
-        DrawLineEx(p1, p2, 2.0f, Fade(shieldColor, ship->shieldGlow * 0.5f));
+        float glowAlpha = (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->specialAbilityActive) ? 0.8f : ship->shieldGlow * 0.5f;
+        DrawLineEx(p1, p2, lineThickness, Fade(shieldColor, glowAlpha));
     }
     
     // Inner shield glow
     if (ship->shield > 0) {
         float alpha = (ship->shield / ship->maxShield) * 0.3f;
+        if (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->specialAbilityActive) {
+            alpha = 0.4f;  // More visible in enhanced mode
+        }
         DrawCircle(ship->position.x, ship->position.y, shieldRadius * 0.9f, Fade(shieldColor, alpha));
     }
 }
 
 void DrawEngineTrail(const PlayerShip* ship) {
-    // Draw particle trail
+    // Draw particle trail (boost effects removed)
     for (int i = 0; i < 20; i++) {
         int index = (ship->trailIndex - i + 20) % 20;
         if (ship->trailAlpha[index] > 0) {
@@ -450,22 +480,6 @@ void DrawEngineTrail(const PlayerShip* ship) {
             Color trailColor = Fade(ship->engineColor, ship->trailAlpha[index] * (1.0f - i / 20.0f));
             DrawCircle(ship->trailPositions[index].x, ship->trailPositions[index].y - 5, size, trailColor);
             DrawCircle(ship->trailPositions[index].x, ship->trailPositions[index].y + 5, size, trailColor);
-        }
-    }
-    
-    // Boost trail effect
-    if (ship->isBoosting) {
-        for (int i = 0; i < 5; i++) {
-            float offset = i * 10.0f;
-            float alpha = (1.0f - i / 5.0f) * 0.5f;
-            Color boostColor = Fade((Color){255, 150, 0, 255}, alpha);
-            DrawRectangle(
-                ship->position.x - 30 - offset,
-                ship->position.y - 3,
-                10,
-                6,
-                boostColor
-            );
         }
     }
 }
@@ -476,58 +490,120 @@ void DrawShipHUD(const PlayerShip* ship) {
         return;
     }
     
+    // Position in bottom HUD area (left side, compact layout)
     int hudX = 10;
-    int hudY = SCREEN_HEIGHT - 120;
+    int hudY = PLAY_ZONE_BOTTOM + 8;
+    int barWidth = 180;  // Slightly narrower bars
+    int barHeight = 12;  // Slightly shorter bars
+    int spacing = 18;    // Tighter spacing
     
     // Health bar
-    DrawText("HULL", hudX, hudY, 12, WHITE);
-    DrawRectangle(hudX + 50, hudY, 200, 15, Fade(RED, 0.3f));
-    DrawRectangle(hudX + 50, hudY, (ship->health * 200) / ship->maxHealth, 15, RED);
-    DrawRectangleLines(hudX + 50, hudY, 200, 15, WHITE);
+    DrawText("HULL", hudX, hudY, 11, WHITE);
+    DrawRectangle(hudX + 50, hudY, barWidth, barHeight, Fade(RED, 0.3f));
+    DrawRectangle(hudX + 50, hudY, (ship->health * barWidth) / ship->maxHealth, barHeight, RED);
+    DrawRectangleLines(hudX + 50, hudY, barWidth, barHeight, WHITE);
     
     // Shield bar
-    DrawText("SHIELD", hudX, hudY + 20, 12, WHITE);
-    DrawRectangle(hudX + 50, hudY + 20, 200, 15, Fade(SKYBLUE, 0.3f));
-    DrawRectangle(hudX + 50, hudY + 20, (ship->shield * 200) / ship->maxShield, 15, SKYBLUE);
-    DrawRectangleLines(hudX + 50, hudY + 20, 200, 15, WHITE);
+    DrawText("SHIELD", hudX, hudY + spacing, 11, WHITE);
+    Color shieldBarColor = SKYBLUE;
+    if (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->specialAbilityActive) {
+        shieldBarColor = (Color){100, 255, 255, 255};  // Brighter when enhanced
+    }
+    DrawRectangle(hudX + 50, hudY + spacing, barWidth, barHeight, Fade(shieldBarColor, 0.3f));
+    DrawRectangle(hudX + 50, hudY + spacing, (ship->shield * barWidth) / ship->maxShield, barHeight, shieldBarColor);
+    DrawRectangleLines(hudX + 50, hudY + spacing, barWidth, barHeight, WHITE);
     
     // Energy bar
-    DrawText("ENERGY", hudX, hudY + 40, 12, WHITE);
-    DrawRectangle(hudX + 50, hudY + 40, 200, 15, Fade(YELLOW, 0.3f));
-    DrawRectangle(hudX + 50, hudY + 40, (ship->energy * 200) / ship->maxEnergy, 15, YELLOW);
-    DrawRectangleLines(hudX + 50, hudY + 40, 200, 15, WHITE);
+    DrawText("ENERGY", hudX, hudY + spacing * 2, 11, WHITE);
+    Color energyColor = YELLOW;
+    DrawRectangle(hudX + 50, hudY + spacing * 2, barWidth, barHeight, Fade(energyColor, 0.3f));
+    DrawRectangle(hudX + 50, hudY + spacing * 2, (ship->energy * barWidth) / ship->maxEnergy, barHeight, energyColor);
+    DrawRectangleLines(hudX + 50, hudY + spacing * 2, barWidth, barHeight, WHITE);
     
-    // Ability cooldowns
-    DrawText("ABILITIES:", hudX, hudY + 65, 12, WHITE);
-    const char* abilityNames[ABILITY_COUNT] = {
-        "[SHIFT] BOOST", "[E] SHIELD", "[Q] EMP", "[R] OVERDRIVE"
-    };
-    
-    for (int i = 0; i < ABILITY_COUNT; i++) {
-        int x = hudX + 90 + i * 70;
-        Color abilityColor = (ship->abilityCooldowns[i] <= 0 && ship->energy >= ABILITY_COSTS[i]) ? GREEN : GRAY;
-        if (ship->abilityActive[i]) abilityColor = YELLOW;
-        
-        DrawText(abilityNames[i], x, hudY + 65, 10, abilityColor);
-        if (ship->abilityCooldowns[i] > 0) {
-            char cooldownText[16];
-            snprintf(cooldownText, sizeof(cooldownText), "%.1fs", ship->abilityCooldowns[i]);
-            DrawText(cooldownText, x + 10, hudY + 80, 10, RED);
-        }
+    // Energy status indicator (compact)
+    float timeSinceDepletion = GetTime() - ship->lastEnergyDepletionTime;
+    if (ship->energy <= 0 && timeSinceDepletion < ship->energyRegenDelay) {
+        float remainingDelay = ship->energyRegenDelay - timeSinceDepletion;
+        DrawText(TextFormat("%.1fs", remainingDelay), hudX + 235, hudY + spacing * 2, 10, RED);
+    } else if (ship->energyFull) {
+        const char* bonusText = (ship->energyMode == ENERGY_MODE_OFFENSIVE) ? "2X" : "2X";
+        DrawText(bonusText, hudX + 235, hudY + spacing * 2, 10, GREEN);
     }
     
-    // Score and stats
-    char statsText[256];
-    snprintf(statsText, sizeof(statsText), 
-        "Score: %d | Enemies: %d | Time: %.1fs", 
-        ship->score, ship->enemiesDestroyed, ship->survivalTime);
-    DrawText(statsText, hudX, hudY + 95, 12, WHITE);
+    // Mode display (compact)
+    DrawText("MODE", hudX, hudY + spacing * 3, 11, WHITE);
+    const char* modeText = (ship->energyMode == ENERGY_MODE_OFFENSIVE) ? "OFFENSE" : "DEFENSE";
+    Color modeColor = (ship->energyMode == ENERGY_MODE_OFFENSIVE) ? ORANGE : SKYBLUE;
+    
+    if (ship->energyFull) {
+        DrawRectangle(hudX + 50, hudY + spacing * 3, 90, barHeight, modeColor);
+        DrawText(modeText, hudX + 52, hudY + spacing * 3 + 2, 10, BLACK);
+        DrawText("*", hudX + 42, hudY + spacing * 3, 14, modeColor);
+    } else {
+        DrawRectangle(hudX + 50, hudY + spacing * 3, 90, barHeight, Fade(modeColor, 0.5f));
+        DrawText(modeText, hudX + 52, hudY + spacing * 3 + 2, 10, WHITE);
+    }
+    DrawRectangleLines(hudX + 50, hudY + spacing * 3, 90, barHeight, modeColor);
+    
+    // Special ability status (compact)
+    if (ship->specialAbilityActive) {
+        const char* abilityText = (ship->energyMode == ENERGY_MODE_OFFENSIVE) ? "DEVASTATE!" : "ENHANCED!";
+        DrawText(abilityText, hudX + 145, hudY + spacing * 3 + 2, 10, GREEN);
+    } else if (ship->energy > 0) {
+        DrawText("(Press E)", hudX + 145, hudY + spacing * 3 + 2, 9, Fade(WHITE, 0.6f));
+    }
+    
+    // REVIVE NOTIFICATION - Big clear text in center of play zone when revived
+    if (ship->reviveEffectTimer > 0.0f) {
+        float reviveIntensity = ship->reviveEffectTimer / 2.0f;
+        Color mainTextColor = (Color){255, 215, 0, (unsigned char)(255 * reviveIntensity)};
+        Color subTextColor = (Color){255, 255, 200, (unsigned char)(255 * reviveIntensity)};
+        
+        // Pulsing effect
+        float pulse = (sinf(GetTime() * 8.0f) + 1.0f) * 0.5f;
+        int mainFontSize = 48 + (int)(pulse * 8);
+        
+        // Main revive message - clearer without emojis
+        const char* reviveText = "SHIP REVIVED!";
+        int textWidth = MeasureText(reviveText, mainFontSize);
+        int centerX = SCREEN_WIDTH / 2 - textWidth / 2;
+        int centerY = PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT / 2 - 100;
+        
+        // Enhanced shadow with outline for maximum readability
+        for (int ox = -2; ox <= 2; ox += 2) {
+            for (int oy = -2; oy <= 2; oy += 2) {
+                if (ox != 0 || oy != 0) {
+                    DrawText(reviveText, centerX + ox, centerY + oy, mainFontSize, 
+                            Fade(BLACK, reviveIntensity * 0.8f));
+                }
+            }
+        }
+        DrawText(reviveText, centerX, centerY, mainFontSize, mainTextColor);
+        
+        // Clearer sub-text with better formatting
+        const char* weaponText = TextFormat("Weapon Power: Level %d", ship->weaponPowerupCount);
+        int weaponWidth = MeasureText(weaponText, 22);
+        DrawText(weaponText, SCREEN_WIDTH / 2 - weaponWidth / 2 + 1, centerY + 58, 22, 
+                Fade(BLACK, reviveIntensity * 0.8f));  // Shadow
+        DrawText(weaponText, SCREEN_WIDTH / 2 - weaponWidth / 2, centerY + 57, 22, subTextColor);
+        
+        const char* hullText = TextFormat("Hull Restored: %d HP", ship->health);
+        int hullWidth = MeasureText(hullText, 22);
+        DrawText(hullText, SCREEN_WIDTH / 2 - hullWidth / 2 + 1, centerY + 83, 22, 
+                Fade(BLACK, reviveIntensity * 0.8f));  // Shadow
+        DrawText(hullText, SCREEN_WIDTH / 2 - hullWidth / 2, centerY + 82, 22, subTextColor);
+    }
+    
+    // Compact HUD complete - weapon mode and damage info visible through gameplay
 }
 
 void DamagePlayerShip(PlayerShip* ship, int damage) {
-    // Check for invulnerability
-    if (ship->abilityActive[ABILITY_SHIELD_BURST]) {
-        return; // No damage during shield burst
+    // Abilities removed - no invulnerability check
+    
+    // Enhanced shield in defensive mode absorbs half damage
+    if (ship->energyMode == ENERGY_MODE_DEFENSIVE && ship->specialAbilityActive) {
+        damage = damage / 2;  // Absorb half damage
+        if (damage < 1) damage = 1;  // At least 1 damage
     }
     
     // Apply damage to shield first
@@ -546,6 +622,24 @@ void DamagePlayerShip(PlayerShip* ship, int damage) {
         }
     }
     
+    // WEAPON POWERUP REVIVE SYSTEM
+    // If health reaches 0 and we have weapon powerups, use one to revive
+    if (ship->health <= 0 && ship->weaponPowerupCount > 0) {
+        // Consume one weapon powerup level to revive
+        ship->weaponPowerupCount--;
+        
+        // Restore 1/3 of max health
+        ship->health = ship->maxHealth / 3;
+        
+        // Also restore some shield for survival
+        ship->shield = ship->maxShield * 0.5f;
+        ship->shieldGlow = 1.0f;
+        
+        // Set revive flags for visual feedback
+        ship->justRevived = true;
+        ship->reviveEffectTimer = 2.0f;  // 2 second revive effect
+    }
+    
     ship->lastDamageTime = GetTime();
 }
 
@@ -553,43 +647,58 @@ void RepairPlayerShip(PlayerShip* ship, int amount) {
     ship->health = fminf(ship->maxHealth, ship->health + amount);
 }
 
-bool ActivateAbility(PlayerShip* ship, PlayerAbility ability) {
-    if (ship->abilityCooldowns[ability] > 0 || ship->energy < ABILITY_COSTS[ability]) {
-        return false;
+float CalculateDamagePerShot(const PlayerShip* ship) {
+    // Calculate base damage per bullet based on weapon mode
+    float damagePerBullet = 1.0f;
+    
+    switch (ship->weaponMode) {
+        case WEAPON_MODE_SINGLE:
+            damagePerBullet = 3.0f;
+            break;
+        case WEAPON_MODE_DOUBLE:
+            damagePerBullet = 1.5f;
+            break;
+        case WEAPON_MODE_SPREAD:
+            damagePerBullet = 1.0f;
+            break;
+        case WEAPON_MODE_RAPID:
+            damagePerBullet = 1.5f;
+            break;
+        case WEAPON_MODE_DUAL:
+            damagePerBullet = 1.5f;
+            break;
+        case WEAPON_MODE_CHARGE:
+            // Variable based on charge level
+            damagePerBullet = 1.0f;
+            break;
+        default:
+            damagePerBullet = 1.0f;
+            break;
     }
     
-    ship->energy -= ABILITY_COSTS[ability];
-    ship->abilityCooldowns[ability] = ABILITY_COOLDOWNS[ability];
-    ship->abilityActive[ability] = true;
-    ship->abilityDurations[ability] = ABILITY_DURATIONS[ability];
+    // Apply weapon powerup multiplier
+    float powerMultiplier = 1.0f;
+    switch (ship->weaponPowerupCount) {
+        case 0: powerMultiplier = 1.0f; break;
+        case 1: powerMultiplier = 1.5f; break;
+        case 2: powerMultiplier = 2.0f; break;
+        case 3: powerMultiplier = 2.5f; break;
+        default: powerMultiplier = 1.0f; break;
+    }
+    damagePerBullet *= powerMultiplier;
     
-    // Apply immediate effects
-    switch (ability) {
-        case ABILITY_BOOST:
-            ship->isBoosting = true;
-            ship->currentSpeed = ship->boostSpeed;
-            break;
-        case ABILITY_SHIELD_BURST:
-            ship->shield = ship->maxShield;
-            ship->shieldGlow = 1.0f;
-            break;
-        case ABILITY_EMP_BLAST:
-            // EMP effect handled in game logic
-            break;
-        case ABILITY_OVERDRIVE:
-            ship->weaponHeat = 0;
-            ship->overheated = false;
-            break;
+    // Apply offensive mode bonus if active (applied to each bullet)
+    if (ship->energyMode == ENERGY_MODE_OFFENSIVE && ship->energyFull) {
+        damagePerBullet *= 2.0f;  // 2x bonus with full energy
     }
     
-    return true;
+    // Return damage per individual bullet
+    return damagePerBullet;
 }
 
-void SwitchWeaponMode(PlayerShip* ship, WeaponMode mode) {
-    ship->weaponMode = mode;
-    ship->chargeLevel = 0;
-    ship->isCharging = false;
-}
+// ActivateAbility function removed - abilities system disabled
+
+// Weapon mode switching removed - always SINGLE mode
 
 void ApplyShipUpgrade(PlayerShip* ship, int upgradeType, int level) {
     level = fminf(5, fmaxf(1, level)); // Clamp between 1-5
@@ -639,7 +748,7 @@ void GetShipStats(const PlayerShip* ship, char* buffer, int bufferSize) {
         (ship->weaponMode == WEAPON_MODE_DOUBLE) ? "Double" :
         (ship->weaponMode == WEAPON_MODE_SPREAD) ? "Spread" :
         (ship->weaponMode == WEAPON_MODE_RAPID) ? "Rapid" :
-        (ship->weaponMode == WEAPON_MODE_CHARGE) ? "Charge" : "Wave",
+        (ship->weaponMode == WEAPON_MODE_CHARGE) ? "Charge" : "Dual",
         ship->score,
         ship->enemiesDestroyed,
         ship->survivalTime,

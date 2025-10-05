@@ -1274,7 +1274,7 @@ SpawnEvent* CreateStaticWaveplan(int* eventCount) {
         .time = 428.0f,
         .type = ENEMY_BOSS,
         .x = SCREEN_WIDTH + 100,
-        .y = SCREEN_HEIGHT / 2,
+        .y = PLAY_ZONE_HEIGHT / 2,
         .count = 1,
         .interval = 0,
         .pattern = "boss"

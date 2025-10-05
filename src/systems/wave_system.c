@@ -170,7 +170,7 @@ void ApplyMovementPattern(EnemyEx* enemy, const char* pattern) {
         enemy->speedY = 0;
     } else if (strcmp(pattern, "v_formation") == 0) {
         enemy->speedX = enemy->speed * 1.2f;
-        enemy->speedY = (enemy->position.y < SCREEN_HEIGHT/2) ? 1.0f : -1.0f;
+        enemy->speedY = (enemy->position.y < PLAY_ZONE_HEIGHT/2) ? 1.0f : -1.0f;
     } else if (strcmp(pattern, "hover") == 0) {
         enemy->speedX = enemy->speed * 0.3f;
         enemy->speedY = 0;
@@ -187,11 +187,11 @@ void ApplyMovementPattern(EnemyEx* enemy, const char* pattern) {
         enemy->speedY = 0;
     } else if (strcmp(pattern, "flanking") == 0) {
         enemy->speedX = enemy->speed * 1.5f;
-        enemy->speedY = (enemy->position.y < SCREEN_HEIGHT/2) ? 2.0f : -2.0f;
+        enemy->speedY = (enemy->position.y < PLAY_ZONE_HEIGHT/2) ? 2.0f : -2.0f;
     } else if (strcmp(pattern, "boss") == 0) {
         enemy->speedX = enemy->speed * 0.4f;
         enemy->speedY = 0;
-        enemy->targetY = SCREEN_HEIGHT/2;
+        enemy->targetY = PLAY_ZONE_HEIGHT/2;
     } else if (strcmp(pattern, "minion") == 0) {
         enemy->speedX = enemy->speed * 1.2f;
         enemy->speedY = GetRandomValue(-2, 2);
@@ -377,7 +377,7 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
                     enemy->position.x += 8.0f;  // Fast escape speed
                     
                     // Move towards center Y for dramatic exit
-                    float centerY = SCREEN_HEIGHT / 2;
+                    float centerY = PLAY_ZONE_HEIGHT / 2;
                     float diff = centerY - enemy->position.y;
                     if (fabs(diff) > 5.0f) {
                         enemy->position.y += (diff > 0 ? 1 : -1) * 3.0f;
@@ -403,8 +403,8 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
                     if (enemy->position.x <= maxBossX) {
                         enemy->moveTimer = 1;  // Switch to hovering state
                         enemy->specialTimer = 0;  // Reset for movement timer
-                        // Set initial target in safe zone (last third of screen)
-                        enemy->targetY = GetRandomValue(100, SCREEN_HEIGHT - 100);
+                        // Set initial target in safe zone (play zone only)
+                        enemy->targetY = GetRandomValue(PLAY_ZONE_TOP + 100, PLAY_ZONE_BOTTOM - 100);
                         enemy->speedX = GetRandomValue(minBossX + 30, maxBossX - 30);  // Initial target X
                     }
                 } else {
@@ -417,8 +417,8 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
                     if (enemy->specialTimer >= 2.5f) {
                         enemy->specialTimer = 0;
                         
-                        // Set new random target within last third bounds
-                        enemy->targetY = GetRandomValue(100, SCREEN_HEIGHT - 100);
+                        // Set new random target within play zone bounds
+                        enemy->targetY = GetRandomValue(PLAY_ZONE_TOP + 100, PLAY_ZONE_BOTTOM - 100);
                         // speedX repurposed for horizontal target position in this mode
                         enemy->speedX = GetRandomValue(minBossX, maxBossX);
                     }
@@ -465,13 +465,13 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
             break;
     }
     
-    // Keep enemies in bounds
-    if (enemy->position.y < enemy->radius) {
-        enemy->position.y = enemy->radius;
+    // Keep enemies in bounds (within play zone, above HUD)
+    if (enemy->position.y < PLAY_ZONE_TOP + enemy->radius) {
+        enemy->position.y = PLAY_ZONE_TOP + enemy->radius;
         enemy->speedY = fabs(enemy->speedY);
     }
-    if (enemy->position.y > SCREEN_HEIGHT - enemy->radius) {
-        enemy->position.y = SCREEN_HEIGHT - enemy->radius;
+    if (enemy->position.y > PLAY_ZONE_BOTTOM - enemy->radius) {
+        enemy->position.y = PLAY_ZONE_BOTTOM - enemy->radius;
         enemy->speedY = -fabs(enemy->speedY);
     }
     
@@ -492,10 +492,9 @@ void CleanupWaveSystem(WaveSystem* waveSystem) {
         free(waveSystem->phases);
         waveSystem->phases = NULL;
     }
-    if (waveSystem->spawnEvents) {
-        free(waveSystem->spawnEvents);
-        waveSystem->spawnEvents = NULL;
-    }
+    // DON'T free spawnEvents - it's a static array from CreateStaticWaveplan
+    // Static arrays are not heap-allocated and shouldn't be freed
+    waveSystem->spawnEvents = NULL;
 }
 
 const char* GetCurrentPhaseName(const WaveSystem* waveSystem) {

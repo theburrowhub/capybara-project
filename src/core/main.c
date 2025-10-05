@@ -3,6 +3,7 @@
 #include "constants.h"
 #include "game.h"
 #include "collision.h"
+#include "powerup.h"
 #include "renderer.h"
 #include "menu.h"
 
@@ -10,6 +11,9 @@ int main(void) {
     // Initialize window
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Shoot'em Up - Prototype");
     SetTargetFPS(60);
+    
+    // Initialize audio device (only once at program start)
+    InitAudioDevice();
     
     // Create and initialize menu
     Menu menu;
@@ -36,6 +40,8 @@ int main(void) {
             // Check collisions
             if (!game.gameOver) {
                 CheckCollisions(&game);
+                // Check powerup collisions
+                CheckPowerupCollisions(game.powerupSystem, game.playerShip, &game.score);
             }
             
             // Check if player wants to return to menu (ESC key when game is over)

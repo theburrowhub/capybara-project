@@ -10,6 +10,7 @@ typedef struct WaveSystem WaveSystem;
 typedef struct EnemyEx EnemyEx;
 typedef struct PlayerShip PlayerShip;
 typedef struct ExplosionSystem ExplosionSystem;
+typedef struct PowerupSystem PowerupSystem;
 
 // Bullet structure
 typedef struct Bullet {
@@ -17,6 +18,9 @@ typedef struct Bullet {
     Rectangle bounds;
     bool active;
     float speed;
+    float damage;       // Damage dealt by this bullet
+    float velocityY;    // Y velocity for spread/dual shots
+    int powerLevel;     // Weapon power level 0-3 (standard, +1, +2, +3)
 } Bullet;
 
 // Note: Enemy structure has been replaced by EnemyEx in enemy_types.h
@@ -45,6 +49,8 @@ struct Game {
     WaveSystem* waveSystem;
     // Explosion system
     ExplosionSystem* explosionSystem;
+    // Powerup system
+    PowerupSystem* powerupSystem;
     // Starfield
     Star* stars;
     int numStars;

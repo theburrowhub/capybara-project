@@ -9,6 +9,7 @@
 #include "combat_system.h"
 #include "projectile_manager.h"
 #include "collision.h"
+#include "powerup.h"
 #include "utils.h"
 #include <stdlib.h>
 #include <string.h>
@@ -18,10 +19,8 @@ void InitGame(Game* game) {
     // Initialize logger
     InitLogger(game);
     
-    // Initialize audio device
-    InitAudioDevice();
-    
     // Try to load background music
+    // Note: Audio device is initialized once in main(), not here
     game->musicLoaded = false;
     game->musicVolume = 0.5f;  // Default 50% volume
     const char* musicPath = "assets/audio/level1.mp3";
@@ -78,6 +77,10 @@ void InitGame(Game* game) {
     // Initialize explosion system
     game->explosionSystem = (ExplosionSystem*)malloc(sizeof(ExplosionSystem));
     InitExplosionSystem(game->explosionSystem);
+    
+    // Initialize powerup system
+    game->powerupSystem = (PowerupSystem*)malloc(sizeof(PowerupSystem));
+    InitPowerupSystem(game->powerupSystem);
     
     // Initialize game state
     game->score = 0;
@@ -265,6 +268,16 @@ void UpdateGame(Game* game) {
             // Update new player ship
             UpdatePlayerShip(game->playerShip, deltaTime);
             
+            // Check for weapon powerup revive event and log it
+            static bool wasJustRevived = false;
+            if (game->playerShip->justRevived && !wasJustRevived) {
+                LogEvent(game, "[%.2f] SHIP REVIVED! Weapon powerup consumed. Hull restored: %d HP | Shield: 50%% | Weapon Power: Level %d",
+                        game->gameTime, game->playerShip->health, game->playerShip->weaponPowerupCount);
+                wasJustRevived = true;
+            } else if (!game->playerShip->justRevived) {
+                wasJustRevived = false;
+            }
+            
             // Player ship properties are used directly
             
             // Use original bullet system
@@ -275,6 +288,9 @@ void UpdateGame(Game* game) {
             
             // Update explosion system
             UpdateExplosionSystem(game->explosionSystem, deltaTime);
+            
+            // Update powerup system
+            UpdatePowerups(game->powerupSystem, game->playerShip, deltaTime);
             
             // Update starfield
             for (int i = 0; i < game->numStars; i++) {
@@ -290,9 +306,6 @@ void UpdateGame(Game* game) {
             if (game->backgroundX <= -SCREEN_WIDTH) {
                 game->backgroundX = 0;
             }
-            
-            // Update score from player ship
-            game->score = game->playerShip->score;
             
             // Boss escape sequence - 30 seconds before level end (523.82s)
             // DRAMATIC PHASED SEQUENCE
@@ -434,7 +447,7 @@ void CleanupGame(Game* game) {
         UnloadMusicStream(game->backgroundMusic);
         game->musicLoaded = false;
     }
-    CloseAudioDevice();
+    // Note: Don't call CloseAudioDevice() here - Raylib handles it on window close
     
     // Free wave system
     if (game->waveSystem) {
@@ -447,6 +460,13 @@ void CleanupGame(Game* game) {
     if (game->explosionSystem) {
         free(game->explosionSystem);
         game->explosionSystem = NULL;
+    }
+    
+    // Free powerup system
+    if (game->powerupSystem) {
+        CleanupPowerupSystem(game->powerupSystem);
+        free(game->powerupSystem);
+        game->powerupSystem = NULL;
     }
     
     // Free player ship

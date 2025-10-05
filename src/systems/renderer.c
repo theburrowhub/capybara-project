@@ -6,7 +6,9 @@
 #include "wave_system.h"
 #include "weapon.h"
 #include "explosion.h"
+#include "powerup.h"
 #include <stdio.h>
+#include <math.h>
 
 void DrawStarfield(const Game* game) {
     // Draw parallax starfield
@@ -55,8 +57,7 @@ void DrawUI(const Game* game) {
         DrawText("[INVULNERABLE]", 200, 50, 30, LIME);
     }
     
-    // Weapon heat bar
-    DrawWeaponHeatBar(game->playerShip);
+    // Weapon heat bar removed - no overheating system
     
     // Wave phase information
     if (game->waveSystem) {
@@ -81,7 +82,7 @@ void DrawUI(const Game* game) {
     }
     
     // Draw controls
-    DrawText("Controls: WASD/Arrows - Move | P - Pause | H - Show Hitboxes", 
+    DrawText("Controls: WASD/Arrows - Move | P - Pause", 
             10, SCREEN_HEIGHT - 30, 20, WHITE);
     
     // Show debug phase start if applicable
@@ -99,8 +100,11 @@ void DrawDebugInfo(const Game* game) {
 }
 
 void DrawGameOver(const Game* game) {
+    // Darken full screen but center content in play zone
     DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(BLACK, 0.7f));
-    DrawText("GAME OVER", SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 150, 50, RED);
+    
+    int centerY = PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2;
+    DrawText("GAME OVER", SCREEN_WIDTH/2 - 150, centerY - 150, 50, RED);
     
     // Show current phase number for easy debug restart
     if (game->waveSystem) {
@@ -108,22 +112,22 @@ void DrawGameOver(const Game* game) {
         int minutes = (int)(game->gameTime / 60);
         int seconds = (int)game->gameTime % 60;
         
-        DrawRectangle(SCREEN_WIDTH/2 - 200, SCREEN_HEIGHT/2 - 90, 400, 60, Fade(DARKBLUE, 0.8f));
-        DrawRectangleLines(SCREEN_WIDTH/2 - 200, SCREEN_HEIGHT/2 - 90, 400, 60, SKYBLUE);
+        DrawRectangle(SCREEN_WIDTH/2 - 200, centerY - 90, 400, 60, Fade(DARKBLUE, 0.8f));
+        DrawRectangleLines(SCREEN_WIDTH/2 - 200, centerY - 90, 400, 60, SKYBLUE);
         
         DrawText(TextFormat("Phase: %d  |  Time: %02d:%02d", phaseNum, minutes, seconds), 
-                SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 75, 24, SKYBLUE);
+                SCREEN_WIDTH/2 - 150, centerY - 75, 24, SKYBLUE);
         DrawText(TextFormat("To restart here: ./run_debug_game.sh -i -p %d", phaseNum), 
-                SCREEN_WIDTH/2 - 190, SCREEN_HEIGHT/2 - 50, 18, LIGHTGRAY);
+                SCREEN_WIDTH/2 - 190, centerY - 50, 18, LIGHTGRAY);
     }
     
     // Show death cause with better formatting
     int textWidth = MeasureText(game->deathCause, 20);
-    DrawText("Cause of Death:", SCREEN_WIDTH/2 - 80, SCREEN_HEIGHT/2 + 10, 22, ORANGE);
-    DrawText(game->deathCause, SCREEN_WIDTH/2 - textWidth/2, SCREEN_HEIGHT/2 + 40, 20, YELLOW);
+    DrawText("Cause of Death:", SCREEN_WIDTH/2 - 80, centerY + 10, 22, ORANGE);
+    DrawText(game->deathCause, SCREEN_WIDTH/2 - textWidth/2, centerY + 40, 20, YELLOW);
     
-    DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - 120, SCREEN_HEIGHT/2 + 80, 30, WHITE);
-    DrawText("Press R to Restart", SCREEN_WIDTH/2 - 110, SCREEN_HEIGHT/2 + 120, 25, WHITE);
+    DrawText(TextFormat("Final Score: %d", game->score), SCREEN_WIDTH/2 - 120, centerY + 80, 30, WHITE);
+    DrawText("Press R to Restart", SCREEN_WIDTH/2 - 110, centerY + 120, 25, WHITE);
 }
 
 void DrawProjectiles(const Game* game, bool showHitbox) {
@@ -147,61 +151,216 @@ void DrawProjectiles(const Game* game, bool showHitbox) {
 }
 
 void DrawGame(Game* game) {
-    bool showHitbox = IsKeyDown(KEY_H);
+    // Hitbox debug removed for cleaner gameplay
     
-    // Draw starfield background
-    DrawStarfield(game);
+    // === TOP HUD (Phase, Progress, Time, Enemy Count) ===
+    // Draw top HUD background bar
+    DrawRectangle(0, 0, SCREEN_WIDTH, 30, Fade(BLACK, 0.7f));
     
-    // Draw game objects
-    // Draw the new enhanced player ship
-    DrawPlayerShip(game->playerShip);
-    
-    // Draw hitbox if requested (and ship is visible)
-    if (showHitbox && game->playerShip->isVisible) {
-        DrawRectangleLines(
-            game->playerShip->bounds.x,
-            game->playerShip->bounds.y,
-            game->playerShip->bounds.width,
-            game->playerShip->bounds.height,
-            LIME
-        );
-    }
-    
-    DrawBullets(game->bullets);
-    DrawProjectiles(game, showHitbox);
-    DrawEnemies(game, showHitbox);
-    
-    // Draw explosions (after enemies but before HUD for proper layering)
-    DrawExplosions(game->explosionSystem);
-    
-    // Draw player ship HUD
-    DrawShipHUD(game->playerShip);
-    
-    // Draw additional UI
-    DrawDebugInfo(game);
-    
-    // Draw wave information
+    // Left: Phase name
     if (game->waveSystem) {
         const char* phaseName = GetCurrentPhaseName(game->waveSystem);
-        float progress = GetWaveProgress(game->waveSystem);
-        DrawText(TextFormat("Phase: %s", phaseName), SCREEN_WIDTH/2 - 100, 50, 25, YELLOW);
-        
-        // Wave progress bar
-        DrawRectangle(SCREEN_WIDTH/2 - 200, 20, 400, 20, Fade(BLACK, 0.5f));
-        DrawRectangle(SCREEN_WIDTH/2 - 200, 20, (int)(400 * progress / 100), 20, Fade(GREEN, 0.7f));
-        DrawRectangleLines(SCREEN_WIDTH/2 - 200, 20, 400, 20, WHITE);
-        DrawText("WAVE PROGRESS", SCREEN_WIDTH/2 - 60, 22, 16, WHITE);
+        DrawText(TextFormat("PHASE: %s", phaseName), 10, 8, 18, YELLOW);
     }
     
-    // Draw controls hint
-    DrawText("Controls: WASD - Move | SPACE - Fire | SHIFT - Boost | E/Q/R - Abilities | P - Pause | H - Hitboxes", 
-            10, SCREEN_HEIGHT - 30, 16, Fade(WHITE, 0.7f));
+    // Center-Left: Wave progress bar
+    if (game->waveSystem) {
+        float progress = GetWaveProgress(game->waveSystem);
+        int barX = 250;
+        int barWidth = 300;
+        DrawText("PROGRESS:", barX, 10, 14, GRAY);
+        DrawRectangle(barX + 85, 10, barWidth, 12, Fade(DARKGRAY, 0.5f));
+        DrawRectangle(barX + 85, 10, (int)(barWidth * progress / 100), 12, Fade(GREEN, 0.8f));
+        DrawRectangleLines(barX + 85, 10, barWidth, 12, WHITE);
+        DrawText(TextFormat("%.0f%%", progress), barX + 390, 10, 14, WHITE);
+    }
+    
+    // Center-Right: Time
+    int minutes = (int)(game->gameTime / 60);
+    int seconds = (int)game->gameTime % 60;
+    DrawText(TextFormat("TIME: %02d:%02d", minutes, seconds), 680, 8, 18, WHITE);
+    
+    // Right: Enemy count
+    if (game->waveSystem) {
+        int enemyCount = CountActiveEnemies(game);
+        Color enemyColor = enemyCount > 0 ? RED : GREEN;
+        DrawText(TextFormat("ENEMIES: %d", enemyCount), 850, 8, 18, enemyColor);
+    }
+    
+    // Debug indicators (top right corner)
+    if (DEBUG_INVULNERABILITY) {
+        DrawText("[INVULN]", 1050, 8, 16, LIME);
+    }
+    if (DEBUG_START_PHASE > 0) {
+        DrawText(TextFormat("[P%d]", DEBUG_START_PHASE), 1150, 8, 16, ORANGE);
+    }
+    
+    // Draw starfield background (only in play zone)
+    DrawStarfield(game);
+    
+    // Draw game objects (all in play zone)
+    DrawPlayerShip(game->playerShip);
+    DrawBullets(game->bullets);
+    DrawProjectiles(game, false);  // No hitbox display
+    DrawEnemies(game, false);  // No hitbox display
+    DrawPowerups(game->powerupSystem);
+    DrawExplosions(game->explosionSystem);
+    
+    // Danger warning effect - 30 seconds before boss escape
+    const float BOSS_ESCAPE_TIME = 523.82f;
+    const float WARNING_START_TIME = BOSS_ESCAPE_TIME - 30.0f;  // 493.82s
+    
+    if (game->gameTime >= WARNING_START_TIME && game->gameTime < BOSS_ESCAPE_TIME && !game->bossEscapeTriggered) {
+        // Calculate time remaining and intensity
+        float timeRemaining = BOSS_ESCAPE_TIME - game->gameTime;
+        float warningProgress = 1.0f - (timeRemaining / 30.0f);  // 0.0 to 1.0
+        
+        // Pulsing effect - faster as time runs out
+        float pulseSpeed = 2.0f + (warningProgress * 6.0f);  // 2 to 8 Hz
+        float pulse = (sinf(game->gameTime * pulseSpeed) + 1.0f) * 0.5f;  // 0.0 to 1.0
+        
+        // Alpha increases with time and pulse
+        float baseAlpha = 0.1f + (warningProgress * 0.4f);  // 0.1 to 0.5
+        float alpha = baseAlpha * pulse;
+        
+        // Draw red borders around play zone
+        int borderThickness = 8 + (int)(warningProgress * 12.0f);  // 8 to 20 pixels
+        Color dangerColor = Fade(RED, alpha);
+        
+        // Top border
+        DrawRectangle(0, PLAY_ZONE_TOP, SCREEN_WIDTH, borderThickness, dangerColor);
+        // Bottom border
+        DrawRectangle(0, PLAY_ZONE_BOTTOM - borderThickness, SCREEN_WIDTH, borderThickness, dangerColor);
+        // Left border
+        DrawRectangle(0, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
+        // Right border
+        DrawRectangle(SCREEN_WIDTH - borderThickness, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
+        
+        // Add warning text in top center when close to escape (last 10 seconds)
+        if (timeRemaining <= 10.0f) {
+            int textSize = 30 + (int)((1.0f - timeRemaining / 10.0f) * 20.0f);  // 30 to 50
+            const char* warningText = TextFormat("DANGER! BOSS ESCAPE IN %.0f!", timeRemaining);
+            int textWidth = MeasureText(warningText, textSize);
+            Color textColor = Fade(RED, 0.7f + pulse * 0.3f);
+            DrawText(warningText, (SCREEN_WIDTH - textWidth) / 2, PLAY_ZONE_TOP + 40, textSize, textColor);
+        }
+    }
+    
+    // Draw play zone separator line
+    DrawLine(0, PLAY_ZONE_BOTTOM, SCREEN_WIDTH, PLAY_ZONE_BOTTOM, Fade(WHITE, 0.3f));
+    
+    // === BOTTOM HUD (from left to right) ===
+    int hudY = PLAY_ZONE_BOTTOM + 5;  // Start HUD 5 pixels below play zone
+    
+    // Draw HUD background
+    DrawRectangle(0, PLAY_ZONE_BOTTOM, SCREEN_WIDTH, BOTTOM_HUD_HEIGHT, Fade(BLACK, 0.8f));
+    
+    // Left section: Ship status bars (hull, shield, energy, mode)
+    DrawShipHUD(game->playerShip);
+    
+    // Middle-Left section: Score
+    int scoreX = 280;
+    DrawText(TextFormat("SCORE: %d", game->score), scoreX, hudY + 15, 24, GOLD);
+    
+    // Middle section: Weapon info & damage (recovered from removal)
+    int weaponX = 480;
+    
+    // Weapon Mode Display (recovered)
+    DrawText("WEAPON:", weaponX, hudY + 8, 14, GRAY);
+    const char* weaponModeNames[] = {
+        "SINGLE", "DOUBLE", "SPREAD", "RAPID", "CHARGE", "DUAL"
+    };
+    Color weaponColor = (Color){100, 255, 100, 255};
+    DrawText(weaponModeNames[game->playerShip->weaponMode], weaponX + 75, hudY + 8, 14, weaponColor);
+    DrawText("(1-6/R)", weaponX + 145, hudY + 8, 11, Fade(WHITE, 0.5f));
+    
+    // Weapon Power Counter (recovered)
+    DrawText("POWER:", weaponX, hudY + 28, 14, GRAY);
+    int socketX = weaponX + 60;
+    int socketSize = 12;
+    for (int i = 0; i < 3; i++) {
+        int x = socketX + i * 18;
+        if (i < game->playerShip->weaponPowerupCount) {
+            DrawRectangle(x, hudY + 29, socketSize, socketSize, ORANGE);
+            DrawRectangleLines(x, hudY + 29, socketSize, socketSize, WHITE);
+        } else {
+            DrawRectangle(x, hudY + 29, socketSize, socketSize, Fade(DARKGRAY, 0.3f));
+            DrawRectangleLines(x, hudY + 29, socketSize, socketSize, DARKGRAY);
+        }
+    }
+    DrawText(TextFormat("%d/3", game->playerShip->weaponPowerupCount), socketX + 60, hudY + 28, 14, ORANGE);
+    
+    // Damage indicator with bonuses and multipliers
+    DrawText("DAMAGE:", weaponX, hudY + 50, 14, GRAY);
+    float damagePerShot = CalculateDamagePerShot(game->playerShip);
+    Color damageColor = WHITE;
+    if (damagePerShot >= 15.0f) {
+        damageColor = (Color){255, 50, 50, 255};
+    } else if (damagePerShot >= 10.0f) {
+        damageColor = (Color){255, 100, 0, 255};
+    } else if (damagePerShot >= 6.0f) {
+        damageColor = ORANGE;
+    } else if (damagePerShot >= 3.0f) {
+        damageColor = YELLOW;
+    }
+    DrawText(TextFormat("%.1f", damagePerShot), weaponX + 75, hudY + 50, 14, damageColor);
+    DrawText("per shot", weaponX + 120, hudY + 50, 11, Fade(WHITE, 0.5f));
+    
+    // Show active multipliers and bonuses
+    int multX = weaponX + 180;
+    bool hasMultiplier = false;
+    
+    // Weapon power multiplier
+    if (game->playerShip->weaponPowerupCount > 0) {
+        float powerMult = 1.0f;
+        switch (game->playerShip->weaponPowerupCount) {
+            case 1: powerMult = 1.5f; break;
+            case 2: powerMult = 2.0f; break;
+            case 3: powerMult = 2.5f; break;
+            default: powerMult = 1.0f; break;
+        }
+        DrawText(TextFormat("x%.1f", powerMult), multX, hudY + 50, 12, ORANGE);
+        DrawText("PWR", multX, hudY + 62, 9, Fade(ORANGE, 0.7f));
+        multX += 42;
+        hasMultiplier = true;
+    }
+    
+    // Offensive mode bonus (2x damage when energy full)
+    if (game->playerShip->energyMode == ENERGY_MODE_OFFENSIVE && game->playerShip->energyFull) {
+        DrawText("x2.0", multX, hudY + 50, 12, RED);
+        DrawText("MODE", multX - 2, hudY + 62, 9, Fade(RED, 0.7f));
+        hasMultiplier = true;
+    }
+    
+    // If no multipliers, show base damage note
+    if (!hasMultiplier) {
+        DrawText("(base)", multX, hudY + 52, 10, Fade(WHITE, 0.4f));
+    }
+    
+    // Charge indicator for charge mode
+    if (game->playerShip->weaponMode == WEAPON_MODE_CHARGE && game->playerShip->isCharging) {
+        DrawText("CHARGING...", weaponX, hudY + 70, 12, YELLOW);
+        DrawRectangle(weaponX + 80, hudY + 72, 100, 8, Fade(GRAY, 0.3f));
+        DrawRectangle(weaponX + 80, hudY + 72, (game->playerShip->chargeLevel), 8, YELLOW);
+        DrawRectangleLines(weaponX + 80, hudY + 72, 100, 8, WHITE);
+    }
+    
+    // Right section: Controls
+    int controlsX = 750;
+    DrawText("CONTROLS:", controlsX, hudY + 5, 12, GRAY);
+    DrawText("WASD/Arrows - Move", controlsX, hudY + 20, 11, WHITE);
+    DrawText("SPACE - Fire", controlsX, hudY + 35, 11, WHITE);
+    DrawText("Q - Mode", controlsX, hudY + 50, 11, WHITE);
+    DrawText("E - Special", controlsX, hudY + 65, 11, WHITE);
+    
+    DrawText("P - Pause", controlsX + 120, hudY + 20, 11, WHITE);
+    DrawText("ESC - Menu", controlsX + 120, hudY + 35, 11, WHITE);
     
     // Draw pause overlay
     if (game->gamePaused) {
         DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(BLACK, 0.5f));
-        DrawText("PAUSED", SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 - 50, 60, WHITE);
-        DrawText("Press P to Resume", SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 20, 25, WHITE);
+        DrawText("PAUSED", SCREEN_WIDTH/2 - 100, PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2 - 50, 60, WHITE);
+        DrawText("Press P to Resume", SCREEN_WIDTH/2 - 100, PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2 + 20, 25, WHITE);
     }
     
     // Draw game over screen if needed

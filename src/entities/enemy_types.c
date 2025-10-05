@@ -148,7 +148,7 @@ void InitEnemyTypes(void) {
         .type = ENEMY_BOSS,
         .name = "Boss",
         .size = 3.0f,
-        .health = 150,  // Balanced health pool, no shield mechanic
+        .health = 1000,  // Massive health pool for epic boss battles
         .speed = 0.6f,
         .power = 50,
         .primaryColor = (Color){150, 0, 0, 255},      // Dark Red

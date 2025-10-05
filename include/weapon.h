@@ -6,8 +6,11 @@
 // Initialize bullets array
 void InitBullets(Bullet* bullets);
 
-// Shoot a bullet from given position
+// Shoot a bullet from given position (legacy - use ShootBulletsForMode)
 void ShootBullet(Bullet* bullets, Vector2 position);
+
+// Fire bullets according to weapon mode with balanced damage
+void ShootBulletsForMode(Bullet* bullets, PlayerShip* playerShip);
 
 // Update weapon heat system
 void UpdateWeaponHeat(PlayerShip* playerShip, float deltaTime);

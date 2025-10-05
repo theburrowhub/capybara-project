@@ -5,6 +5,13 @@
 #define SCREEN_WIDTH 1200
 #define SCREEN_HEIGHT 600
 
+// HUD and play zone dimensions
+#define TOP_HUD_HEIGHT 30           // Height of top HUD bar
+#define BOTTOM_HUD_HEIGHT 100       // Height of bottom HUD
+#define PLAY_ZONE_TOP TOP_HUD_HEIGHT // Top of play zone (30)
+#define PLAY_ZONE_BOTTOM (SCREEN_HEIGHT - BOTTOM_HUD_HEIGHT)  // Bottom of play zone (500)
+#define PLAY_ZONE_HEIGHT (PLAY_ZONE_BOTTOM - PLAY_ZONE_TOP)  // Effective play zone height (470)
+
 // Game object limits
 #define MAX_BULLETS 50
 #define MAX_ENEMIES 30  // Increased for wave system
