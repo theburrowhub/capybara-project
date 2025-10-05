@@ -49,6 +49,7 @@ After clicking an enemy, you enter an interactive combat arena where:
 - **Standard Behaviors**: Each enemy uses its authentic attack pattern from the main game
 - **Live Combat**: Shoot and destroy enemies to test weapon effectiveness
 - **Statistics Tracking**: View spawned, destroyed, and active enemy counts
+- **Visual Effects**: Explosions, particle effects, screen shake (shared from main game)
 
 **Controls:**
 - `WASD` or `Arrow Keys` - Move player ship
@@ -62,6 +63,7 @@ After clicking an enemy, you enter an interactive combat arena where:
   - Shooting: Press button each time (not continuous hold)
   - **Enemy firing**: Enemies fire projectiles using their weapon configurations
   - **Enemy projectiles**: Same types, speeds, and patterns as main game
+  - **Explosions**: Same explosion effects when enemies destroyed
 - **Arena differences:**
   - Player is invincible - enemy projectiles pass through (for safe testing)
   - No weapon overheating
@@ -123,68 +125,117 @@ Observe enemy animations, special effects, and attack patterns in isolation.
 ### 6. Movement Pattern Verification
 Ensure complex movement patterns (tank assault, elite retreat, boss hover) work correctly while firing.
 
+### 7. Explosion Testing
+- Verify explosion sizes match enemy sizes
+- Test particle effects and colors
+- Observe shockwave rings (medium/large enemies)
+- Experience screen shake effects
+
 ## Implementation Details
+
+### Shared Modules (100% Code Reuse)
+
+The arena uses the **exact same systems** as the main game:
+
+1. **Combat System** (`combat_system.c`)
+   - `Combat_FireEnemyProjectile()` - Enemy firing logic
+   - `Combat_UpdateEnemyFiring()` - Firing timer management
+
+2. **Projectile Manager** (`projectile_manager.c`)
+   - `ProjectileManager_UpdateAll()` - Update all projectiles
+   - `ProjectileManager_DrawAll()` - Draw all projectiles
+   - `ProjectileManager_InitAll()` - Initialize projectiles
+
+3. **Collision System** (`collision.c`)
+   - `Collision_CheckBulletEnemyGeneric()` - Bullet-enemy collisions
+   - Damage calculation with resistance
+   - Ghost phasing logic
+   - Boss shield handling
+
+4. **Explosion System** (`explosion.c`)
+   - `InitExplosionSystem()` - Initialize explosions
+   - `UpdateExplosionSystem()` - Update all explosions
+   - `DrawExplosions()` - Draw all explosions
+   - `CreateEnemyExplosion()` - Create explosion on enemy death
+
+5. **Enemy Systems** (`enemy_types.c`, `wave_system.c`)
+   - Enemy definitions and stats
+   - Movement patterns
+   - Drawing routines
+
+6. **Weapon System** (`weapon.c`)
+   - Bullet initialization
+   - Bullet firing logic
+
+**Result:** The showcase is a **thin wrapper** around the game's systems with ~500 lines, while reusing ~2000+ lines of game logic!
 
 ### Architecture
 
-The showcase uses a state-based architecture with two modes:
-
-```c
-typedef enum {
-    MODE_GRID_SELECT,   // Grid selection screen
-    MODE_TEST_ARENA     // Interactive test arena
-} ShowcaseMode;
+```
+                    Shared Game Systems
+                    ──────────────────
+┌────────────────────────────────────────────────────┐
+│  combat_system.c  │  projectile_manager.c          │
+│  collision.c      │  explosion.c                   │
+│  enemy_types.c    │  wave_system.c                 │
+│  weapon.c         │  player_ship.c                 │
+└────────┬──────────────────────┬────────────────────┘
+         ↓                      ↓
+    game.c (~300 lines)    showcase.c (~500 lines)
+    Uses all systems       Uses all systems
 ```
 
-### Enemy Movement Patterns
-
-Enemies use the same movement system as the main game:
-- `ApplyMovementPattern()` - Sets initial movement parameters
-- `UpdateEnemyMovement()` - Updates position each frame based on type-specific behavior
-
-### Collision Detection
-
-Simplified collision system:
-- Player bullets vs enemies
-- No player damage (invincible mode)
-- Enemies removed when destroyed or off-screen
-
-### Spawning Logic
-
-- **Initial spawn**: 0.5 seconds after entering arena
-- **Respawn delay**: 1.0 seconds after last enemy dies/escapes
-- **Spawn location**: Random Y position on right edge
-- **Maximum enemies**: Limited by MAX_ENEMIES constant
+---
 
 ## Troubleshooting
 
-### Enemy not moving correctly
-- Check that the enemy's attack pattern matches the main game
-- Verify `UpdateEnemyMovement()` is being called each frame
+### No explosions appear
+**Fix:** Verify `state->explosionSystem` is initialized in `InitArenaState()`
 
-### Collision not working
-- Ensure bullets have proper bounds
-- Verify enemy bounds are updated each frame
+### Explosions look different from game
+**Issue:** Should be identical - they use the same functions
+**Fix:** Report the difference
 
-### Performance issues
-- Reduce MAX_ENEMIES if too many spawn
-- Check for memory leaks in spawn/despawn cycle
+### Performance issues with many explosions
+**Check:** Should handle up to 50 simultaneous explosions
+**Fix:** May need to reduce MAX_EXPLOSIONS
 
-## Future Enhancements
-
-Potential additions:
-- [ ] Weapon switching to test different projectile types
-- [ ] Enemy firing enabled/disabled toggle
-- [ ] Slow motion mode for detailed observation
-- [ ] Detailed hit feedback (damage numbers)
-- [ ] Wave pattern testing (spawn multiple enemies)
-- [ ] Recording/playback of test sessions
-- [ ] Side-by-side comparison of multiple enemy types
+---
 
 ## Related Files
 
-- `src/demo/enemy_showcase.c` - Main implementation
-- `src/entities/enemy_types.c` - Enemy definitions and behaviors
-- `src/systems/wave_system.c` - Movement pattern system
-- `include/enemy_types.h` - Enemy type definitions
-- `run_enemy_test_arena.sh` - Convenient run script
+**Main Implementation:**
+- `src/demo/enemy_showcase.c` - Arena implementation
+
+**Shared Modules (Reused):**
+- `src/systems/combat_system.c` - Enemy firing
+- `src/systems/projectile_manager.c` - Projectile lifecycle
+- `src/systems/collision.c` - Collision detection
+- `src/systems/explosion.c` - Explosion effects
+- `src/systems/wave_system.c` - Movement patterns
+- `src/entities/enemy_types.c` - Enemy definitions
+- `src/entities/player_ship.c` - Player ship
+- `src/systems/weapon.c` - Weapon system
+
+**Headers:**
+- `include/combat_system.h`
+- `include/projectile_manager.h`
+- `include/collision.h`
+- `include/explosion.h`
+
+**Documentation:**
+- `EXPLOSION_INTEGRATION_TEST.md` - Testing steps
+- `REFACTOR_TEST_STEPS.md` - Full refactoring tests
+
+---
+
+## Benefits
+
+✅ **100% code reuse** - Zero explosion code duplication  
+✅ **Identical effects** - Same as main game  
+✅ **Easy maintenance** - Fix once, works everywhere  
+✅ **Full features** - Particles, shockwaves, screen shake  
+✅ **Automatic sizing** - Explosion size matches enemy size  
+✅ **Color matching** - Explosions use enemy colors  
+
+The test arena now provides a **complete and authentic** enemy testing experience! 🎮💥
