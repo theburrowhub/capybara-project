@@ -22,7 +22,8 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/wave_system.c \
               $(SRC_DIR)/systems/static_waves.c \
               $(SRC_DIR)/systems/projectile_types.c \
-              $(SRC_DIR)/systems/explosion.c
+              $(SRC_DIR)/systems/explosion.c \
+              $(SRC_DIR)/systems/combat_system.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c
 
@@ -40,6 +41,7 @@ SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/systems/weapon.c \
                 $(SRC_DIR)/systems/wave_system.c \
                 $(SRC_DIR)/systems/static_waves.c \
+                $(SRC_DIR)/systems/combat_system.c \
                 $(SRC_DIR)/utils/logger.c
 
 # Sprite showcase source files
