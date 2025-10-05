@@ -56,6 +56,7 @@ struct Game {
     // Audio
     Music backgroundMusic;
     bool musicLoaded;
+    float musicVolume;
     // Boss tracking
     int bossEnemyIndex;       // Index of boss enemy in enemies array (-1 if none)
     bool bossEscapeTriggered; // Whether boss escape sequence has been triggered
