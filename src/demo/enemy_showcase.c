@@ -7,6 +7,7 @@
 #include "wave_system.h"
 #include "combat_system.h"
 #include "projectile_manager.h"
+#include "explosion.h"
 #include "constants.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -48,6 +49,7 @@ typedef struct {
     Bullet* bullets;
     EnemyEx* enemies;
     void* projectiles;        // Projectile* (enemy projectiles)
+    ExplosionSystem* explosionSystem;  // Shared explosion system
     int activeEnemyCount;
     float spawnTimer;
     float spawnDelay;
@@ -119,6 +121,10 @@ void InitArenaState(ArenaState* state, EnemyType enemyType) {
     };
     ProjectileManager_InitAll(&mgr);
     
+    // Initialize explosion system (reused from main game)
+    state->explosionSystem = (ExplosionSystem*)malloc(sizeof(ExplosionSystem));
+    InitExplosionSystem(state->explosionSystem);
+    
     state->activeEnemyCount = 0;
     state->spawnTimer = 0.0f;
     state->spawnDelay = 0.5f; // Spawn first enemy quickly
@@ -143,6 +149,10 @@ void CleanupArenaState(ArenaState* state) {
     if (state->projectiles) {
         free(state->projectiles);
         state->projectiles = NULL;
+    }
+    if (state->explosionSystem) {
+        free(state->explosionSystem);
+        state->explosionSystem = NULL;
     }
 }
 
@@ -376,16 +386,19 @@ void UpdateArenaState(ArenaState* state) {
     };
     ProjectileManager_UpdateAll(&projMgr, deltaTime);
     
+    // Update explosion system (reused from main game)
+    UpdateExplosionSystem(state->explosionSystem, deltaTime);
+    
     // Check bullet-enemy collisions using generic collision system
     CollisionContext collisionCtx = {
         .bullets = state->bullets,
         .maxBullets = MAX_BULLETS,
         .enemies = state->enemies,
         .maxEnemies = MAX_ENEMIES,
-        .explosionSystem = NULL,          // No explosions in showcase
-        .score = NULL,                    // No score in showcase
-        .enemiesKilled = &state->enemiesKilled,  // Track kills
-        .logContext = NULL,               // No logging in showcase
+        .explosionSystem = state->explosionSystem,  // ✅ Enable explosions (reused from game)
+        .score = NULL,                              // No score in showcase
+        .enemiesKilled = &state->enemiesKilled,     // Track kills
+        .logContext = NULL,                         // No logging in showcase
         .onEnemyHit = NULL,
         .onEnemyDestroyed = NULL
     };
@@ -526,6 +539,9 @@ void DrawArenaState(const ArenaState* state) {
         .maxProjectiles = MAX_PROJECTILES
     };
     ProjectileManager_DrawAll(&projMgr);
+    
+    // Draw explosions (reused from main game)
+    DrawExplosions(state->explosionSystem);
     
     // Draw HUD
     DrawRectangle(0, 0, SHOWCASE_WIDTH, 100, Fade(BLACK, 0.7f));
