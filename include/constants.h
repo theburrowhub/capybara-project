@@ -26,11 +26,13 @@
 #define SPEED_UPDATE_INTERVAL 20  // Seconds
 
 // Weapon system
+#define WEAPON_FIRE_RATE 0.12f
+
+// Weapon overheating (disabled - legacy code remains for compatibility)
+#define WEAPON_OVERHEATING false
 #define WEAPON_HEAT_PER_SHOT 8.0f
 #define WEAPON_COOLDOWN_RATE 30.0f
 #define WEAPON_OVERHEAT_TIME 3.0f
-#define WEAPON_FIRE_RATE 0.12f
-#define WEAPON_OVERHEATING false     // Enable/disable weapon overheating system (default: disabled)
 
 // Boss constants
 #define BOSS_SHIELD_HEALTH 100       // Boss shield health
