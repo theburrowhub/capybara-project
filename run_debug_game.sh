@@ -10,7 +10,6 @@ NC='\033[0m' # No Color
 # Default values
 INVULNERABLE="false"
 PHASE=0
-OVERHEATING="false"
 LOGGING="false"
 SHOW_HELP=0
 
@@ -69,7 +68,6 @@ show_help() {
     echo ""
     echo -e "${YELLOW}Options:${NC}"
     echo "  -i, --invulnerable    Enable invulnerability mode"
-    echo "  -o, --overheating     Enable weapon overheating system"
     echo "  -d, --debug-log       Enable debug logging to game.log"
     echo "  -p, --phase NUMBER    Start at specific phase (0-17)"
     echo "  -l, --list           List all available phases"
@@ -78,11 +76,10 @@ show_help() {
     echo -e "${YELLOW}Examples:${NC}"
     echo "  $0                    # Normal game"
     echo "  $0 -i                 # Invulnerable from start"
-    echo "  $0 -o                 # Enable weapon overheating"
     echo "  $0 -d                 # Enable debug logging"
     echo "  $0 -p 3               # Start at Tank Squadron (best for tank testing)"
     echo "  $0 -i -p 3            # Tank Squadron with invulnerability"
-    echo "  $0 -i -o -d -p 11     # Combined Arms (intense tanks) with all debug features"
+    echo "  $0 -i -d -p 11        # Combined Arms (intense tanks) with all debug features"
     echo ""
     echo -e "${YELLOW}Tank Testing Phases:${NC}"
     echo "  Phase 3  - Tank Squadron (clean tank testing)"
@@ -110,10 +107,6 @@ while [[ $# -gt 0 ]]; do
     case $1 in
         -i|--invulnerable)
             INVULNERABLE="true"
-            shift
-            ;;
-        -o|--overheating)
-            OVERHEATING="true"
             shift
             ;;
         -d|--debug-log)
@@ -159,7 +152,6 @@ echo -e "${GREEN}================================${NC}"
 echo ""
 echo -e "${YELLOW}Settings:${NC}"
 echo -e "  Invulnerability: ${INVULNERABLE}"
-echo -e "  Weapon Overheating: ${OVERHEATING}"
 echo -e "  Debug Logging: ${LOGGING}"
 echo -e "  Starting Phase: $PHASE - ${PHASE_NAMES[$PHASE]}"
 echo -e "  Description: ${PHASE_DESCRIPTIONS[$PHASE]}"
@@ -173,8 +165,28 @@ cp include/constants.h include/constants.h.backup
 restore_settings() {
     echo ""
     echo -e "${YELLOW}Restoring original settings...${NC}"
-    mv include/constants.h.backup include/constants.h
-    echo -e "${GREEN}Settings restored!${NC}"
+    
+    # First, try to restore from backup if it exists
+    if [[ -f "include/constants.h.backup" ]]; then
+        mv include/constants.h.backup include/constants.h
+    fi
+    
+    # Explicitly ensure all debug values are set to defaults
+    # This provides an extra layer of safety
+    sed -i '' 's/#define DEBUG_INVULNERABILITY true/#define DEBUG_INVULNERABILITY false/' include/constants.h 2>/dev/null
+    sed -i '' 's/#define DEBUG_LOGGING true/#define DEBUG_LOGGING false/' include/constants.h 2>/dev/null
+    sed -i '' 's/#define DEBUG_START_PHASE [0-9]*/#define DEBUG_START_PHASE 0/' include/constants.h 2>/dev/null
+    
+    # Rebuild the game with restored defaults
+    echo -e "${YELLOW}Rebuilding game with default settings...${NC}"
+    make clean > /dev/null 2>&1
+    if make > /dev/null 2>&1; then
+        echo -e "${GREEN}Game rebuilt with default settings!${NC}"
+    else
+        echo -e "${RED}Warning: Rebuild failed. You may need to run 'make clean && make' manually.${NC}"
+    fi
+    
+    echo -e "${GREEN}Settings restored to defaults!${NC}"
 }
 
 # Set up trap to restore settings on script exit
@@ -188,13 +200,6 @@ if [[ $INVULNERABLE == "true" ]]; then
     sed -i '' 's/#define DEBUG_INVULNERABILITY false/#define DEBUG_INVULNERABILITY true/' include/constants.h
 else
     sed -i '' 's/#define DEBUG_INVULNERABILITY true/#define DEBUG_INVULNERABILITY false/' include/constants.h
-fi
-
-# Update overheating setting
-if [[ $OVERHEATING == "true" ]]; then
-    sed -i '' 's/#define WEAPON_OVERHEATING false/#define WEAPON_OVERHEATING true/' include/constants.h
-else
-    sed -i '' 's/#define WEAPON_OVERHEATING true/#define WEAPON_OVERHEATING false/' include/constants.h
 fi
 
 # Update logging setting
@@ -231,10 +236,6 @@ echo ""
 
 if [[ $INVULNERABLE == "true" ]]; then
     echo -e "${GREEN}[INVULNERABLE] will appear in game${NC}"
-fi
-
-if [[ $OVERHEATING == "true" ]]; then
-    echo -e "${YELLOW}[WEAPON OVERHEATING] is enabled${NC}"
 fi
 
 if [[ $LOGGING == "true" ]]; then
