@@ -16,15 +16,6 @@ typedef enum {
     WEAPON_MODE_COUNT
 } WeaponMode;
 
-// Player ship abilities
-typedef enum {
-    ABILITY_BOOST,          // Speed boost
-    ABILITY_SHIELD_BURST,   // Temporary invulnerability
-    ABILITY_EMP_BLAST,      // Clear nearby projectiles
-    ABILITY_OVERDRIVE,      // Unlimited fire for short time
-    ABILITY_COUNT
-} PlayerAbility;
-
 // Energy mode system
 typedef enum {
     ENERGY_MODE_OFFENSIVE,   // Boosted weapon damage when full energy
@@ -75,16 +66,6 @@ typedef struct PlayerShip {
     float baseSpeed;
     float currentSpeed;
     float acceleration;
-    float maxSpeed;
-    float boostSpeed;
-    bool isBoosting;
-    float boostDuration;
-    float boostCooldown;
-    
-    // Abilities
-    float abilityCooldowns[ABILITY_COUNT];
-    bool abilityActive[ABILITY_COUNT];
-    float abilityDurations[ABILITY_COUNT];
     
     // Visual effects
     float engineGlow;       // Engine effect intensity (0-1)
@@ -158,9 +139,6 @@ void UpdateShipPhysics(PlayerShip* ship, float deltaTime);
 // Update weapon system
 void UpdateShipWeapons(PlayerShip* ship, Game* game, float deltaTime);
 
-// Update abilities
-void UpdateShipAbilities(PlayerShip* ship, float deltaTime);
-
 // Update visual effects
 void UpdateShipEffects(PlayerShip* ship, float deltaTime);
 
@@ -184,9 +162,6 @@ void DamagePlayerShip(PlayerShip* ship, int damage);
 
 // Heal/repair ship
 void RepairPlayerShip(PlayerShip* ship, int amount);
-
-// Activate ability
-bool ActivateAbility(PlayerShip* ship, PlayerAbility ability);
 
 // Switch weapon mode
 void SwitchWeaponMode(PlayerShip* ship, WeaponMode mode);

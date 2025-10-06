@@ -53,8 +53,8 @@ void InitShowcase(ShowcaseState* state) {
 void FireProjectile(ShowcaseState* state) {
     PlayerShip* ship = &state->ship;
     
-    // Don't fire if overheated (unless in overdrive)
-    if (ship->overheated && !ship->abilityActive[ABILITY_OVERDRIVE]) {
+    // Don't fire if overheated
+    if (ship->overheated) {
         return;
     }
     
@@ -62,7 +62,6 @@ void FireProjectile(ShowcaseState* state) {
     float fireRate = 0.15f;
     if (ship->weaponMode == WEAPON_MODE_RAPID) fireRate = 0.05f;
     if (ship->weaponMode == WEAPON_MODE_CHARGE) fireRate = 0.5f;
-    if (ship->abilityActive[ABILITY_OVERDRIVE]) fireRate *= 0.5f;
     
     if (ship->fireTimer > 0) {
         return;
@@ -70,13 +69,11 @@ void FireProjectile(ShowcaseState* state) {
     
     ship->fireTimer = fireRate;
     
-    // Add heat (unless in overdrive)
-    if (!ship->abilityActive[ABILITY_OVERDRIVE]) {
-        ship->weaponHeat += 8.0f;
-        if (ship->weaponHeat >= ship->maxHeat) {
-            ship->overheated = true;
-            ship->cooldownTime = 2.0f;
-        }
+    // Add heat (weapon overheating disabled in main game)
+    ship->weaponHeat += 8.0f;
+    if (ship->weaponHeat >= ship->maxHeat) {
+        ship->overheated = true;
+        ship->cooldownTime = 2.0f;
     }
     
     // Find free projectile slots and fire based on weapon mode
@@ -121,9 +118,9 @@ void FireProjectile(ShowcaseState* state) {
                 case WEAPON_MODE_DOUBLE:
                     firePos.x += 15;
                     if (projectilesFired == 0) {
-                        firePos.y -= 8;
+                        firePos.y -= 15;
                     } else {
-                        firePos.y += 8;
+                        firePos.y += 15;
                     }
                     break;
                     
@@ -277,9 +274,7 @@ void DrawShowcase(ShowcaseState* state) {
     if (state->playerSprite.id > 0) {
         // Use sprite if available
         int frame = ((int)(state->demoTime * 10) % 4);
-        if (state->ship.isBoosting || state->ship.abilityActive[ABILITY_SHIELD_BURST]) {
-            frame += 4; // Use boosted frames
-        }
+        // Abilities removed - using normal frames only
         
         Rectangle source = {
             (frame % 4) * 64,

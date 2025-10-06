@@ -34,11 +34,6 @@
 #define WEAPON_COOLDOWN_RATE 30.0f
 #define WEAPON_OVERHEAT_TIME 3.0f
 
-// Boss constants
-#define BOSS_SHIELD_HEALTH 100       // Boss shield health
-#define BOSS_SHIELD_REGEN_TIME 5.0f  // Time in seconds before shield regenerates
-#define BOSS_BASE_HEALTH 500         // Boss base health without shield
-
 // Debug constants
 #define DEBUG_LOGGING false          // Set to true to enable game.log file creation
 #define DEBUG_INVULNERABILITY false  // Set to true to make player invulnerable

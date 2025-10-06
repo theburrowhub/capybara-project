@@ -18,6 +18,11 @@ typedef enum {
     ENEMY_TYPE_COUNT
 } EnemyType;
 
+// Boss-specific constants (each boss type will have its own in the future)
+#define BOSS_SHIELD_HEALTH 100       // Boss shield health
+#define BOSS_SHIELD_REGEN_TIME 5.0f  // Time in seconds before shield regenerates
+#define BOSS_BASE_HEALTH 500         // Boss base health without shield
+
 // Enemy type definition structure
 typedef struct {
     EnemyType type;

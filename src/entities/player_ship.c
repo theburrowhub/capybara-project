@@ -30,10 +30,10 @@ void InitPlayerShip(PlayerShip* ship) {
     };
     ship->rotation = 0.0f;
     
-    // Health & Shield (reduced for more difficulty)
+    // Health & Shield
     ship->maxHealth = DEFAULT_SHIP_CONFIG.baseHealth;
     ship->health = ship->maxHealth;
-    ship->maxShield = 20;  // Reduced from 50 to 20 for more difficulty
+    ship->maxShield = 25;  // Offensive mode starts with 25 shield
     ship->shield = ship->maxShield;
     ship->shieldRegenRate = 2.0f;  // Slower regen (was 5.0f)
     ship->shieldRegenDelay = 5.0f; // Longer delay before regen (was 3.0f)
@@ -210,8 +210,16 @@ void HandlePlayerInput(PlayerShip* ship) {
     if (IsKeyPressed(KEY_Q)) {
         if (ship->energyMode == ENERGY_MODE_OFFENSIVE) {
             ship->energyMode = ENERGY_MODE_DEFENSIVE;
+            // Switch to defensive mode: increase max shield from 25 to 50
+            float shieldPercent = ship->shield / ship->maxShield;
+            ship->maxShield = 50;
+            ship->shield = shieldPercent * ship->maxShield;  // Maintain proportional shield
         } else {
             ship->energyMode = ENERGY_MODE_OFFENSIVE;
+            // Switch to offensive mode: decrease max shield from 50 to 25
+            float shieldPercent = ship->shield / ship->maxShield;
+            ship->maxShield = 25;
+            ship->shield = shieldPercent * ship->maxShield;  // Maintain proportional shield
         }
     }
     
@@ -294,19 +302,12 @@ void UpdateShipPhysics(PlayerShip* ship, float deltaTime) {
     
     // Update trail alpha
     for (int i = 0; i < 20; i++) {
-        if (ship->isBoosting) {
-            ship->trailAlpha[i] = fminf(1.0f, ship->trailAlpha[i] + deltaTime * 5.0f);
-        } else {
-            ship->trailAlpha[i] = fmaxf(0.0f, ship->trailAlpha[i] - deltaTime * 2.0f);
-        }
+        ship->trailAlpha[i] = fmaxf(0.0f, ship->trailAlpha[i] - deltaTime * 2.0f);
     }
     
     // Update engine glow based on movement
     float speed = sqrtf(ship->velocity.x * ship->velocity.x + ship->velocity.y * ship->velocity.y);
-    ship->engineGlow = 0.5f + (speed / ship->maxSpeed) * 0.5f;
-    if (ship->isBoosting) {
-        ship->engineGlow = fminf(1.0f, ship->engineGlow + 0.3f);
-    }
+    ship->engineGlow = 0.5f + (speed / ship->baseSpeed) * 0.5f;
 }
 
 // Abilities system removed - keeping gameplay simple for now
@@ -716,7 +717,6 @@ void ApplyShipUpgrade(PlayerShip* ship, int upgradeType, int level) {
         case 2: // Engine upgrade
             ship->upgrades.engineLevel = level;
             ship->baseSpeed = DEFAULT_SHIP_CONFIG.baseSpeed * (1.0f + (level - 1) * 0.15f);
-            ship->boostSpeed = ship->baseSpeed * 3.0f;
             break;
         case 3: // Energy upgrade
             ship->upgrades.energyLevel = level;

@@ -95,9 +95,9 @@ void ShootBulletsForMode(Bullet* bullets, PlayerShip* playerShip) {
                 case WEAPON_MODE_DOUBLE:
                     bullets[i].position.x += 20;
                     if (bulletsFired == 0) {
-                        bullets[i].position.y -= 8;
+                        bullets[i].position.y -= 15;
                     } else {
-                        bullets[i].position.y += 8;
+                        bullets[i].position.y += 15;
                     }
                     break;
                     
@@ -250,7 +250,7 @@ void UpdateBullets(Game* game) {
                 playerShip->chargeLevel = 100.0f;
             }
         } else if (playerShip->isCharging && playerShip->chargeLevel > 20.0f) {
-            // Release charge - fire multiple bullets across the screen
+            // Release charge - fire bullets in a radial globe/shotgun pattern
             int bulletCount = (int)(playerShip->chargeLevel / 10.0f);  // 2-10 bullets based on charge
             int bulletsFired = 0;
             
@@ -265,13 +265,25 @@ void UpdateBullets(Game* game) {
                 default: powerMultiplier = 1.0f; break;
             }
             
+            // Calculate angle spread - more bullets = wider spread
+            float totalSpreadAngle = 40.0f + (bulletCount * 3.0f);  // 40-70 degrees total spread
+            float angleStep = totalSpreadAngle / (bulletCount - 1);
+            float startAngle = -totalSpreadAngle / 2.0f;
+            
             for (int i = 0; i < MAX_BULLETS && bulletsFired < bulletCount; i++) {
                 if (!bullets[i].active) {
                     bullets[i].position = playerShip->position;
                     bullets[i].position.x += 25;
-                    bullets[i].position.y += (bulletsFired - bulletCount/2) * 8;  // Spread vertically
-                    bullets[i].speed = BULLET_SPEED;
-                    bullets[i].velocityY = 0.0f;
+                    
+                    // Calculate angle for this bullet in the radial spread
+                    float angle = startAngle + (bulletsFired * angleStep);
+                    float angleRad = angle * DEG2RAD;
+                    
+                    // Set velocity components for radial spread (globe pattern)
+                    float speed = BULLET_SPEED * 1.2f;  // Slightly faster
+                    bullets[i].speed = speed * cosf(angleRad);  // X velocity
+                    bullets[i].velocityY = speed * sinf(angleRad);  // Y velocity
+                    
                     bullets[i].damage = 1.0f * powerMultiplier;  // Apply power multiplier
                     bullets[i].powerLevel = powerLevel;
                     bullets[i].bounds = (Rectangle){bullets[i].position.x - 5, bullets[i].position.y - 2, 10, 4};
