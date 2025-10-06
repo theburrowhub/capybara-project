@@ -88,11 +88,11 @@ The game ends when:
 
 ## Tips & Strategies
 
-1. **Heat Management**: Fire in bursts to avoid overheating
-2. **Positioning**: Stay mobile but avoid the right side
-3. **Priority Targets**: Clear destructible obstacles for points
-4. **Pattern Recognition**: Learn enemy movement patterns
-5. **Risk vs Reward**: Destroying obstacles gives points but risks collision
+1. **Positioning**: Stay mobile but avoid the right side
+2. **Priority Targets**: Clear destructible obstacles for points
+3. **Pattern Recognition**: Learn enemy movement patterns
+4. **Risk vs Reward**: Destroying obstacles gives points but risks collision
+5. **Collect Powerups**: They drift away quickly, prioritize shield and weapon upgrades
 
 ## Debug Features
 

@@ -66,7 +66,6 @@ After clicking an enemy, you enter an interactive combat arena where:
   - **Explosions**: Same explosion effects when enemies destroyed
 - **Arena differences:**
   - Player is invincible - enemy projectiles pass through (for safe testing)
-  - No weapon overheating
   - Focus on observing enemy attack patterns
 
 ## Enemy Behaviors

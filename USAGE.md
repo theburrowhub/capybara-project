@@ -20,14 +20,14 @@ make run_audio_cli    # Build and run audio analysis CLI
 
 ### Advanced Debugging
 
-For advanced debugging options (invulnerability, phase selection, weapon overheating, debug logging):
+For advanced debugging options (invulnerability, phase selection, debug logging):
 
 ```bash
 ./run_debug_game.sh --help        # Show all options
 ./run_debug_game.sh -l            # List all phases
 ./run_debug_game.sh -i            # Invulnerable mode
 ./run_debug_game.sh -p 3          # Start at specific phase
-./run_debug_game.sh -i -o -p 11   # Combined options
+./run_debug_game.sh -i -d -p 11   # Combined options
 ```
 
 ### Build Management

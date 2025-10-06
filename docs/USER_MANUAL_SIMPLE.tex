@@ -8,6 +8,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage[margin=1in]{geometry}
 \usepackage{xcolor}
+\usepackage{colortbl}
 \usepackage{enumitem}
 \usepackage{tabularx}
 \usepackage{booktabs}
@@ -161,9 +162,11 @@ make
 \rowcolor{primarycolor!20}
 \textbf{Key} & \textbf{Action} \\
 \hline
-\textbf{1-6} & Cycle through weapon modes \\
+\textbf{1-6} & Select specific weapon mode \\
 \hline
-\textbf{R} & Toggle Energy Mode (Offensive/Defensive) \\
+\textbf{R} & Cycle through weapon modes \\
+\hline
+\textbf{Q} & Toggle Energy Mode (Offensive/Defensive) \\
 \hline
 \textbf{E} (hold) & Use special ability \\
 \hline
@@ -173,7 +176,7 @@ make
 \caption{Advanced Combat Controls}
 \end{table}
 
-\infobox{infocolor}{\textbf{Pro Tip:} Hold Space to fire continuously! Watch your heat indicator to avoid overheating.}
+\infobox{infocolor}{\textbf{Pro Tip:} Hold Space to fire continuously! Watch for powerups to upgrade your weapons.}
 
 %===========================================
 \section{HUD (Heads-Up Display)}
@@ -257,7 +260,7 @@ Mode & Orange/Cyan & Current energy mode with bonuses. \\
     \item \textbf{Special Ability (Hold E)}: Enhanced Shield - larger shield, 50\% damage reduction
 \end{itemize}
 
-\infobox{successcolor}{\textbf{Strategy:} Switch modes with \textbf{R} based on situation! Offensive when healthy, Defensive when low on hull.}
+\infobox{successcolor}{\textbf{Strategy:} Switch energy modes with \textbf{Q} based on situation! Offensive when healthy, Defensive when low on hull. Use \textbf{R} to cycle weapon modes.}
 
 \subsection{Weapon Heat Management}
 
@@ -392,25 +395,25 @@ With 3 weapon powerups = \textbf{4 total lives!}}
 \rowcolor{primarycolor!20}
 \textbf{Enemy} & \textbf{Difficulty} & \textbf{Behavior} \\
 \hline
-Grunt & ★ & Basic straight movement \\
+Grunt & * & Basic straight movement \\
 \hline
-Swarm & ★ & Small, fast, numerous \\
+Swarm & * & Small, fast, numerous \\
 \hline
-Speeder & ★★ & Fast zig-zag movement \\
+Speeder & ** & Fast zig-zag movement \\
 \hline
-Zigzag & ★★ & Unpredictable patterns \\
+Zigzag & ** & Unpredictable patterns \\
 \hline
-Bomber & ★★★ & Area attacks \\
+Bomber & *** & Area attacks \\
 \hline
-Tank & ★★★ & Heavy armor, missile barrages \\
+Tank & *** & Heavy armor, missile barrages \\
 \hline
-Shield & ★★★ & Rotating shield protection \\
+Shield & *** & Rotating shield protection \\
 \hline
-Ghost & ★★★ & Phase in/out ability \\
+Ghost & *** & Phase in/out ability \\
 \hline
-Elite & ★★★★ & Advanced AI, multiple attacks \\
+Elite & **** & Advanced AI, multiple attacks \\
 \hline
-Boss & ★★★★★ & Complex patterns, massive health \\
+Boss & ***** & Complex patterns, massive health \\
 \hline
 \end{tabularx}
 \caption{Enemy Types and Difficulty}
@@ -425,7 +428,6 @@ Boss & ★★★★★ & Complex patterns, massive health \\
 \subsection{Beginner Tips}
 
 \begin{enumerate}
-    \item \textbf{Fire in bursts} to avoid overheating
     \item \textbf{Let shield regenerate} between waves
     \item \textbf{Collect all powerups} - they drift away quickly!
     \item \textbf{Learn enemy patterns} - each type is predictable
@@ -433,6 +435,7 @@ Boss & ★★★★★ & Complex patterns, massive health \\
     \item \textbf{Save weapon powerups} - they're extra lives!
     \item \textbf{Switch energy modes} based on situation
     \item \textbf{Use Spread mode} for beginners (wide coverage)
+    \item \textbf{Stay mobile} - keep moving to avoid enemy projectiles
 \end{enumerate}
 
 \subsection{Advanced Strategies}

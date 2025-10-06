@@ -64,7 +64,6 @@ capybara-project/
 - **⭐ Powerup System**: 4 types (energy, shield, hull, weapon) with smart drop mechanics
 - **Music-Reactive Spawning**: Difficulty adapts to audio intensity in real-time
 - **Epic Boss Battle**: Timed to appear at musical climax (427s)
-- **Heat Management**: Weapon overheating system
 - **Dynamic Difficulty**: Progressive scaling throughout 9-minute soundtrack
 - **Sprite System**: Both abstract and spaceship designs
 - **Debug Mode**: Invulnerability, phase selection, pause, and hitbox visualization
