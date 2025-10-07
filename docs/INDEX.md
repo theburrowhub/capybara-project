@@ -10,12 +10,14 @@ Welcome to the Capybara Shoot'em Up documentation!
 - **[GAMEPLAY.md](GAMEPLAY.md)** - How to play, controls, and game mechanics
 
 ### Game Content
+- **[LEVEL_SYSTEM.md](LEVEL_SYSTEM.md)** - 🎵 Multiple levels with unique music and wave plans
+- **[LEVEL1_PHASES.md](LEVEL1_PHASES.md)** - 🎓 Level 1 complete phase guide and design
+- **[LEVEL2_PHASES.md](LEVEL2_PHASES.md)** - 🔥 Level 2 complete phase guide and design
 - **[ENEMIES_AND_SPRITES.md](ENEMIES_AND_SPRITES.md)** - All 10 enemy types, behaviors, and sprite designs
 - **[WEAPONS_AND_DAMAGE.md](WEAPONS_AND_DAMAGE.md)** - Comprehensive weapon systems, damage mechanics, projectile types, and combat
 - **[POWERUPS.md](POWERUPS.md)** - ⭐ Complete powerup system with types, drop mechanics, visual design, and integration
 - **[PLAYER_SHIP.md](PLAYER_SHIP.md)** - Player ship design, systems, and capabilities
 - **[ENERGY_MODE_SYSTEM.md](ENERGY_MODE_SYSTEM.md)** - Offensive/Defensive energy modes and special abilities
-- **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** - Wave orchestration and phase progression
 
 ### Technical Documentation
 - **[ARCHITECTURE.md](ARCHITECTURE.md)** - Project structure, design patterns, and module organization
@@ -58,13 +60,14 @@ capybara-project/
 
 ## 🎮 Game Features
 
-- **🎵 Bass-Driven Gameplay**: Enemy waves sync with music bass patterns
+- **🎵 Multiple Levels**: 2 levels (extensible) with unique music tracks and wave plans
+- **Bass-Driven Gameplay**: Enemy waves sync with music bass patterns
 - **10 Enemy Types**: Each with unique behaviors and attack patterns
 - **4 Projectile Types**: Laser, Plasma, Missile, and Energy Orb
 - **⭐ Powerup System**: 4 types (energy, shield, hull, weapon) with smart drop mechanics
 - **Music-Reactive Spawning**: Difficulty adapts to audio intensity in real-time
-- **Epic Boss Battle**: Timed to appear at musical climax (427s)
-- **Dynamic Difficulty**: Progressive scaling throughout 9-minute soundtrack
+- **Epic Boss Battles**: Strategic boss encounters at musical climaxes
+- **Dynamic Difficulty**: Progressive scaling synchronized with audio
 - **Sprite System**: Both abstract and spaceship designs
 - **Debug Mode**: Invulnerability, phase selection, pause, and hitbox visualization
 
