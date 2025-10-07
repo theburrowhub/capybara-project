@@ -3,6 +3,7 @@
 #include "player_ship.h"
 #include "enemy_types.h"
 #include "projectile_types.h"
+#include "level_system.h"
 #include "wave_system.h"
 #include "weapon.h"
 #include "explosion.h"
@@ -19,11 +20,18 @@ void InitGame(Game* game) {
     // Initialize logger
     InitLogger(game);
     
-    // Try to load background music
+    // Initialize level manager
+    game->levelManager = (LevelManager*)malloc(sizeof(LevelManager));
+    InitLevelManager(game->levelManager);
+    
+    // Get current level configuration
+    const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+    
+    // Try to load background music for current level
     // Note: Audio device is initialized once in main(), not here
     game->musicLoaded = false;
     game->musicVolume = 0.5f;  // Default 50% volume
-    const char* musicPath = "assets/audio/level1.mp3";
+    const char* musicPath = currentLevel->audioPath;
     if (FileExists(musicPath)) {
         game->backgroundMusic = LoadMusicStream(musicPath);
         // Check if music loaded successfully (ctxType will be non-zero if valid)
@@ -31,7 +39,11 @@ void InitGame(Game* game) {
             game->musicLoaded = true;
             PlayMusicStream(game->backgroundMusic);
             SetMusicVolume(game->backgroundMusic, game->musicVolume);
+            printf("[GAME] Loaded music for level %d: %s\n", 
+                   currentLevel->levelNumber, musicPath);
         }
+    } else {
+        printf("[GAME] WARNING: Music file not found: %s\n", musicPath);
     }
     
     // Allocate memory for arrays
@@ -70,9 +82,9 @@ void InitGame(Game* game) {
         game->enemies[i].active = false;
     }
     
-    // Initialize wave system
+    // Initialize wave system with current level configuration
     game->waveSystem = (WaveSystem*)malloc(sizeof(WaveSystem));
-    InitWaveSystem(game->waveSystem);
+    InitWaveSystem(game->waveSystem, currentLevel);
     
     // Initialize explosion system
     game->explosionSystem = (ExplosionSystem*)malloc(sizeof(ExplosionSystem));
@@ -88,6 +100,7 @@ void InitGame(Game* game) {
     game->gameOver = false;
     game->gamePaused = false;
     game->bossEnemyIndex = -1;        // No boss initially
+    game->bossSpawnTime = -1.0f;      // Boss not spawned yet
     game->bossEscapeTriggered = false;
     game->bossEscapeTimer = 0.0f;
     game->bossEscapePhase = 0;
@@ -255,6 +268,13 @@ void UpdateGame(Game* game) {
     }
     
     if (!game->gameOver) {
+        // Get level-specific timing (used throughout this function)
+        const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+        float levelDuration = currentLevel ? currentLevel->duration : 553.82f;
+        // Give more time to kill boss: Level 1 = 30s, Level 2 = 50s before escape
+        float bossEscapeBuffer = (currentLevel && currentLevel->levelNumber == 2) ? 50.0f : 30.0f;
+        float bossEscapeTime = levelDuration - bossEscapeBuffer;
+        
         // Only update if not paused
         if (!game->gamePaused) {
             // Update game time
@@ -307,22 +327,31 @@ void UpdateGame(Game* game) {
                 game->backgroundX = 0;
             }
             
-            // Boss escape sequence - 30 seconds before level end (523.82s)
+            // Boss escape sequence - starts AFTER boss has been alive for a certain time
+            // Level 1: 90 seconds after boss spawn (427s → 517s)
+            // Level 2: 70 seconds after boss spawn (530s → 600s)
             // DRAMATIC PHASED SEQUENCE
-            if (!game->bossEscapeTriggered && game->gameTime >= 523.82f) {
-                // Check if boss is still active
-                if (game->bossEnemyIndex >= 0 && 
-                    game->bossEnemyIndex < MAX_ENEMIES && 
-                    game->enemies[game->bossEnemyIndex].active &&
-                    game->enemies[game->bossEnemyIndex].type == ENEMY_BOSS) {
-                    
-                    game->bossEscapeTriggered = true;
-                    game->bossEscapePhase = 1;  // Start destruction phase
-                    game->bossEscapeTimer = 0.0f;
-                    game->enemies[game->bossEnemyIndex].isEscaping = true;
-                    
-                    LogEvent(game, "[%.2f] BOSS DOOMSDAY - Escape sequence initiated!", 
-                            game->gameTime, game->enemies[game->bossEnemyIndex].id);
+            if (!game->bossEscapeTriggered && game->bossSpawnTime >= 0) {
+                // Calculate boss battle duration
+                float bossBattleTime = game->gameTime - game->bossSpawnTime;
+                float requiredBattleTime = (currentLevel && currentLevel->levelNumber == 2) ? 70.0f : 90.0f;
+                
+                // Check if boss has been alive long enough
+                if (bossBattleTime >= requiredBattleTime) {
+                    // Check if boss is still active
+                    if (game->bossEnemyIndex >= 0 && 
+                        game->bossEnemyIndex < MAX_ENEMIES && 
+                        game->enemies[game->bossEnemyIndex].active &&
+                        game->enemies[game->bossEnemyIndex].type == ENEMY_BOSS) {
+                        
+                        game->bossEscapeTriggered = true;
+                        game->bossEscapePhase = 1;  // Start destruction phase
+                        game->bossEscapeTimer = 0.0f;
+                        game->enemies[game->bossEnemyIndex].isEscaping = true;
+                        
+                        LogEvent(game, "[%.2f] BOSS DOOMSDAY - Escape sequence initiated! (Boss alive for %.1fs)", 
+                                game->gameTime, bossBattleTime);
+                    }
                 }
             }
             
@@ -416,8 +445,8 @@ void UpdateGame(Game* game) {
                 }
             }
             
-            // Check if level time limit reached (9 minutes 13 seconds)
-            if (game->gameTime >= 553.0f && !game->bossEscapeTriggered) {
+            // Check if level time limit reached
+            if (game->gameTime >= levelDuration && !game->bossEscapeTriggered) {
                 game->gameOver = true;
                 strcpy(game->deathCause, "Victory! You survived the entire level!");
             }
@@ -448,6 +477,13 @@ void CleanupGame(Game* game) {
         game->musicLoaded = false;
     }
     // Note: Don't call CloseAudioDevice() here - Raylib handles it on window close
+    
+    // Free level manager
+    if (game->levelManager) {
+        CleanupLevelManager(game->levelManager);
+        free(game->levelManager);
+        game->levelManager = NULL;
+    }
     
     // Free wave system
     if (game->waveSystem) {

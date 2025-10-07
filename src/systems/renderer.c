@@ -4,6 +4,7 @@
 #include "game.h"
 #include "projectile_types.h"
 #include "wave_system.h"
+#include "level_system.h"
 #include "weapon.h"
 #include "explosion.h"
 #include "powerup.h"
@@ -206,43 +207,54 @@ void DrawGame(Game* game) {
     DrawPowerups(game->powerupSystem);
     DrawExplosions(game->explosionSystem);
     
-    // Danger warning effect - 30 seconds before boss escape
-    const float BOSS_ESCAPE_TIME = 523.82f;
-    const float WARNING_START_TIME = BOSS_ESCAPE_TIME - 30.0f;  // 493.82s
-    
-    if (game->gameTime >= WARNING_START_TIME && game->gameTime < BOSS_ESCAPE_TIME && !game->bossEscapeTriggered) {
-        // Calculate time remaining and intensity
-        float timeRemaining = BOSS_ESCAPE_TIME - game->gameTime;
-        float warningProgress = 1.0f - (timeRemaining / 30.0f);  // 0.0 to 1.0
+    // Danger warning effect - warning before boss escape
+    // Level 1: Warning at 60s after boss spawn (30s before 90s escape)
+    // Level 2: Warning at 40s after boss spawn (30s before 70s escape)
+    // IMPORTANT: Warning stops immediately if boss is killed!
+    if (game->bossSpawnTime >= 0 && !game->bossEscapeTriggered && 
+        game->bossEnemyIndex >= 0 && 
+        game->enemies[game->bossEnemyIndex].active) {  // Only show if boss is still alive!
         
-        // Pulsing effect - faster as time runs out
-        float pulseSpeed = 2.0f + (warningProgress * 6.0f);  // 2 to 8 Hz
-        float pulse = (sinf(game->gameTime * pulseSpeed) + 1.0f) * 0.5f;  // 0.0 to 1.0
+        const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+        float bossBattleTime = game->gameTime - game->bossSpawnTime;
+        float requiredBattleTime = (currentLevel && currentLevel->levelNumber == 2) ? 70.0f : 90.0f;
+        float warningDuration = 30.0f;  // Both levels: 30s warning
+        float warningStartTime = requiredBattleTime - warningDuration;
         
-        // Alpha increases with time and pulse
-        float baseAlpha = 0.1f + (warningProgress * 0.4f);  // 0.1 to 0.5
-        float alpha = baseAlpha * pulse;
-        
-        // Draw red borders around play zone
-        int borderThickness = 8 + (int)(warningProgress * 12.0f);  // 8 to 20 pixels
-        Color dangerColor = Fade(RED, alpha);
-        
-        // Top border
-        DrawRectangle(0, PLAY_ZONE_TOP, SCREEN_WIDTH, borderThickness, dangerColor);
-        // Bottom border
-        DrawRectangle(0, PLAY_ZONE_BOTTOM - borderThickness, SCREEN_WIDTH, borderThickness, dangerColor);
-        // Left border
-        DrawRectangle(0, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
-        // Right border
-        DrawRectangle(SCREEN_WIDTH - borderThickness, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
-        
-        // Add warning text in top center when close to escape (last 10 seconds)
-        if (timeRemaining <= 10.0f) {
-            int textSize = 30 + (int)((1.0f - timeRemaining / 10.0f) * 20.0f);  // 30 to 50
-            const char* warningText = TextFormat("DANGER! BOSS ESCAPE IN %.0f!", timeRemaining);
-            int textWidth = MeasureText(warningText, textSize);
-            Color textColor = Fade(RED, 0.7f + pulse * 0.3f);
-            DrawText(warningText, (SCREEN_WIDTH - textWidth) / 2, PLAY_ZONE_TOP + 40, textSize, textColor);
+        if (bossBattleTime >= warningStartTime && bossBattleTime < requiredBattleTime) {
+            // Calculate time remaining until escape countdown
+            float timeRemaining = requiredBattleTime - bossBattleTime;
+            float warningProgress = 1.0f - (timeRemaining / warningDuration);  // 0.0 to 1.0
+            
+            // Pulsing effect - faster as time runs out
+            float pulseSpeed = 2.0f + (warningProgress * 6.0f);  // 2 to 8 Hz
+            float pulse = (sinf(game->gameTime * pulseSpeed) + 1.0f) * 0.5f;  // 0.0 to 1.0
+            
+            // Alpha increases with time and pulse
+            float baseAlpha = 0.1f + (warningProgress * 0.4f);  // 0.1 to 0.5
+            float alpha = baseAlpha * pulse;
+            
+            // Draw red borders around play zone
+            int borderThickness = 8 + (int)(warningProgress * 12.0f);  // 8 to 20 pixels
+            Color dangerColor = Fade(RED, alpha);
+            
+            // Top border
+            DrawRectangle(0, PLAY_ZONE_TOP, SCREEN_WIDTH, borderThickness, dangerColor);
+            // Bottom border
+            DrawRectangle(0, PLAY_ZONE_BOTTOM - borderThickness, SCREEN_WIDTH, borderThickness, dangerColor);
+            // Left border
+            DrawRectangle(0, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
+            // Right border
+            DrawRectangle(SCREEN_WIDTH - borderThickness, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
+            
+            // Add warning text in top center when close to escape (last 10 seconds)
+            if (timeRemaining <= 10.0f) {
+                int textSize = 30 + (int)((1.0f - timeRemaining / 10.0f) * 20.0f);  // 30 to 50
+                const char* warningText = TextFormat("DANGER! BOSS ESCAPE IN %.0f!", timeRemaining);
+                int textWidth = MeasureText(warningText, textSize);
+                Color textColor = Fade(RED, 0.7f + pulse * 0.3f);
+                DrawText(warningText, (SCREEN_WIDTH - textWidth) / 2, PLAY_ZONE_TOP + 40, textSize, textColor);
+            }
         }
     }
     

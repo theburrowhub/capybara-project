@@ -1,4 +1,5 @@
 #include "wave_system.h"
+#include "level_system.h"
 #include "enemy_types.h"
 #include "constants.h"
 #include "utils.h"
@@ -7,7 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 
-void InitWaveSystem(WaveSystem* waveSystem) {
+void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig) {
     // Initialize enemy types first
     InitEnemyTypes();
     
@@ -16,11 +17,21 @@ void InitWaveSystem(WaveSystem* waveSystem) {
     waveSystem->phases = NULL;
     waveSystem->currentPhase = 0;
     
-    // Load static spawn events
-    waveSystem->spawnEvents = CreateStaticWaveplan(&waveSystem->eventCount);
+    // Load spawn events based on level
+    if (levelConfig->levelNumber == 1) {
+        waveSystem->spawnEvents = CreateLevel1Waveplan(&waveSystem->eventCount);
+    } else if (levelConfig->levelNumber == 2) {
+        waveSystem->spawnEvents = CreateLevel2Waveplan(&waveSystem->eventCount);
+    } else {
+        // Fallback to level 1
+        printf("[WAVE SYSTEM] WARNING: Unknown level %d, falling back to level 1\n", 
+               levelConfig->levelNumber);
+        waveSystem->spawnEvents = CreateLevel1Waveplan(&waveSystem->eventCount);
+    }
     waveSystem->nextEventIndex = 0;
     
-    printf("[WAVE SYSTEM] Loaded %d static spawn events\n", waveSystem->eventCount);
+    printf("[WAVE SYSTEM] Loaded %d spawn events for level %d: %s\n", 
+           waveSystem->eventCount, levelConfig->levelNumber, levelConfig->name);
     
     // Apply DEBUG_START_PHASE to set starting time
     float startTime = 0.0f;
@@ -51,7 +62,7 @@ void InitWaveSystem(WaveSystem* waveSystem) {
     
     // Initialize state with debug start time
     waveSystem->waveTimer = startTime;
-    waveSystem->totalDuration = 553.82f; // Level duration from audio analysis
+    waveSystem->totalDuration = levelConfig->duration; // Level duration from config
     waveSystem->isComplete = false;
     waveSystem->lastSpawnTime = startTime;
     waveSystem->totalEnemiesSpawned = 0;
@@ -135,12 +146,17 @@ void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const c
             game->enemies[i].id = game->nextEnemyId++;
             ApplyMovementPattern(&game->enemies[i], pattern);
             
-            // Enemies can fire after the warm-up period (first 55 seconds)
-            game->enemies[i].can_fire = (game->waveSystem->waveTimer >= 55.0f);
+            // Enemies can fire based on level and time
+            // Level 1: After warm-up period (55 seconds)
+            // Level 2: After first wave (0.5 seconds) - IMMEDIATE DANGER!
+            const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+            float fireThreshold = (currentLevel && currentLevel->levelNumber == 2) ? 0.5f : 55.0f;
+            game->enemies[i].can_fire = (game->waveSystem->waveTimer >= fireThreshold);
             
             // Track boss enemy
             if (type == ENEMY_BOSS) {
                 game->bossEnemyIndex = i;
+                game->bossSpawnTime = game->gameTime;  // Record spawn time for countdown
                 LogEvent(game, "[%.2f] BOSS spawned - ID:%d at index %d", 
                         game->gameTime, game->enemies[i].id, i);
             }

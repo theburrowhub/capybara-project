@@ -46,8 +46,11 @@ typedef struct WaveSystem {
     int totalEnemiesKilled;
 } WaveSystem;
 
+// Forward declaration
+typedef struct LevelConfig LevelConfig;
+
 // Function declarations
-void InitWaveSystem(WaveSystem* waveSystem);
+void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig);
 void UpdateWaveSystem(WaveSystem* waveSystem, struct Game* game, float deltaTime);
 void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const char* pattern);
 void CleanupWaveSystem(WaveSystem* waveSystem);
@@ -59,8 +62,5 @@ int GetCurrentPhaseNumber(const WaveSystem* waveSystem);
 // Movement pattern functions
 void ApplyMovementPattern(EnemyEx* enemy, const char* pattern);
 void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime);
-
-// Static wave creation
-SpawnEvent* CreateStaticWaveplan(int* eventCount);
 
 #endif // WAVE_SYSTEM_H
