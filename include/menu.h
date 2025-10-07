@@ -8,6 +8,9 @@
 typedef enum {
     MENU_MAIN,
     MENU_OPTIONS,
+    MENU_OPTIONS_SOUND,
+    MENU_OPTIONS_VIDEO,
+    MENU_OPTIONS_GAME,
     MENU_CREDITS,
     MENU_GAME
 } MenuState;
@@ -20,6 +23,20 @@ typedef enum {
     MENU_TOTAL_OPTIONS = 3
 } MenuOption;
 
+// Resolution presets
+typedef struct {
+    int width;
+    int height;
+    const char* name;
+} Resolution;
+
+// Fullscreen mode
+typedef enum {
+    FULLSCREEN_OFF = 0,
+    FULLSCREEN_WINDOWED = 1,
+    FULLSCREEN_EXCLUSIVE = 2
+} FullscreenMode;
+
 // Menu structure
 typedef struct {
     MenuState currentState;
@@ -29,10 +46,14 @@ typedef struct {
     float titleBounce;
     float optionAlpha[MENU_TOTAL_OPTIONS];
     
-    // Options state
+    // Audio options
     float soundVolume;
     float musicVolume;
-    bool fullscreen;
+    
+    // Video options
+    int selectedResolution;
+    FullscreenMode fullscreenMode;
+    bool vsync;
     
     // Animation timers
     float animationTimer;
@@ -44,7 +65,15 @@ void UpdateMenu(Menu* menu, MenuState* gameState);
 void DrawMenu(const Menu* menu);
 void DrawMainMenu(const Menu* menu);
 void DrawOptions(Menu* menu);
+void DrawOptionsSound(Menu* menu);
+void DrawOptionsVideo(Menu* menu);
+void DrawOptionsGame(Menu* menu);
 void DrawCredits(const Menu* menu);
+
+// Resolution management
+const Resolution* GetAvailableResolutions(int* count);
+void ApplyResolution(Menu* menu);
+void ApplyFullscreenMode(Menu* menu);
 
 #endif // MENU_H
 

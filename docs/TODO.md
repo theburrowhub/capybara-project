@@ -10,12 +10,12 @@
 - [ ] Add mouse aiming option
 
 ## 🖥️ Display & Graphics
-- [ ] Allow configurable screen size
-  - [ ] Add resolution options in settings
-  - [ ] Maintain aspect ratio when resizing
-- [ ] Implement fullscreen mode toggle (F11 or Alt+Enter)
-- [ ] Add windowed fullscreen option
-- [ ] Implement proper scaling for different resolutions
+- [x] Allow configurable screen size
+  - [x] Add resolution options in settings
+  - [x] Maintain aspect ratio when resizing
+- [x] Implement fullscreen mode toggle (F11 or Alt+Enter)
+- [x] Add windowed fullscreen option
+- [x] Implement proper scaling for different resolutions
 
 ## 🎨 Sprites & Visual Assets
 - [x] Create/add simple sprites
