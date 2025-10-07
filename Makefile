@@ -20,7 +20,9 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/collision.c \
               $(SRC_DIR)/systems/renderer.c \
               $(SRC_DIR)/systems/wave_system.c \
-              $(SRC_DIR)/systems/static_waves.c \
+              $(SRC_DIR)/systems/level_system.c \
+              $(SRC_DIR)/systems/level1_waves.c \
+              $(SRC_DIR)/systems/level2_waves.c \
               $(SRC_DIR)/systems/projectile_types.c \
               $(SRC_DIR)/systems/explosion.c \
               $(SRC_DIR)/systems/combat_system.c \
@@ -47,7 +49,9 @@ SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/systems/projectile_types.c \
                 $(SRC_DIR)/systems/weapon.c \
                 $(SRC_DIR)/systems/wave_system.c \
-                $(SRC_DIR)/systems/static_waves.c \
+                $(SRC_DIR)/systems/level_system.c \
+                $(SRC_DIR)/systems/level1_waves.c \
+                $(SRC_DIR)/systems/level2_waves.c \
                 $(SRC_DIR)/systems/combat_system.c \
                 $(SRC_DIR)/systems/projectile_manager.c \
                 $(SRC_DIR)/systems/collision.c \
