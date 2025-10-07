@@ -8,7 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 
-void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig) {
+void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig, bool applyDebugPhase) {
     // Initialize enemy types first
     InitEnemyTypes();
     
@@ -33,9 +33,9 @@ void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig) {
     printf("[WAVE SYSTEM] Loaded %d spawn events for level %d: %s\n", 
            waveSystem->eventCount, levelConfig->levelNumber, levelConfig->name);
     
-    // Apply DEBUG_START_PHASE to set starting time
+    // Apply DEBUG_START_PHASE to set starting time (only if applyDebugPhase is true)
     float startTime = 0.0f;
-    if (DEBUG_START_PHASE > 0 && DEBUG_START_PHASE <= 17) {
+    if (applyDebugPhase && DEBUG_START_PHASE > 0 && DEBUG_START_PHASE <= 17) {
         // Phase timing mapping based on documentation
         const float phaseTimes[] = {
             0.0f,    // Phase 0: Normal start
@@ -156,9 +156,11 @@ void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const c
             // Track boss enemy
             if (type == ENEMY_BOSS) {
                 game->bossEnemyIndex = i;
-                game->bossSpawnTime = game->gameTime;  // Record spawn time for countdown
-                LogEvent(game, "[%.2f] BOSS spawned - ID:%d at index %d", 
-                        game->gameTime, game->enemies[i].id, i);
+                // Use level time for boss spawn tracking
+                float levelTime = game->gameTime - game->levelStartTime;
+                game->bossSpawnTime = levelTime;  // Record spawn time for countdown (level time)
+                LogEvent(game, "[%.2f] BOSS spawned - ID:%d at index %d (Level Time: %.2f)", 
+                        game->gameTime, game->enemies[i].id, i, levelTime);
             }
             
             LogEvent(game, "[%.2f] Enemy spawned - Type:%s ID:%d Pattern:%s Pos:(%.0f,%.0f)", 

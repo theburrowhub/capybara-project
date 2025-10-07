@@ -50,7 +50,7 @@ typedef struct WaveSystem {
 typedef struct LevelConfig LevelConfig;
 
 // Function declarations
-void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig);
+void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig, bool applyDebugPhase);
 void UpdateWaveSystem(WaveSystem* waveSystem, struct Game* game, float deltaTime);
 void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const char* pattern);
 void CleanupWaveSystem(WaveSystem* waveSystem);

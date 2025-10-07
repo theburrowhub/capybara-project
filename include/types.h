@@ -72,6 +72,11 @@ struct Game {
     bool bossEscapeTriggered; // Whether boss escape sequence has been triggered
     float bossEscapeTimer;    // Timer for dramatic escape sequence
     int bossEscapePhase;      // Phase of escape: 0=not started, 1=destroying everything, 2=boss escaping, 3=show game over
+    // Interlevel transition system
+    bool showingLevelComplete; // Whether we're showing level complete overlay
+    float levelCompleteTimer;  // Time since level complete overlay appeared
+    bool transitioningToNextLevel; // Whether we're in the middle of transitioning
+    float levelStartTime;      // Game time when current level started (for display)
 };
 
 #endif // TYPES_H

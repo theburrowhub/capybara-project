@@ -84,7 +84,7 @@ void InitGame(Game* game) {
     
     // Initialize wave system with current level configuration
     game->waveSystem = (WaveSystem*)malloc(sizeof(WaveSystem));
-    InitWaveSystem(game->waveSystem, currentLevel);
+    InitWaveSystem(game->waveSystem, currentLevel, true);  // Apply debug phase on initial start
     
     // Initialize explosion system
     game->explosionSystem = (ExplosionSystem*)malloc(sizeof(ExplosionSystem));
@@ -104,6 +104,12 @@ void InitGame(Game* game) {
     game->bossEscapeTriggered = false;
     game->bossEscapeTimer = 0.0f;
     game->bossEscapePhase = 0;
+    
+    // Initialize interlevel transition system
+    game->showingLevelComplete = false;
+    game->levelCompleteTimer = 0.0f;
+    game->transitioningToNextLevel = false;
+    game->levelStartTime = 0.0f;  // Level starts at time 0
     
     // Apply DEBUG_START_PHASE to set starting time
     float startTime = 0.0f;
@@ -271,9 +277,6 @@ void UpdateGame(Game* game) {
         // Get level-specific timing (used throughout this function)
         const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
         float levelDuration = currentLevel ? currentLevel->duration : 553.82f;
-        // Give more time to kill boss: Level 1 = 30s, Level 2 = 50s before escape
-        float bossEscapeBuffer = (currentLevel && currentLevel->levelNumber == 2) ? 50.0f : 30.0f;
-        float bossEscapeTime = levelDuration - bossEscapeBuffer;
         
         // Only update if not paused
         if (!game->gamePaused) {
@@ -332,8 +335,9 @@ void UpdateGame(Game* game) {
             // Level 2: 70 seconds after boss spawn (530s → 600s)
             // DRAMATIC PHASED SEQUENCE
             if (!game->bossEscapeTriggered && game->bossSpawnTime >= 0) {
-                // Calculate boss battle duration
-                float bossBattleTime = game->gameTime - game->bossSpawnTime;
+                // Calculate boss battle duration (using level time)
+                float currentLevelTime = game->gameTime - game->levelStartTime;
+                float bossBattleTime = currentLevelTime - game->bossSpawnTime;  // Both in level time
                 float requiredBattleTime = (currentLevel && currentLevel->levelNumber == 2) ? 70.0f : 90.0f;
                 
                 // Check if boss has been alive long enough
@@ -445,10 +449,99 @@ void UpdateGame(Game* game) {
                 }
             }
             
+            // Interlevel transition system
+            // Calculate time elapsed in current level (gameTime continues across levels)
+            float levelTime = game->gameTime - game->levelStartTime;
+            float timeRemaining = levelDuration - levelTime;
+            
+            // Show level complete overlay when 15 seconds remain
+            if (timeRemaining <= 15.0f && timeRemaining > 0.0f && !game->showingLevelComplete) {
+                game->showingLevelComplete = true;
+                game->levelCompleteTimer = 0.0f;
+                LogEvent(game, "[%.2f] Level %d completion overlay displayed - 15 seconds remaining", 
+                        game->gameTime, currentLevel->levelNumber);
+            }
+            
+            // Update level complete timer
+            if (game->showingLevelComplete) {
+                game->levelCompleteTimer += deltaTime;
+            }
+            
             // Check if level time limit reached
-            if (game->gameTime >= levelDuration && !game->bossEscapeTriggered) {
-                game->gameOver = true;
-                strcpy(game->deathCause, "Victory! You survived the entire level!");
+            if (levelTime >= levelDuration && !game->bossEscapeTriggered) {
+                // Check if there's a next level
+                if (game->levelManager->currentLevel + 1 < game->levelManager->levelCount) {
+                    // Transition to next level seamlessly
+                    if (!game->transitioningToNextLevel) {
+                        game->transitioningToNextLevel = true;
+                        
+                        LogEvent(game, "[%.2f] Level %d complete! Score: %d - Transitioning to next level...", 
+                                game->gameTime, currentLevel->levelNumber, game->score);
+                        
+                        // Advance to next level
+                        AdvanceToNextLevel(game->levelManager);
+                        const LevelConfig* nextLevel = GetCurrentLevel(game->levelManager);
+                        
+                        // Load new music
+                        if (game->musicLoaded) {
+                            StopMusicStream(game->backgroundMusic);
+                            UnloadMusicStream(game->backgroundMusic);
+                        }
+                        
+                        game->musicLoaded = false;
+                        if (FileExists(nextLevel->audioPath)) {
+                            game->backgroundMusic = LoadMusicStream(nextLevel->audioPath);
+                            if (game->backgroundMusic.ctxType > 0) {
+                                game->musicLoaded = true;
+                                PlayMusicStream(game->backgroundMusic);
+                                SetMusicVolume(game->backgroundMusic, game->musicVolume);
+                                LogEvent(game, "[%.2f] Started music for level %d: %s", 
+                                        game->gameTime, nextLevel->levelNumber, nextLevel->audioPath);
+                            }
+                        }
+                        
+                        // Clear remaining enemies from previous level
+                        for (int i = 0; i < MAX_ENEMIES; i++) {
+                            game->enemies[i].active = false;
+                        }
+                        
+                        // Clear remaining projectiles from previous level
+                        Projectile* projectiles = (Projectile*)game->projectiles;
+                        for (int i = 0; i < MAX_PROJECTILES; i++) {
+                            projectiles[i].active = false;
+                        }
+                        
+                        // Reinitialize wave system for new level
+                        CleanupWaveSystem(game->waveSystem);
+                        InitWaveSystem(game->waveSystem, nextLevel, false);  // NO debug phase - start at 0
+                        
+                        // Mark the start of the new level (gameTime continues running)
+                        // This allows speed to be preserved while level timer resets
+                        game->levelStartTime = game->gameTime;
+                        // Note: gameTime, speedLevel and scrollSpeed continue from previous level
+                        
+                        // Reset boss tracking
+                        game->bossEnemyIndex = -1;
+                        game->bossSpawnTime = -1.0f;
+                        game->bossEscapeTriggered = false;
+                        game->bossEscapeTimer = 0.0f;
+                        game->bossEscapePhase = 0;
+                        
+                        // Reset interlevel transition state
+                        game->showingLevelComplete = false;
+                        game->levelCompleteTimer = 0.0f;
+                        game->transitioningToNextLevel = false;
+                        
+                        LogEvent(game, "[%.2f] Now playing Level %d: %s (Level Time: 0.00)", 
+                                game->gameTime, nextLevel->levelNumber, nextLevel->name);
+                    }
+                } else {
+                    // Last level completed - end game with victory
+                    game->gameOver = true;
+                    strcpy(game->deathCause, "VICTORY! You survived all levels!");
+                    LogEvent(game, "[%.2f] All levels completed! Final score: %d", 
+                            game->gameTime, game->score);
+                }
             }
             
             // Game over check (but not during boss escape sequence - that handles its own game over)
