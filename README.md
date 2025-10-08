@@ -13,10 +13,11 @@ Complete documentation is available in the [`docs/`](docs/INDEX.md) folder:
 - [API Reference](docs/API.md) - Module interfaces and functions
 
 ### Game Content
+- [Level System](docs/LEVEL_SYSTEM.md) - Multiple levels with unique wave plans and music
 - [Enemies and Sprites](docs/ENEMIES_AND_SPRITES.md) - All 10 enemy types and sprite designs
 - [Weapons and Damage](docs/WEAPONS_AND_DAMAGE.md) - Comprehensive weapon systems, damage mechanics, and projectile types
 - [Powerup System](docs/POWERUPS.md) - 4 powerup types with drop mechanics
-- [Flight Plan](docs/FLIGHT_PLAN.md) - Wave system and phase progression
+- [Flight Plan](docs/FLIGHT_PLAN.md) - Level 1 wave system and phase progression
 
 ### Development
 - [Debug Features](docs/DEBUG_FEATURES.md) - Testing tools and debug modes
@@ -41,10 +42,11 @@ make run
 
 ## Key Features
 
+- 🎵 **Multiple Levels**: 2 levels with unique music tracks and wave plans (extensible)
 - 🎮 **Dynamic Gameplay**: Speed increases every 20 seconds
 - 🔫 **Heat Management**: Weapon overheats with continuous fire
 - 👾 **10 Enemy Types**: Each with unique behaviors and attack patterns
-- 🌊 **Wave System**: 17 phases with progressive difficulty
+- 🌊 **Wave System**: Synchronized with music bass events for dynamic difficulty
 - ⭐ **Powerup System**: 4 types (energy, shield, hull, weapon) with smart drop mechanics
 - 📊 **Score System**: Points for destroying enemies
 - 🐛 **Debug Mode**: Invulnerability, phase selection, and hitbox visualization

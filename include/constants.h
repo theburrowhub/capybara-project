@@ -37,6 +37,7 @@
 // Debug constants
 #define DEBUG_LOGGING false          // Set to true to enable game.log file creation
 #define DEBUG_INVULNERABILITY false  // Set to true to make player invulnerable
+#define DEBUG_START_LEVEL 1          // Level to start at (1 = Level 1, 2 = Level 2, etc.)
 #define DEBUG_START_PHASE 0          // Phase to start at (0 = normal start)
                                       // Tank Testing: Phase 3 (35s), 5 (85s), 11 (300s)
                                       // Boss Testing: Phase 12+ (345s+)

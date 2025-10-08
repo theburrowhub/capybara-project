@@ -4,6 +4,7 @@
 #include "game.h"
 #include "projectile_types.h"
 #include "wave_system.h"
+#include "level_system.h"
 #include "weapon.h"
 #include "explosion.h"
 #include "powerup.h"
@@ -67,9 +68,10 @@ void DrawUI(const Game* game) {
         DrawText(TextFormat("Progress: %.1f%%", progress), 10, 145, 25, WHITE);
     }
     
-    // Time
-    int minutes = (int)(game->gameTime / 60);
-    int seconds = (int)game->gameTime % 60;
+    // Time (show level time)
+    float levelTime = game->gameTime - game->levelStartTime;
+    int minutes = (int)(levelTime / 60);
+    int seconds = (int)levelTime % 60;
     DrawText(TextFormat("Time: %02d:%02d", minutes, seconds), 10, 175, 25, WHITE);
     
     // Wave progress bar
@@ -109,8 +111,9 @@ void DrawGameOver(const Game* game) {
     // Show current phase number for easy debug restart
     if (game->waveSystem) {
         int phaseNum = GetCurrentPhaseNumber(game->waveSystem);
-        int minutes = (int)(game->gameTime / 60);
-        int seconds = (int)game->gameTime % 60;
+        float levelTime = game->gameTime - game->levelStartTime;
+        int minutes = (int)(levelTime / 60);
+        int seconds = (int)levelTime % 60;
         
         DrawRectangle(SCREEN_WIDTH/2 - 200, centerY - 90, 400, 60, Fade(DARKBLUE, 0.8f));
         DrawRectangleLines(SCREEN_WIDTH/2 - 200, centerY - 90, 400, 60, SKYBLUE);
@@ -150,6 +153,68 @@ void DrawProjectiles(const Game* game, bool showHitbox) {
     }
 }
 
+void DrawLevelCompleteOverlay(const Game* game) {
+    if (!game->showingLevelComplete) {
+        return;
+    }
+    
+    // Get current level information
+    const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+    if (!currentLevel) {
+        return;
+    }
+    
+    // Calculate time remaining until level ends (using level time, not total game time)
+    float levelTime = game->gameTime - game->levelStartTime;
+    float timeRemaining = currentLevel->duration - levelTime;
+    
+    // Fade in effect for first second
+    float fadeAlpha = game->levelCompleteTimer < 1.0f ? game->levelCompleteTimer : 1.0f;
+    
+    // Semi-transparent background in upper section
+    int panelY = PLAY_ZONE_TOP + 60;
+    int panelHeight = 120;
+    int panelWidth = 600;
+    int panelX = (SCREEN_WIDTH - panelWidth) / 2;
+    
+    // Background with border
+    DrawRectangle(panelX, panelY, panelWidth, panelHeight, Fade((Color){0, 20, 40, 200}, fadeAlpha * 0.85f));
+    DrawRectangleLines(panelX, panelY, panelWidth, panelHeight, Fade((Color){100, 200, 255, 255}, fadeAlpha));
+    
+    // Add corner decorations
+    int cornerSize = 20;
+    DrawRectangle(panelX, panelY, cornerSize, 3, Fade(GOLD, fadeAlpha));
+    DrawRectangle(panelX, panelY, 3, cornerSize, Fade(GOLD, fadeAlpha));
+    DrawRectangle(panelX + panelWidth - cornerSize, panelY, cornerSize, 3, Fade(GOLD, fadeAlpha));
+    DrawRectangle(panelX + panelWidth - 3, panelY, 3, cornerSize, Fade(GOLD, fadeAlpha));
+    DrawRectangle(panelX, panelY + panelHeight - 3, cornerSize, 3, Fade(GOLD, fadeAlpha));
+    DrawRectangle(panelX, panelY + panelHeight - cornerSize, 3, cornerSize, Fade(GOLD, fadeAlpha));
+    DrawRectangle(panelX + panelWidth - cornerSize, panelY + panelHeight - 3, cornerSize, 3, Fade(GOLD, fadeAlpha));
+    DrawRectangle(panelX + panelWidth - 3, panelY + panelHeight - cornerSize, 3, cornerSize, Fade(GOLD, fadeAlpha));
+    
+    // Level complete title
+    const char* titleText = TextFormat("LEVEL %d: %s", currentLevel->levelNumber, currentLevel->name);
+    int titleWidth = MeasureText(titleText, 30);
+    DrawText(titleText, panelX + (panelWidth - titleWidth) / 2, panelY + 15, 30, Fade(GOLD, fadeAlpha));
+    
+    // Status text
+    const char* statusText = "COMPLETING...";
+    int statusWidth = MeasureText(statusText, 20);
+    DrawText(statusText, panelX + (panelWidth - statusWidth) / 2, panelY + 50, 20, Fade(LIME, fadeAlpha));
+    
+    // Current score
+    const char* scoreText = TextFormat("Current Score: %d", game->score);
+    int scoreWidth = MeasureText(scoreText, 24);
+    DrawText(scoreText, panelX + (panelWidth - scoreWidth) / 2, panelY + 78, 24, Fade(WHITE, fadeAlpha));
+    
+    // Time remaining indicator (small, at bottom of panel)
+    if (timeRemaining > 0) {
+        const char* timeText = TextFormat("Next level in: %.0f seconds", timeRemaining);
+        int timeWidth = MeasureText(timeText, 14);
+        DrawText(timeText, panelX + (panelWidth - timeWidth) / 2, panelY + panelHeight - 22, 14, Fade(SKYBLUE, fadeAlpha * 0.8f));
+    }
+}
+
 void DrawGame(Game* game) {
     // Hitbox debug removed for cleaner gameplay
     
@@ -175,9 +240,10 @@ void DrawGame(Game* game) {
         DrawText(TextFormat("%.0f%%", progress), barX + 390, 10, 14, WHITE);
     }
     
-    // Center-Right: Time
-    int minutes = (int)(game->gameTime / 60);
-    int seconds = (int)game->gameTime % 60;
+    // Center-Right: Time (shows level time, not total game time)
+    float levelTime = game->gameTime - game->levelStartTime;
+    int minutes = (int)(levelTime / 60);
+    int seconds = (int)levelTime % 60;
     DrawText(TextFormat("TIME: %02d:%02d", minutes, seconds), 680, 8, 18, WHITE);
     
     // Right: Enemy count
@@ -206,43 +272,56 @@ void DrawGame(Game* game) {
     DrawPowerups(game->powerupSystem);
     DrawExplosions(game->explosionSystem);
     
-    // Danger warning effect - 30 seconds before boss escape
-    const float BOSS_ESCAPE_TIME = 523.82f;
-    const float WARNING_START_TIME = BOSS_ESCAPE_TIME - 30.0f;  // 493.82s
-    
-    if (game->gameTime >= WARNING_START_TIME && game->gameTime < BOSS_ESCAPE_TIME && !game->bossEscapeTriggered) {
-        // Calculate time remaining and intensity
-        float timeRemaining = BOSS_ESCAPE_TIME - game->gameTime;
-        float warningProgress = 1.0f - (timeRemaining / 30.0f);  // 0.0 to 1.0
+    // Danger warning effect - warning before boss escape
+    // Level 1: Warning at 60s after boss spawn (30s before 90s escape)
+    // Level 2: Warning at 40s after boss spawn (30s before 70s escape)
+    // IMPORTANT: Warning stops immediately if boss is killed!
+    if (game->bossSpawnTime >= 0 && !game->bossEscapeTriggered && 
+        game->bossEnemyIndex >= 0 && 
+        game->enemies[game->bossEnemyIndex].active) {  // Only show if boss is still alive!
         
-        // Pulsing effect - faster as time runs out
-        float pulseSpeed = 2.0f + (warningProgress * 6.0f);  // 2 to 8 Hz
-        float pulse = (sinf(game->gameTime * pulseSpeed) + 1.0f) * 0.5f;  // 0.0 to 1.0
+        const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+        // Calculate boss battle time using level time
+        float currentLevelTime = game->gameTime - game->levelStartTime;
+        float bossBattleTime = currentLevelTime - game->bossSpawnTime;  // Both in level time
+        float requiredBattleTime = (currentLevel && currentLevel->levelNumber == 2) ? 70.0f : 90.0f;
+        float warningDuration = 30.0f;  // Both levels: 30s warning
+        float warningStartTime = requiredBattleTime - warningDuration;
         
-        // Alpha increases with time and pulse
-        float baseAlpha = 0.1f + (warningProgress * 0.4f);  // 0.1 to 0.5
-        float alpha = baseAlpha * pulse;
-        
-        // Draw red borders around play zone
-        int borderThickness = 8 + (int)(warningProgress * 12.0f);  // 8 to 20 pixels
-        Color dangerColor = Fade(RED, alpha);
-        
-        // Top border
-        DrawRectangle(0, PLAY_ZONE_TOP, SCREEN_WIDTH, borderThickness, dangerColor);
-        // Bottom border
-        DrawRectangle(0, PLAY_ZONE_BOTTOM - borderThickness, SCREEN_WIDTH, borderThickness, dangerColor);
-        // Left border
-        DrawRectangle(0, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
-        // Right border
-        DrawRectangle(SCREEN_WIDTH - borderThickness, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
-        
-        // Add warning text in top center when close to escape (last 10 seconds)
-        if (timeRemaining <= 10.0f) {
-            int textSize = 30 + (int)((1.0f - timeRemaining / 10.0f) * 20.0f);  // 30 to 50
-            const char* warningText = TextFormat("DANGER! BOSS ESCAPE IN %.0f!", timeRemaining);
-            int textWidth = MeasureText(warningText, textSize);
-            Color textColor = Fade(RED, 0.7f + pulse * 0.3f);
-            DrawText(warningText, (SCREEN_WIDTH - textWidth) / 2, PLAY_ZONE_TOP + 40, textSize, textColor);
+        if (bossBattleTime >= warningStartTime && bossBattleTime < requiredBattleTime) {
+            // Calculate time remaining until escape countdown
+            float timeRemaining = requiredBattleTime - bossBattleTime;
+            float warningProgress = 1.0f - (timeRemaining / warningDuration);  // 0.0 to 1.0
+            
+            // Pulsing effect - faster as time runs out
+            float pulseSpeed = 2.0f + (warningProgress * 6.0f);  // 2 to 8 Hz
+            float pulse = (sinf(game->gameTime * pulseSpeed) + 1.0f) * 0.5f;  // 0.0 to 1.0
+            
+            // Alpha increases with time and pulse
+            float baseAlpha = 0.1f + (warningProgress * 0.4f);  // 0.1 to 0.5
+            float alpha = baseAlpha * pulse;
+            
+            // Draw red borders around play zone
+            int borderThickness = 8 + (int)(warningProgress * 12.0f);  // 8 to 20 pixels
+            Color dangerColor = Fade(RED, alpha);
+            
+            // Top border
+            DrawRectangle(0, PLAY_ZONE_TOP, SCREEN_WIDTH, borderThickness, dangerColor);
+            // Bottom border
+            DrawRectangle(0, PLAY_ZONE_BOTTOM - borderThickness, SCREEN_WIDTH, borderThickness, dangerColor);
+            // Left border
+            DrawRectangle(0, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
+            // Right border
+            DrawRectangle(SCREEN_WIDTH - borderThickness, PLAY_ZONE_TOP, borderThickness, PLAY_ZONE_HEIGHT, dangerColor);
+            
+            // Add warning text in top center when close to escape (last 10 seconds)
+            if (timeRemaining <= 10.0f) {
+                int textSize = 30 + (int)((1.0f - timeRemaining / 10.0f) * 20.0f);  // 30 to 50
+                const char* warningText = TextFormat("DANGER! BOSS ESCAPE IN %.0f!", timeRemaining);
+                int textWidth = MeasureText(warningText, textSize);
+                Color textColor = Fade(RED, 0.7f + pulse * 0.3f);
+                DrawText(warningText, (SCREEN_WIDTH - textWidth) / 2, PLAY_ZONE_TOP + 40, textSize, textColor);
+            }
         }
     }
     
@@ -355,6 +434,9 @@ void DrawGame(Game* game) {
     
     DrawText("P - Pause", controlsX + 120, hudY + 20, 11, WHITE);
     DrawText("ESC - Menu", controlsX + 120, hudY + 35, 11, WHITE);
+    
+    // Draw level complete overlay (semi-transparent, non-invasive)
+    DrawLevelCompleteOverlay(game);
     
     // Draw pause overlay
     if (game->gamePaused) {
