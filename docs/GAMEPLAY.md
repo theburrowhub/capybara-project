@@ -88,11 +88,11 @@ The game ends when:
 
 ## Tips & Strategies
 
-1. **Heat Management**: Fire in bursts to avoid overheating
-2. **Positioning**: Stay mobile but avoid the right side
-3. **Priority Targets**: Clear destructible obstacles for points
-4. **Pattern Recognition**: Learn enemy movement patterns
-5. **Risk vs Reward**: Destroying obstacles gives points but risks collision
+1. **Positioning**: Stay mobile but avoid the right side
+2. **Priority Targets**: Clear destructible obstacles for points
+3. **Pattern Recognition**: Learn enemy movement patterns
+4. **Risk vs Reward**: Destroying obstacles gives points but risks collision
+5. **Collect Powerups**: They drift away quickly, prioritize shield and weapon upgrades
 
 ## Debug Features
 
@@ -118,7 +118,7 @@ The game includes 10 different enemy types:
 - **Plasma**: Medium speed with homing
 - **Missile**: Slow but high damage with strong homing
 - **Energy Orb**: Area damage with piercing
-- See [Weapons and Projectiles](WEAPONS_AND_PROJECTILES.md) for details
+- See [Weapons and Damage](WEAPONS_AND_DAMAGE.md) for details
 
 ## Planned Features
 

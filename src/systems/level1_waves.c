@@ -17,7 +17,7 @@
 // - Example: Tanks (slow/tough) + Speeders (fast/weak) = varied threats
 // - Use spacing intervals to prevent collision
 //
-SpawnEvent* CreateStaticWaveplan(int* eventCount) {
+SpawnEvent* CreateLevel1Waveplan(int* eventCount) {
     static SpawnEvent events[400];
     int index = 0;
     

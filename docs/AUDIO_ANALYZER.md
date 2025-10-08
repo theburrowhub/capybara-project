@@ -805,7 +805,6 @@ Both programs share the same config file format and peak detection algorithm.
 
 - **[FLIGHT_PLAN.md](FLIGHT_PLAN.md)** - Current static wave system and level design
 - **[static_waves.c](../src/systems/static_waves.c)** - Where you implement wave designs
-- **[BASS_DRIVEN_GAMEPLAY_ARCHIVED.md](BASS_DRIVEN_GAMEPLAY_ARCHIVED.md)** - Previous dynamic system (archived, not used)
 
 ---
 

@@ -18,4 +18,7 @@ void DrawGameOver(const Game* game);
 // Draw debug information
 void DrawDebugInfo(const Game* game);
 
+// Draw level complete overlay (semi-transparent)
+void DrawLevelCompleteOverlay(const Game* game);
+
 #endif // RENDERER_H

@@ -4,6 +4,7 @@
 #include "projectile_types.h"
 #include "player_ship.h"
 #include "explosion.h"
+#include "powerup.h"
 #include "utils.h"
 #include <stdio.h>
 #include <string.h>
@@ -24,6 +25,7 @@ void CheckBulletEnemyCollisions(Game* game) {
         .onEnemyDestroyed = NULL
     };
     
+    // Pass player ship for damage calculation
     Collision_CheckBulletEnemyGeneric(&ctx);
 }
 
@@ -39,7 +41,17 @@ void Collision_CheckBulletEnemyGeneric(CollisionContext* ctx) {
                     
                     if (CheckCollisionRecs(ctx->bullets[b].bounds, ctx->enemies[e].bounds)) {
                         // Calculate damage with resistance
-                        float baseDamage = 1.0f;
+                        float baseDamage = ctx->bullets[b].damage;  // Use bullet's damage value
+                        
+                        // Offensive mode with FULL energy: double damage bonus
+                        if (ctx->logContext) {
+                            Game* game = (Game*)ctx->logContext;
+                            if (game->playerShip->energyMode == ENERGY_MODE_OFFENSIVE && 
+                                game->playerShip->energyFull) {
+                                baseDamage *= 2.0f;  // 2x damage bonus only when energy is FULL
+                            }
+                        }
+                        
                         float effectiveDamage = baseDamage * (1.0f - ctx->enemies[e].resistance);
                         int damageDealt = (int)fmaxf(1.0f, effectiveDamage);  // At least 1 damage
                         
@@ -88,6 +100,14 @@ void Collision_CheckBulletEnemyGeneric(CollisionContext* ctx) {
                                 float enemySize = ctx->enemies[e].bounds.width;
                                 CreateEnemyExplosion(ctx->explosionSystem, ctx->enemies[e].position, 
                                                    enemyColor, enemySize);
+                            }
+                            
+                            // Drop powerup from defeated enemy
+                            if (ctx->logContext) {
+                                Game* game = (Game*)ctx->logContext;
+                                if (game->powerupSystem) {
+                                    DropPowerupFromEnemy(game->powerupSystem, &ctx->enemies[e]);
+                                }
                             }
                             
                             // Add score if score pointer is provided
@@ -150,8 +170,8 @@ void CheckPlayerEnemyCollisions(Game* game) {
                         game->enemies[e].position.x, 
                         game->enemies[e].position.y);
                 
-                // Apply damage only if not invulnerable or shield burst is active
-                if (!DEBUG_INVULNERABILITY && !game->playerShip->abilityActive[ABILITY_SHIELD_BURST]) {
+                // Apply damage only if not invulnerable (ability system removed)
+                if (!DEBUG_INVULNERABILITY) {
                     // Damage based on enemy power
                     int damage = (game->enemies[e].power / 20) + 1;  // 1-3 damage based on power
                     DamagePlayerShip(game->playerShip, damage * 10);  // Scale up damage
@@ -164,6 +184,11 @@ void CheckPlayerEnemyCollisions(Game* game) {
                     float enemySize = game->enemies[e].bounds.width;
                     CreateEnemyExplosion(game->explosionSystem, game->enemies[e].position, enemyColor, enemySize);
                     
+                    // Drop powerup from defeated enemy
+                    if (game->powerupSystem) {
+                        DropPowerupFromEnemy(game->powerupSystem, &game->enemies[e]);
+                    }
+                    
                     game->enemies[e].active = false;
                 } else {
                     // Boss takes damage from collision
@@ -171,6 +196,11 @@ void CheckPlayerEnemyCollisions(Game* game) {
                     if (game->enemies[e].health <= 0) {
                         // Large explosion for boss
                         CreateExplosion(game->explosionSystem, game->enemies[e].position, EXPLOSION_LARGE);
+                        
+                        // Drop powerup from defeated boss
+                        if (game->powerupSystem) {
+                            DropPowerupFromEnemy(game->powerupSystem, &game->enemies[e]);
+                        }
                         
                         game->enemies[e].active = false;
                         game->score += game->enemies[e].power * 10;  // Big score for boss
@@ -195,8 +225,8 @@ void CheckProjectilePlayerCollision(Game* game) {
             float playerRadius = 25.0f;  // Approximate player ship radius
             
             if (distance < (def->hitboxRadius + playerRadius)) {
-                // Apply damage only if not invulnerable or shield burst is active
-                if (!DEBUG_INVULNERABILITY && !game->playerShip->abilityActive[ABILITY_SHIELD_BURST]) {
+                // Apply damage only if not invulnerable (ability system removed)
+                if (!DEBUG_INVULNERABILITY) {
                     // Hit the player
                     int damage = fmaxf(1, def->damage / 2);  // Scale damage
                     DamagePlayerShip(game->playerShip, damage);
@@ -271,6 +301,11 @@ void CheckProjectileEnemyCollision(Game* game) {
                             Color enemyColor = GetEnemyTypeColor(game->enemies[e].type);
                             float enemySize = game->enemies[e].bounds.width;
                             CreateEnemyExplosion(game->explosionSystem, game->enemies[e].position, enemyColor, enemySize);
+                            
+                            // Drop powerup from defeated enemy
+                            if (game->powerupSystem) {
+                                DropPowerupFromEnemy(game->powerupSystem, &game->enemies[e]);
+                            }
                             
                             game->enemies[e].active = false;
                             game->score += game->enemies[e].power * 2;

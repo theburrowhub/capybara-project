@@ -12,18 +12,15 @@ typedef enum {
     WEAPON_MODE_SPREAD,     // 3-way spread shot
     WEAPON_MODE_RAPID,      // Rapid fire mode
     WEAPON_MODE_CHARGE,     // Charge beam
-    WEAPON_MODE_WAVE,       // Wave pattern shots
+    WEAPON_MODE_DUAL,       // Front and back shots
     WEAPON_MODE_COUNT
 } WeaponMode;
 
-// Player ship abilities
+// Energy mode system
 typedef enum {
-    ABILITY_BOOST,          // Speed boost
-    ABILITY_SHIELD_BURST,   // Temporary invulnerability
-    ABILITY_EMP_BLAST,      // Clear nearby projectiles
-    ABILITY_OVERDRIVE,      // Unlimited fire for short time
-    ABILITY_COUNT
-} PlayerAbility;
+    ENERGY_MODE_OFFENSIVE,   // Boosted weapon damage when full energy
+    ENERGY_MODE_DEFENSIVE    // Better shield when full energy
+} EnergyMode;
 
 // Ship upgrade levels
 typedef struct {
@@ -69,16 +66,6 @@ typedef struct PlayerShip {
     float baseSpeed;
     float currentSpeed;
     float acceleration;
-    float maxSpeed;
-    float boostSpeed;
-    bool isBoosting;
-    float boostDuration;
-    float boostCooldown;
-    
-    // Abilities
-    float abilityCooldowns[ABILITY_COUNT];
-    bool abilityActive[ABILITY_COUNT];
-    float abilityDurations[ABILITY_COUNT];
     
     // Visual effects
     float engineGlow;       // Engine effect intensity (0-1)
@@ -101,6 +88,19 @@ typedef struct PlayerShip {
     // Upgrades
     ShipUpgrades upgrades;
     
+    // Powerup tracking
+    int weaponPowerupCount;  // Number of weapon powerups collected (0-3)
+    
+    // Energy mode system
+    EnergyMode energyMode;           // Current mode (offensive/defensive)
+    bool specialAbilityActive;       // Whether special ability is currently active
+    float specialAbilityTimer;       // Timer for special ability duration
+    float specialAbilityHoldTimer;   // Timer for holding CTRL in defensive mode
+    bool energyFull;                 // Cache whether energy is at max
+    float energyDrainRate;           // Rate at which energy drains during special (per second)
+    float lastEnergyDepletionTime;   // Time when energy was last depleted to 0
+    float energyRegenDelay;          // Delay before energy starts regenerating after depletion
+    
     // Stats
     int score;
     int enemiesDestroyed;
@@ -108,6 +108,10 @@ typedef struct PlayerShip {
     
     // Visibility (for boss escape sequence)
     bool isVisible;
+    
+    // Revive tracking (weapon powerup revive system)
+    bool justRevived;        // Flag set when a revive happens
+    float reviveEffectTimer; // Timer for revive visual effect
 } PlayerShip;
 
 // Ship configuration
@@ -135,9 +139,6 @@ void UpdateShipPhysics(PlayerShip* ship, float deltaTime);
 // Update weapon system
 void UpdateShipWeapons(PlayerShip* ship, Game* game, float deltaTime);
 
-// Update abilities
-void UpdateShipAbilities(PlayerShip* ship, float deltaTime);
-
 // Update visual effects
 void UpdateShipEffects(PlayerShip* ship, float deltaTime);
 
@@ -162,9 +163,6 @@ void DamagePlayerShip(PlayerShip* ship, int damage);
 // Heal/repair ship
 void RepairPlayerShip(PlayerShip* ship, int amount);
 
-// Activate ability
-bool ActivateAbility(PlayerShip* ship, PlayerAbility ability);
-
 // Switch weapon mode
 void SwitchWeaponMode(PlayerShip* ship, WeaponMode mode);
 
@@ -173,5 +171,8 @@ void ApplyShipUpgrade(PlayerShip* ship, int upgradeType, int level);
 
 // Get ship stats for display
 void GetShipStats(const PlayerShip* ship, char* buffer, int bufferSize);
+
+// Calculate damage per individual bullet based on current state
+float CalculateDamagePerShot(const PlayerShip* ship);
 
 #endif // PLAYER_SHIP_H

@@ -44,3 +44,11 @@ core.*
 
 # Media files (audio)
 assets/audio/
+
+# LaTeX build artifacts
+*.aux
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk

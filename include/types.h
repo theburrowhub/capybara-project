@@ -10,6 +10,8 @@ typedef struct WaveSystem WaveSystem;
 typedef struct EnemyEx EnemyEx;
 typedef struct PlayerShip PlayerShip;
 typedef struct ExplosionSystem ExplosionSystem;
+typedef struct PowerupSystem PowerupSystem;
+typedef struct LevelManager LevelManager;
 
 // Bullet structure
 typedef struct Bullet {
@@ -17,6 +19,9 @@ typedef struct Bullet {
     Rectangle bounds;
     bool active;
     float speed;
+    float damage;       // Damage dealt by this bullet
+    float velocityY;    // Y velocity for spread/dual shots
+    int powerLevel;     // Weapon power level 0-3 (standard, +1, +2, +3)
 } Bullet;
 
 // Note: Enemy structure has been replaced by EnemyEx in enemy_types.h
@@ -41,10 +46,14 @@ struct Game {
     float gameTime;           // Time in seconds
     float scrollSpeed;
     int speedLevel;           // Current speed level (increases every minute)
+    // Level system
+    LevelManager* levelManager;
     // Wave system
     WaveSystem* waveSystem;
     // Explosion system
     ExplosionSystem* explosionSystem;
+    // Powerup system
+    PowerupSystem* powerupSystem;
     // Starfield
     Star* stars;
     int numStars;
@@ -59,9 +68,15 @@ struct Game {
     float musicVolume;
     // Boss tracking
     int bossEnemyIndex;       // Index of boss enemy in enemies array (-1 if none)
+    float bossSpawnTime;      // Time when boss spawned (for countdown calculation)
     bool bossEscapeTriggered; // Whether boss escape sequence has been triggered
     float bossEscapeTimer;    // Timer for dramatic escape sequence
     int bossEscapePhase;      // Phase of escape: 0=not started, 1=destroying everything, 2=boss escaping, 3=show game over
+    // Interlevel transition system
+    bool showingLevelComplete; // Whether we're showing level complete overlay
+    float levelCompleteTimer;  // Time since level complete overlay appeared
+    bool transitioningToNextLevel; // Whether we're in the middle of transitioning
+    float levelStartTime;      // Game time when current level started (for display)
 };
 
 #endif // TYPES_H

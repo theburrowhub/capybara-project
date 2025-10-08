@@ -20,11 +20,14 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/collision.c \
               $(SRC_DIR)/systems/renderer.c \
               $(SRC_DIR)/systems/wave_system.c \
-              $(SRC_DIR)/systems/static_waves.c \
+              $(SRC_DIR)/systems/level_system.c \
+              $(SRC_DIR)/systems/level1_waves.c \
+              $(SRC_DIR)/systems/level2_waves.c \
               $(SRC_DIR)/systems/projectile_types.c \
               $(SRC_DIR)/systems/explosion.c \
               $(SRC_DIR)/systems/combat_system.c \
               $(SRC_DIR)/systems/projectile_manager.c \
+              $(SRC_DIR)/systems/powerup.c \
 			  $(SRC_DIR)/systems/menu.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c
@@ -46,11 +49,14 @@ SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/systems/projectile_types.c \
                 $(SRC_DIR)/systems/weapon.c \
                 $(SRC_DIR)/systems/wave_system.c \
-                $(SRC_DIR)/systems/static_waves.c \
+                $(SRC_DIR)/systems/level_system.c \
+                $(SRC_DIR)/systems/level1_waves.c \
+                $(SRC_DIR)/systems/level2_waves.c \
                 $(SRC_DIR)/systems/combat_system.c \
                 $(SRC_DIR)/systems/projectile_manager.c \
                 $(SRC_DIR)/systems/collision.c \
                 $(SRC_DIR)/systems/explosion.c \
+                $(SRC_DIR)/systems/powerup.c \
                 $(SRC_DIR)/utils/logger.c
 
 # Sprite showcase source files
@@ -87,6 +93,13 @@ PLAYER_SHOWCASE_SRCS = $(SRC_DIR)/demo/player_ship_showcase.c \
 # Player sprite generator source files
 PLAYER_GEN_SRCS = $(SRC_DIR)/tools/generate_player_sprite.c
 
+# Powerup showcase source files
+POWERUP_SHOWCASE_SRCS = $(SRC_DIR)/demo/powerup_showcase.c \
+                        $(SRC_DIR)/systems/powerup.c \
+                        $(SRC_DIR)/entities/player_ship.c \
+                        $(SRC_DIR)/entities/enemy_types.c \
+                        $(SRC_DIR)/systems/projectile_types.c
+
 # Audio analysis GUI source files
 AUDIO_GUI_SRCS = $(SRC_DIR)/demo/audio_analysis_gui.c
 
@@ -102,6 +115,7 @@ PROJECTILE_GEN_OBJS = $(PROJECTILE_GEN_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PROJECTILE_SHOWCASE_OBJS = $(PROJECTILE_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PLAYER_SHOWCASE_OBJS = $(PLAYER_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 PLAYER_GEN_OBJS = $(PLAYER_GEN_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+POWERUP_SHOWCASE_OBJS = $(POWERUP_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 AUDIO_GUI_OBJS = $(AUDIO_GUI_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 AUDIO_CLI_OBJS = $(AUDIO_CLI_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
@@ -115,6 +129,7 @@ PROJECTILE_GEN_TARGET = $(BIN_DIR)/generate_projectile_sprites
 PROJECTILE_SHOWCASE_TARGET = $(BIN_DIR)/projectile_showcase
 PLAYER_SHOWCASE_TARGET = $(BIN_DIR)/player_showcase
 PLAYER_GEN_TARGET = $(BIN_DIR)/generate_player_sprite
+POWERUP_SHOWCASE_TARGET = $(BIN_DIR)/powerup_showcase
 AUDIO_GUI_TARGET = $(BIN_DIR)/audio_analysis_gui
 AUDIO_CLI_TARGET = $(BIN_DIR)/audio_analysis_cli
 
@@ -128,7 +143,7 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 # Default target - build all binaries
-all: directories $(TARGET) $(SHOWCASE_TARGET) $(SPRITE_SHOWCASE_TARGET) $(SPRITE_GEN_TARGET) $(SPACESHIP_GEN_TARGET) $(PROJECTILE_GEN_TARGET) $(PROJECTILE_SHOWCASE_TARGET) $(PLAYER_SHOWCASE_TARGET) $(PLAYER_GEN_TARGET) $(AUDIO_GUI_TARGET) $(AUDIO_CLI_TARGET)
+all: directories $(TARGET) $(SHOWCASE_TARGET) $(SPRITE_SHOWCASE_TARGET) $(SPRITE_GEN_TARGET) $(SPACESHIP_GEN_TARGET) $(PROJECTILE_GEN_TARGET) $(PROJECTILE_SHOWCASE_TARGET) $(PLAYER_SHOWCASE_TARGET) $(PLAYER_GEN_TARGET) $(POWERUP_SHOWCASE_TARGET) $(AUDIO_GUI_TARGET) $(AUDIO_CLI_TARGET)
 
 # Build only the main game
 game: directories $(TARGET)
@@ -179,6 +194,10 @@ $(PLAYER_SHOWCASE_TARGET): $(PLAYER_SHOWCASE_OBJS)
 # Link the player sprite generator executable
 $(PLAYER_GEN_TARGET): $(PLAYER_GEN_OBJS)
 	$(CC) $(PLAYER_GEN_OBJS) -o $@ $(LIBS)
+
+# Link the powerup showcase executable
+$(POWERUP_SHOWCASE_TARGET): $(POWERUP_SHOWCASE_OBJS)
+	$(CC) $(POWERUP_SHOWCASE_OBJS) -o $@ $(LIBS)
 
 # Link the audio analysis GUI executable
 $(AUDIO_GUI_TARGET): $(AUDIO_GUI_OBJS) $(AUDIO_ANALYSIS_OBJS)
@@ -253,6 +272,13 @@ player_showcase: directories $(PLAYER_SHOWCASE_TARGET)
 # Build and run player demo
 player: generate_player player_showcase
 
+# Run powerup showcase
+powerup_showcase: directories $(POWERUP_SHOWCASE_TARGET)
+	./$(POWERUP_SHOWCASE_TARGET)
+
+# Build only powerup showcase
+build_powerup_showcase: directories $(POWERUP_SHOWCASE_TARGET)
+
 # Build audio analysis GUI
 audio_gui: directories $(AUDIO_GUI_TARGET)
 
@@ -292,6 +318,7 @@ help:
 	@echo "  showcase         - Build and run enemy showcase"
 	@echo "  enemy_showcase   - Build only the enemy showcase"
 	@echo "  player_showcase  - Build player ship showcase"
+	@echo "  powerup_showcase - Build and run powerup showcase"
 	@echo "  showcase_sprites - Run sprite-based enemy showcase"
 	@echo ""
 	@echo "AUDIO TARGETS:"
@@ -314,5 +341,42 @@ help:
 	@echo ""
 	@echo "OTHER:"
 	@echo "  help             - Show this help message"
+	@echo "  manual           - Compile user manual PDF"
+	@echo "  clean-manual     - Remove manual build artifacts"
 
-.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player
+# User Manual targets
+manual:
+	@echo "Compiling simplified user manual..."
+	@if ! command -v pdflatex >/dev/null 2>&1; then \
+		echo "Error: pdflatex not found. Please install LaTeX:"; \
+		echo "  macOS: brew install --cask mactex"; \
+		echo "  Linux: sudo apt install texlive-latex-extra texlive-fonts-extra"; \
+		exit 1; \
+	fi
+	@cd docs && pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex
+	@cd docs && pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex
+	@mv docs/USER_MANUAL_SIMPLE.pdf docs/USER_MANUAL.pdf 2>/dev/null || true
+	@echo ""
+	@echo "✓ User manual compiled successfully: docs/USER_MANUAL.pdf"
+
+manual-full:
+	@echo "Compiling full user manual (requires additional packages)..."
+	@echo "Installing missing packages via MacPorts..."
+	@echo "Run: sudo port install texlive-latex-extra texlive-fonts-extra"
+	@echo ""
+	@cd docs && pdflatex -interaction=nonstopmode USER_MANUAL.tex
+	@cd docs && pdflatex -interaction=nonstopmode USER_MANUAL.tex
+	@echo ""
+	@echo "✓ Full user manual compiled: docs/USER_MANUAL.pdf"
+
+clean-manual:
+	@echo "Cleaning manual build artifacts..."
+	@rm -f docs/USER_MANUAL.aux docs/USER_MANUAL.log docs/USER_MANUAL.out docs/USER_MANUAL.toc
+	@rm -f docs/USER_MANUAL_SIMPLE.aux docs/USER_MANUAL_SIMPLE.log docs/USER_MANUAL_SIMPLE.out docs/USER_MANUAL_SIMPLE.toc
+	@echo "Manual artifacts cleaned."
+
+clean-manual-all: clean-manual
+	@rm -f docs/USER_MANUAL.pdf docs/USER_MANUAL_SIMPLE.pdf
+	@echo "Manual PDFs removed."
+
+.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all

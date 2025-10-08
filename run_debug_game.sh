@@ -9,8 +9,8 @@ NC='\033[0m' # No Color
 
 # Default values
 INVULNERABLE="false"
+LEVEL=1
 PHASE=0
-OVERHEATING="false"
 LOGGING="false"
 SHOW_HELP=0
 
@@ -58,6 +58,12 @@ PHASE_DESCRIPTIONS=(
     "540-590 seconds - Final challenge"
 )
 
+# Level names
+LEVEL_NAMES=(
+    "Level 1: Initiation"
+    "Level 2: Escalation"
+)
+
 # Function to display help
 show_help() {
     echo -e "${GREEN}================================${NC}"
@@ -68,27 +74,40 @@ show_help() {
     echo "  $0 [OPTIONS]"
     echo ""
     echo -e "${YELLOW}Options:${NC}"
-    echo "  -i, --invulnerable    Enable invulnerability mode"
-    echo "  -o, --overheating     Enable weapon overheating system"
-    echo "  -d, --debug-log       Enable debug logging to game.log"
-    echo "  -p, --phase NUMBER    Start at specific phase (0-17)"
-    echo "  -l, --list           List all available phases"
-    echo "  -h, --help           Show this help message"
+    echo "  -i, --invulnerable         Enable invulnerability mode"
+    echo "  -d, --debug-log            Enable debug logging to game.log"
+    echo "  -p, --phase LEVEL-PHASE    Start at specific level and phase (e.g., 1-12, 2-3)"
+    echo "      --phase NUMBER         Start at phase in Level 1 (legacy, e.g., 12)"
+    echo "  -l, --list                 List all available phases"
+    echo "  -h, --help                 Show this help message"
+    echo ""
+    echo -e "${YELLOW}Level-Phase Format:${NC}"
+    echo "  Format: LEVEL-PHASE"
+    echo "    1-0    = Level 1, Start from beginning"
+    echo "    1-12   = Level 1, Phase 12 (Mini-Boss)"
+    echo "    2-3    = Level 2, Phase 3 (Tank Squadron)"
+    echo "    2-0    = Level 2, Start from beginning"
     echo ""
     echo -e "${YELLOW}Examples:${NC}"
-    echo "  $0                    # Normal game"
-    echo "  $0 -i                 # Invulnerable from start"
-    echo "  $0 -o                 # Enable weapon overheating"
-    echo "  $0 -d                 # Enable debug logging"
-    echo "  $0 -p 3               # Start at Tank Squadron (best for tank testing)"
-    echo "  $0 -i -p 3            # Tank Squadron with invulnerability"
-    echo "  $0 -i -o -d -p 11     # Combined Arms (intense tanks) with all debug features"
+    echo "  $0                         # Normal game (Level 1)"
+    echo "  $0 -i                      # Invulnerable from start"
+    echo "  $0 -d                      # Enable debug logging"
+    echo "  $0 -p 1-3                  # Level 1, Tank Squadron"
+    echo "  $0 -p 2-0                  # Level 2 from beginning"
+    echo "  $0 -p 2-5                  # Level 2, Phase 5"
+    echo "  $0 -i -p 1-3               # Tank Squadron with invulnerability"
+    echo "  $0 -i -d -p 1-11           # Combined Arms (intense tanks) with all debug features"
+    echo "  $0 -p 12                   # Legacy: Level 1, Phase 12"
     echo ""
-    echo -e "${YELLOW}Tank Testing Phases:${NC}"
-    echo "  Phase 3  - Tank Squadron (clean tank testing)"
-    echo "  Phase 5  - Mixed Assault (tanks + other enemies)"
-    echo "  Phase 11 - Combined Arms (high intensity tanks)"
-    echo "  Phase 16 - Heavy Assault (extreme tank challenge)"
+    echo -e "${YELLOW}Available Levels:${NC}"
+    echo "  Level 1 - Initiation (553.82s, ~9 minutes)"
+    echo "  Level 2 - Escalation (612.13s, ~10 minutes)"
+    echo ""
+    echo -e "${YELLOW}Tank Testing Phases (Level 1):${NC}"
+    echo "  1-3   - Tank Squadron (clean tank testing)"
+    echo "  1-5   - Mixed Assault (tanks + other enemies)"
+    echo "  1-11  - Combined Arms (high intensity tanks)"
+    echo "  1-16  - Heavy Assault (extreme tank challenge)"
     echo ""
 }
 
@@ -98,11 +117,33 @@ list_phases() {
     echo -e "${GREEN}Available Phases${NC}"
     echo -e "${GREEN}================================${NC}"
     echo ""
+    echo -e "${BLUE}Note: Phases work for both Level 1 and Level 2${NC}"
+    echo -e "${BLUE}Use format: LEVEL-PHASE (e.g., 1-12 or 2-5)${NC}"
+    echo ""
     for i in "${!PHASE_NAMES[@]}"; do
         echo -e "${YELLOW}Phase $i:${NC} ${PHASE_NAMES[$i]}"
         echo -e "  ${BLUE}${PHASE_DESCRIPTIONS[$i]}${NC}"
         echo ""
     done
+}
+
+# Function to parse level-phase format
+parse_level_phase() {
+    local input=$1
+    
+    # Check if input contains a dash (level-phase format)
+    if [[ $input =~ ^([0-9]+)-([0-9]+)$ ]]; then
+        LEVEL=${BASH_REMATCH[1]}
+        PHASE=${BASH_REMATCH[2]}
+        return 0
+    # Legacy format: just a number (assume Level 1)
+    elif [[ $input =~ ^[0-9]+$ ]]; then
+        LEVEL=1
+        PHASE=$input
+        return 0
+    else
+        return 1
+    fi
 }
 
 # Parse command line arguments
@@ -112,20 +153,21 @@ while [[ $# -gt 0 ]]; do
             INVULNERABLE="true"
             shift
             ;;
-        -o|--overheating)
-            OVERHEATING="true"
-            shift
-            ;;
         -d|--debug-log)
             LOGGING="true"
             shift
             ;;
         -p|--phase)
-            if [[ -n $2 && $2 =~ ^[0-9]+$ ]]; then
-                PHASE=$2
-                shift 2
+            if [[ -n $2 ]]; then
+                if parse_level_phase "$2"; then
+                    shift 2
+                else
+                    echo -e "${RED}Error: Invalid format for --phase${NC}"
+                    echo -e "${YELLOW}Use: LEVEL-PHASE (e.g., 1-12, 2-3) or just PHASE for Level 1${NC}"
+                    exit 1
+                fi
             else
-                echo -e "${RED}Error: --phase requires a number (0-17)${NC}"
+                echo -e "${RED}Error: --phase requires an argument${NC}"
                 exit 1
             fi
             ;;
@@ -145,6 +187,13 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# Validate level number
+if [[ $LEVEL -lt 1 || $LEVEL -gt 2 ]]; then
+    echo -e "${RED}Error: Level must be 1 or 2${NC}"
+    echo "Available levels: 1 (Initiation), 2 (Escalation)"
+    exit 1
+fi
+
 # Validate phase number
 if [[ $PHASE -lt 0 || $PHASE -gt 17 ]]; then
     echo -e "${RED}Error: Phase must be between 0 and 17${NC}"
@@ -159,8 +208,8 @@ echo -e "${GREEN}================================${NC}"
 echo ""
 echo -e "${YELLOW}Settings:${NC}"
 echo -e "  Invulnerability: ${INVULNERABLE}"
-echo -e "  Weapon Overheating: ${OVERHEATING}"
 echo -e "  Debug Logging: ${LOGGING}"
+echo -e "  Starting Level: $LEVEL - ${LEVEL_NAMES[$((LEVEL-1))]}"
 echo -e "  Starting Phase: $PHASE - ${PHASE_NAMES[$PHASE]}"
 echo -e "  Description: ${PHASE_DESCRIPTIONS[$PHASE]}"
 echo ""
@@ -173,8 +222,29 @@ cp include/constants.h include/constants.h.backup
 restore_settings() {
     echo ""
     echo -e "${YELLOW}Restoring original settings...${NC}"
-    mv include/constants.h.backup include/constants.h
-    echo -e "${GREEN}Settings restored!${NC}"
+    
+    # First, try to restore from backup if it exists
+    if [[ -f "include/constants.h.backup" ]]; then
+        mv include/constants.h.backup include/constants.h
+    fi
+    
+    # Explicitly ensure all debug values are set to defaults
+    # This provides an extra layer of safety
+    sed -i '' 's/#define DEBUG_INVULNERABILITY true/#define DEBUG_INVULNERABILITY false/' include/constants.h 2>/dev/null
+    sed -i '' 's/#define DEBUG_LOGGING true/#define DEBUG_LOGGING false/' include/constants.h 2>/dev/null
+    sed -i '' 's/#define DEBUG_START_LEVEL [0-9]*/#define DEBUG_START_LEVEL 1/' include/constants.h 2>/dev/null
+    sed -i '' 's/#define DEBUG_START_PHASE [0-9]*/#define DEBUG_START_PHASE 0/' include/constants.h 2>/dev/null
+    
+    # Rebuild the game with restored defaults
+    echo -e "${YELLOW}Rebuilding game with default settings...${NC}"
+    make clean > /dev/null 2>&1
+    if make > /dev/null 2>&1; then
+        echo -e "${GREEN}Game rebuilt with default settings!${NC}"
+    else
+        echo -e "${RED}Warning: Rebuild failed. You may need to run 'make clean && make' manually.${NC}"
+    fi
+    
+    echo -e "${GREEN}Settings restored to defaults!${NC}"
 }
 
 # Set up trap to restore settings on script exit
@@ -190,19 +260,15 @@ else
     sed -i '' 's/#define DEBUG_INVULNERABILITY true/#define DEBUG_INVULNERABILITY false/' include/constants.h
 fi
 
-# Update overheating setting
-if [[ $OVERHEATING == "true" ]]; then
-    sed -i '' 's/#define WEAPON_OVERHEATING false/#define WEAPON_OVERHEATING true/' include/constants.h
-else
-    sed -i '' 's/#define WEAPON_OVERHEATING true/#define WEAPON_OVERHEATING false/' include/constants.h
-fi
-
 # Update logging setting
 if [[ $LOGGING == "true" ]]; then
     sed -i '' 's/#define DEBUG_LOGGING false/#define DEBUG_LOGGING true/' include/constants.h
 else
     sed -i '' 's/#define DEBUG_LOGGING true/#define DEBUG_LOGGING false/' include/constants.h
 fi
+
+# Update level setting
+sed -i '' "s/#define DEBUG_START_LEVEL [0-9]*/#define DEBUG_START_LEVEL $LEVEL/" include/constants.h
 
 # Update phase setting
 sed -i '' "s/#define DEBUG_START_PHASE [0-9]*/#define DEBUG_START_PHASE $PHASE/" include/constants.h
@@ -233,16 +299,12 @@ if [[ $INVULNERABLE == "true" ]]; then
     echo -e "${GREEN}[INVULNERABLE] will appear in game${NC}"
 fi
 
-if [[ $OVERHEATING == "true" ]]; then
-    echo -e "${YELLOW}[WEAPON OVERHEATING] is enabled${NC}"
-fi
-
 if [[ $LOGGING == "true" ]]; then
     echo -e "${BLUE}[DEBUG LOGGING] game.log will be created${NC}"
 fi
 
-if [[ $PHASE -gt 0 ]]; then
-    echo -e "${YELLOW}[DEBUG: Started at Phase $PHASE] will appear in game${NC}"
+if [[ $LEVEL -ne 1 || $PHASE -gt 0 ]]; then
+    echo -e "${YELLOW}[DEBUG: Level $LEVEL, Phase $PHASE] will appear in game${NC}"
 fi
 
 echo ""

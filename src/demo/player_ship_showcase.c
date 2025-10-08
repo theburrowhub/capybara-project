@@ -53,8 +53,8 @@ void InitShowcase(ShowcaseState* state) {
 void FireProjectile(ShowcaseState* state) {
     PlayerShip* ship = &state->ship;
     
-    // Don't fire if overheated (unless in overdrive)
-    if (ship->overheated && !ship->abilityActive[ABILITY_OVERDRIVE]) {
+    // Don't fire if overheated
+    if (ship->overheated) {
         return;
     }
     
@@ -62,7 +62,6 @@ void FireProjectile(ShowcaseState* state) {
     float fireRate = 0.15f;
     if (ship->weaponMode == WEAPON_MODE_RAPID) fireRate = 0.05f;
     if (ship->weaponMode == WEAPON_MODE_CHARGE) fireRate = 0.5f;
-    if (ship->abilityActive[ABILITY_OVERDRIVE]) fireRate *= 0.5f;
     
     if (ship->fireTimer > 0) {
         return;
@@ -70,13 +69,11 @@ void FireProjectile(ShowcaseState* state) {
     
     ship->fireTimer = fireRate;
     
-    // Add heat (unless in overdrive)
-    if (!ship->abilityActive[ABILITY_OVERDRIVE]) {
-        ship->weaponHeat += 8.0f;
-        if (ship->weaponHeat >= ship->maxHeat) {
-            ship->overheated = true;
-            ship->cooldownTime = 2.0f;
-        }
+    // Add heat (weapon overheating disabled in main game)
+    ship->weaponHeat += 8.0f;
+    if (ship->weaponHeat >= ship->maxHeat) {
+        ship->overheated = true;
+        ship->cooldownTime = 2.0f;
     }
     
     // Find free projectile slots and fire based on weapon mode
@@ -99,8 +96,8 @@ void FireProjectile(ShowcaseState* state) {
         case WEAPON_MODE_CHARGE:
             maxProjectiles = 1;
             break;
-        case WEAPON_MODE_WAVE:
-            maxProjectiles = 5;
+        case WEAPON_MODE_DUAL:
+            maxProjectiles = 2;  // One forward, one backward
             break;
     }
     
@@ -121,9 +118,9 @@ void FireProjectile(ShowcaseState* state) {
                 case WEAPON_MODE_DOUBLE:
                     firePos.x += 15;
                     if (projectilesFired == 0) {
-                        firePos.y -= 8;
+                        firePos.y -= 15;
                     } else {
-                        firePos.y += 8;
+                        firePos.y += 15;
                     }
                     break;
                     
@@ -141,9 +138,13 @@ void FireProjectile(ShowcaseState* state) {
                     // Larger projectile for charged shot
                     break;
                     
-                case WEAPON_MODE_WAVE:
-                    firePos.x += 10;
-                    p->waveOffset = projectilesFired * 0.3f;
+                case WEAPON_MODE_DUAL:
+                    // Position projectiles at front and back of ship
+                    if (projectilesFired == 0) {
+                        firePos.x += 25;  // Forward shot
+                    } else {
+                        firePos.x -= 25;  // Backward shot
+                    }
                     break;
             }
             
@@ -165,9 +166,14 @@ void FireProjectile(ShowcaseState* state) {
                 p->damage = 1 * ship->upgrades.weaponLevel;
             }
             
-            if (ship->weaponMode == WEAPON_MODE_WAVE) {
-                p->velocity.x = 10;
-                p->velocity.y = sinf(p->waveOffset + state->demoTime * 5) * 3;
+            if (ship->weaponMode == WEAPON_MODE_DUAL) {
+                // First projectile goes forward, second goes backward
+                if (projectilesFired == 1) {
+                    p->velocity.x = 15;  // Forward
+                } else {
+                    p->velocity.x = -15;  // Backward
+                }
+                p->velocity.y = 0;
             } else {
                 p->velocity.x = 15;
                 if (ship->weaponMode == WEAPON_MODE_SPREAD) {
@@ -209,10 +215,8 @@ void UpdateShowcase(ShowcaseState* state) {
         if (state->projectiles[i].active) {
             UpdateProjectile(&state->projectiles[i], deltaTime);
             
-            // Wave pattern for wave mode
-            if (state->ship.weaponMode == WEAPON_MODE_WAVE) {
-                state->projectiles[i].velocity.y = sinf(state->projectiles[i].waveOffset + state->demoTime * 5) * 5;
-            }
+            // Dual mode projectiles maintain their direction
+            // No special velocity updates needed for dual mode
             
             // Deactivate if off screen
             if (state->projectiles[i].position.x > SCREEN_WIDTH || 
@@ -270,9 +274,7 @@ void DrawShowcase(ShowcaseState* state) {
     if (state->playerSprite.id > 0) {
         // Use sprite if available
         int frame = ((int)(state->demoTime * 10) % 4);
-        if (state->ship.isBoosting || state->ship.abilityActive[ABILITY_SHIELD_BURST]) {
-            frame += 4; // Use boosted frames
-        }
+        // Abilities removed - using normal frames only
         
         Rectangle source = {
             (frame % 4) * 64,
@@ -322,7 +324,7 @@ void DrawShowcase(ShowcaseState* state) {
             " 3: Spread\n"
             " 4: Rapid\n"
             " 5: Charge\n"
-            " 6: Wave\n"
+            " 6: Dual (Front+Back)\n"
             "\n=== DEBUG ===\n"
             "Damage: -\n"
             "Repair: =\n"
@@ -340,7 +342,7 @@ void DrawShowcase(ShowcaseState* state) {
     // Draw weapon mode indicator
     const char* weaponNames[] = {
         "SINGLE SHOT", "DOUBLE SHOT", "SPREAD SHOT", 
-        "RAPID FIRE", "CHARGE BEAM", "WAVE SHOT"
+        "RAPID FIRE", "CHARGE BEAM", "DUAL SHOT"
     };
     DrawText(weaponNames[state->ship.weaponMode], SCREEN_WIDTH/2 - 60, 35, 14, state->ship.secondaryColor);
     

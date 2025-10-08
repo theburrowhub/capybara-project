@@ -10,20 +10,18 @@ The enhanced player ship system features a sophisticated multi-layered design wi
 
 #### Health & Shield System
 - **Hull Integrity**: 100 HP base health
-- **Energy Shield**: 50 points regenerating shield
-- **Shield Regeneration**: 5 points/second after 3-second delay
+- **Energy Shield**: 25 points (Offensive Mode) / 50 points (Defensive Mode)
+- **Shield Regeneration**: 2 points/second after 5-second delay (4 points/sec in Defensive with full energy)
 - **Damage Mitigation**: Shield absorbs damage before hull
 
 #### Energy Management
-- **Energy Pool**: 100 points for abilities
-- **Regeneration Rate**: 10 points/second
-- **Ability Costs**: Variable per ability
+- **Energy Pool**: 100 points for special abilities
+- **Regeneration Rate**: 2 points/second (strategic resource management)
 
 #### Movement System
 - **Base Speed**: 5.0 units/frame
-- **Boost Speed**: 3x base speed
-- **Banking Animation**: Visual tilt when turning
-- **Smooth Acceleration**: Physics-based movement
+- **Banking Animation**: Visual tilt when turning (-30° to +30°)
+- **Smooth Movement**: Physics-based acceleration
 
 ### 2. Weapon Systems
 
@@ -60,35 +58,32 @@ The player ship features 6 distinct weapon modes:
 - Sine wave movement
 - Area denial capability
 
-### 3. Special Abilities
+### 3. Energy Mode System
 
-#### Boost (SHIFT)
-- **Cost**: 20 energy
-- **Duration**: 2 seconds
-- **Effect**: 3x movement speed
-- **Cooldown**: 3 seconds
-- **Visual**: Orange boost trail
+#### Offensive Mode (Default)
+- **Max Shield**: 25 points
+- **Energy Bonus (when full)**: 2× weapon damage multiplier
+- **Special Ability (Hold E)**: Devastating Attack
+  - Drains energy continuously while held
+  - Fires continuous spread of bullets
+  - Drains 40 energy/second in Offensive mode
+  - Visual: Massive bullet spread pattern
 
-#### Shield Burst (E)
-- **Cost**: 40 energy
-- **Duration**: 3 seconds
-- **Effect**: Temporary invulnerability
-- **Cooldown**: 10 seconds
-- **Visual**: Pulsing hexagonal shield
+#### Defensive Mode (Press Q to toggle)
+- **Max Shield**: 50 points (2× capacity)
+- **Energy Bonus (when full)**: 2× shield regeneration (4 points/sec)
+- **Special Ability (Hold E)**: Enhanced Shield
+  - Drains energy continuously while held
+  - Larger shield radius (60px vs 40px)
+  - Absorbs 50% of all damage
+  - Drains 20 energy/second in Defensive mode
+  - Visual: Brighter, larger hexagonal shield
 
-#### EMP Blast (Q)
-- **Cost**: 60 energy
-- **Duration**: 0.5 seconds
-- **Effect**: Clears nearby projectiles
-- **Cooldown**: 15 seconds
-- **Visual**: Expanding energy rings
-
-#### Overdrive (R)
-- **Cost**: 80 energy
-- **Duration**: 5 seconds
-- **Effect**: Unlimited firing, no heat
-- **Cooldown**: 20 seconds
-- **Visual**: Enhanced weapon effects
+#### Energy Management
+- **Energy Pool**: 100 points
+- **Regeneration**: 2 points/second (slow regeneration encourages strategic use)
+- **Regen Delay**: Energy stops regenerating for 5 seconds after depletion
+- **Toggle**: Press Q to switch between Offensive and Defensive modes
 
 ### 4. Visual Design
 
@@ -106,10 +101,9 @@ The player ship features 6 distinct weapon modes:
 - **Weapon Ports**: Visible firing positions
 
 #### Sprite Animation
-- 8 frames of animation
-- Frames 0-3: Normal flight states
-- Frames 4-7: Boosted/shielded states
-- Dynamic sprite switching
+- Simplified sprite system
+- Banking animation when turning
+- Energy mode visual indicators (orange/cyan)
 
 ### 5. Upgrade System
 
@@ -125,13 +119,11 @@ The player ship features 6 distinct weapon modes:
 
 #### Engine Upgrades (Levels 1-5)
 - Increased base speed
-- Better boost multiplier
 - Improved acceleration
 
 #### Energy Upgrades (Levels 1-5)
 - Larger energy pool
 - Faster regeneration
-- Reduced ability costs
 
 ## Implementation Details
 
@@ -179,9 +171,9 @@ typedef struct PlayerShip {
     float weaponHeat, maxHeat;
     bool overheated;
     
-    // Abilities
-    float abilityCooldowns[ABILITY_COUNT];
-    bool abilityActive[ABILITY_COUNT];
+    // Energy mode system
+    EnergyMode energyMode;
+    bool specialAbilityActive;
     
     // Visual Effects
     Vector2 trailPositions[20];
@@ -214,12 +206,12 @@ make player
 |-----|--------|
 | WASD/Arrows | Movement |
 | SPACE | Fire weapon |
-| 1-6 | Switch weapon modes |
-| SHIFT | Activate boost |
-| E | Shield burst |
-| Q | EMP blast |
-| R | Overdrive mode |
-| TAB | Toggle stats |
+| 1-6 | Select specific weapon mode |
+| R | Cycle through weapon modes |
+| Q | Toggle energy mode (Offensive/Defensive) |
+| E (hold) | Activate special ability |
+| P | Pause game |
+| H | Toggle hitboxes |
 | H | Toggle help |
 
 ### Debug Controls (Showcase Only)
@@ -270,26 +262,22 @@ To integrate the enhanced player ship into the main game:
 
 ## Technical Notes
 
-### Heat Management
-The weapon heat system prevents continuous firing:
-- Heat builds up: 8 units per shot
-- Cooldown rate: 30 units/second
-- Overheat threshold: 100 units
-- Overheat penalty: 2-second cooldown
-
 ### Shield Mechanics
 Shield regeneration follows these rules:
 1. Damage stops regeneration
-2. 3-second delay before regen starts
-3. Regenerates at 5 points/second
-4. Shield burst provides full shield + invulnerability
+2. 5-second delay before regen starts
+3. Regenerates at 2 points/second (base rate)
+4. Regenerates at 4 points/second (Defensive mode with full energy)
+5. Max shield depends on energy mode: 25 (Offensive) or 50 (Defensive)
 
-### Ability Balance
-Abilities are balanced through:
-- Energy costs (20-80 points)
-- Cooldown timers (3-20 seconds)
-- Duration limits (0.5-5 seconds)
-- Visual telegraphing
+### Energy System Balance
+The energy system is balanced for strategic decision-making:
+- **Slow Regeneration**: 2 points/second (50 seconds for full recharge)
+- **Energy Drain**: Special abilities drain energy while active
+  - Offensive mode: 40 energy/second when using Devastating Attack
+  - Defensive mode: 20 energy/second when using Enhanced Shield
+- **Depletion Penalty**: 5-second delay before energy regeneration after running out
+- **Mode Switching**: Instant switching between Offensive/Defensive modes with Q key
 
 ## Credits
 

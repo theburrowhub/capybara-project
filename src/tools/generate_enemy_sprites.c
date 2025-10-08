@@ -133,7 +133,7 @@ void DrawEnemySprite(RenderTexture2D* target, EnemyType type, int gridX, int gri
             DrawCircle(centerX, centerY, baseRadius * 0.2f, Fade(SKYBLUE, 0.8f));
             break;
             
-        case ENEMY_SWARM:
+        case ENEMY_SWARM: {
             // Multiple small circles in formation
             float swarmRadius = baseRadius * 0.3f;
             // Center
@@ -152,6 +152,7 @@ void DrawEnemySprite(RenderTexture2D* target, EnemyType type, int gridX, int gri
                 );
             }
             break;
+        }
             
         case ENEMY_ELITE:
             // Star shape with decorations

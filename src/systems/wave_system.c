@@ -1,4 +1,5 @@
 #include "wave_system.h"
+#include "level_system.h"
 #include "enemy_types.h"
 #include "constants.h"
 #include "utils.h"
@@ -7,7 +8,7 @@
 #include <math.h>
 #include <stdio.h>
 
-void InitWaveSystem(WaveSystem* waveSystem) {
+void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig, bool applyDebugPhase) {
     // Initialize enemy types first
     InitEnemyTypes();
     
@@ -16,15 +17,25 @@ void InitWaveSystem(WaveSystem* waveSystem) {
     waveSystem->phases = NULL;
     waveSystem->currentPhase = 0;
     
-    // Load static spawn events
-    waveSystem->spawnEvents = CreateStaticWaveplan(&waveSystem->eventCount);
+    // Load spawn events based on level
+    if (levelConfig->levelNumber == 1) {
+        waveSystem->spawnEvents = CreateLevel1Waveplan(&waveSystem->eventCount);
+    } else if (levelConfig->levelNumber == 2) {
+        waveSystem->spawnEvents = CreateLevel2Waveplan(&waveSystem->eventCount);
+    } else {
+        // Fallback to level 1
+        printf("[WAVE SYSTEM] WARNING: Unknown level %d, falling back to level 1\n", 
+               levelConfig->levelNumber);
+        waveSystem->spawnEvents = CreateLevel1Waveplan(&waveSystem->eventCount);
+    }
     waveSystem->nextEventIndex = 0;
     
-    printf("[WAVE SYSTEM] Loaded %d static spawn events\n", waveSystem->eventCount);
+    printf("[WAVE SYSTEM] Loaded %d spawn events for level %d: %s\n", 
+           waveSystem->eventCount, levelConfig->levelNumber, levelConfig->name);
     
-    // Apply DEBUG_START_PHASE to set starting time
+    // Apply DEBUG_START_PHASE to set starting time (only if applyDebugPhase is true)
     float startTime = 0.0f;
-    if (DEBUG_START_PHASE > 0 && DEBUG_START_PHASE <= 17) {
+    if (applyDebugPhase && DEBUG_START_PHASE > 0 && DEBUG_START_PHASE <= 17) {
         // Phase timing mapping based on documentation
         const float phaseTimes[] = {
             0.0f,    // Phase 0: Normal start
@@ -51,7 +62,7 @@ void InitWaveSystem(WaveSystem* waveSystem) {
     
     // Initialize state with debug start time
     waveSystem->waveTimer = startTime;
-    waveSystem->totalDuration = 553.82f; // Level duration from audio analysis
+    waveSystem->totalDuration = levelConfig->duration; // Level duration from config
     waveSystem->isComplete = false;
     waveSystem->lastSpawnTime = startTime;
     waveSystem->totalEnemiesSpawned = 0;
@@ -135,14 +146,21 @@ void SpawnWaveEnemy(struct Game* game, EnemyType type, float x, float y, const c
             game->enemies[i].id = game->nextEnemyId++;
             ApplyMovementPattern(&game->enemies[i], pattern);
             
-            // Enemies can fire after the warm-up period (first 55 seconds)
-            game->enemies[i].can_fire = (game->waveSystem->waveTimer >= 55.0f);
+            // Enemies can fire based on level and time
+            // Level 1: After warm-up period (55 seconds)
+            // Level 2: After first wave (0.5 seconds) - IMMEDIATE DANGER!
+            const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+            float fireThreshold = (currentLevel && currentLevel->levelNumber == 2) ? 0.5f : 55.0f;
+            game->enemies[i].can_fire = (game->waveSystem->waveTimer >= fireThreshold);
             
             // Track boss enemy
             if (type == ENEMY_BOSS) {
                 game->bossEnemyIndex = i;
-                LogEvent(game, "[%.2f] BOSS spawned - ID:%d at index %d", 
-                        game->gameTime, game->enemies[i].id, i);
+                // Use level time for boss spawn tracking
+                float levelTime = game->gameTime - game->levelStartTime;
+                game->bossSpawnTime = levelTime;  // Record spawn time for countdown (level time)
+                LogEvent(game, "[%.2f] BOSS spawned - ID:%d at index %d (Level Time: %.2f)", 
+                        game->gameTime, game->enemies[i].id, i, levelTime);
             }
             
             LogEvent(game, "[%.2f] Enemy spawned - Type:%s ID:%d Pattern:%s Pos:(%.0f,%.0f)", 
@@ -170,7 +188,7 @@ void ApplyMovementPattern(EnemyEx* enemy, const char* pattern) {
         enemy->speedY = 0;
     } else if (strcmp(pattern, "v_formation") == 0) {
         enemy->speedX = enemy->speed * 1.2f;
-        enemy->speedY = (enemy->position.y < SCREEN_HEIGHT/2) ? 1.0f : -1.0f;
+        enemy->speedY = (enemy->position.y < PLAY_ZONE_HEIGHT/2) ? 1.0f : -1.0f;
     } else if (strcmp(pattern, "hover") == 0) {
         enemy->speedX = enemy->speed * 0.3f;
         enemy->speedY = 0;
@@ -187,11 +205,11 @@ void ApplyMovementPattern(EnemyEx* enemy, const char* pattern) {
         enemy->speedY = 0;
     } else if (strcmp(pattern, "flanking") == 0) {
         enemy->speedX = enemy->speed * 1.5f;
-        enemy->speedY = (enemy->position.y < SCREEN_HEIGHT/2) ? 2.0f : -2.0f;
+        enemy->speedY = (enemy->position.y < PLAY_ZONE_HEIGHT/2) ? 2.0f : -2.0f;
     } else if (strcmp(pattern, "boss") == 0) {
         enemy->speedX = enemy->speed * 0.4f;
         enemy->speedY = 0;
-        enemy->targetY = SCREEN_HEIGHT/2;
+        enemy->targetY = PLAY_ZONE_HEIGHT/2;
     } else if (strcmp(pattern, "minion") == 0) {
         enemy->speedX = enemy->speed * 1.2f;
         enemy->speedY = GetRandomValue(-2, 2);
@@ -377,7 +395,7 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
                     enemy->position.x += 8.0f;  // Fast escape speed
                     
                     // Move towards center Y for dramatic exit
-                    float centerY = SCREEN_HEIGHT / 2;
+                    float centerY = PLAY_ZONE_HEIGHT / 2;
                     float diff = centerY - enemy->position.y;
                     if (fabs(diff) > 5.0f) {
                         enemy->position.y += (diff > 0 ? 1 : -1) * 3.0f;
@@ -403,8 +421,8 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
                     if (enemy->position.x <= maxBossX) {
                         enemy->moveTimer = 1;  // Switch to hovering state
                         enemy->specialTimer = 0;  // Reset for movement timer
-                        // Set initial target in safe zone (last third of screen)
-                        enemy->targetY = GetRandomValue(100, SCREEN_HEIGHT - 100);
+                        // Set initial target in safe zone (play zone only)
+                        enemy->targetY = GetRandomValue(PLAY_ZONE_TOP + 100, PLAY_ZONE_BOTTOM - 100);
                         enemy->speedX = GetRandomValue(minBossX + 30, maxBossX - 30);  // Initial target X
                     }
                 } else {
@@ -417,8 +435,8 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
                     if (enemy->specialTimer >= 2.5f) {
                         enemy->specialTimer = 0;
                         
-                        // Set new random target within last third bounds
-                        enemy->targetY = GetRandomValue(100, SCREEN_HEIGHT - 100);
+                        // Set new random target within play zone bounds
+                        enemy->targetY = GetRandomValue(PLAY_ZONE_TOP + 100, PLAY_ZONE_BOTTOM - 100);
                         // speedX repurposed for horizontal target position in this mode
                         enemy->speedX = GetRandomValue(minBossX, maxBossX);
                     }
@@ -465,13 +483,13 @@ void UpdateEnemyMovement(EnemyEx* enemy, float deltaTime) {
             break;
     }
     
-    // Keep enemies in bounds
-    if (enemy->position.y < enemy->radius) {
-        enemy->position.y = enemy->radius;
+    // Keep enemies in bounds (within play zone, above HUD)
+    if (enemy->position.y < PLAY_ZONE_TOP + enemy->radius) {
+        enemy->position.y = PLAY_ZONE_TOP + enemy->radius;
         enemy->speedY = fabs(enemy->speedY);
     }
-    if (enemy->position.y > SCREEN_HEIGHT - enemy->radius) {
-        enemy->position.y = SCREEN_HEIGHT - enemy->radius;
+    if (enemy->position.y > PLAY_ZONE_BOTTOM - enemy->radius) {
+        enemy->position.y = PLAY_ZONE_BOTTOM - enemy->radius;
         enemy->speedY = -fabs(enemy->speedY);
     }
     
@@ -492,10 +510,9 @@ void CleanupWaveSystem(WaveSystem* waveSystem) {
         free(waveSystem->phases);
         waveSystem->phases = NULL;
     }
-    if (waveSystem->spawnEvents) {
-        free(waveSystem->spawnEvents);
-        waveSystem->spawnEvents = NULL;
-    }
+    // DON'T free spawnEvents - it's a static array from CreateStaticWaveplan
+    // Static arrays are not heap-allocated and shouldn't be freed
+    waveSystem->spawnEvents = NULL;
 }
 
 const char* GetCurrentPhaseName(const WaveSystem* waveSystem) {
