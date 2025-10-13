@@ -51,61 +51,74 @@ jobs:
         
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        tag_name: ${{ steps.get_version.outputs.version }}
-        release_name: Capybara Shoot'em Up ${{ steps.get_version.outputs.version }} (${{ steps.check_prerelease.outputs.release_type }})
-        prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
-        body: |
-          ## Capybara Shoot'em Up - Release ${{ steps.get_version.outputs.version }}
-          
-          ### Download
-          Download the appropriate package for your platform:
-          - **Linux**: `capybara-shootemup-linux-x86_64.tar.gz`
-          - **macOS**: `capybara-shootemup-macos-universal.tar.gz`
-          - **Windows**: `capybara-shootemup-windows-x86_64.zip`
-          
-          ### Installation
-          
-          #### Linux
-          ```bash
-          tar xzf capybara-shootemup-linux-x86_64.tar.gz
-          cd capybara-shootemup-linux
-          ./run.sh
-          # Or directly: ./shootemup
-          ```
-          
-          #### macOS
-          ```bash
-          tar xzf capybara-shootemup-macos-universal.tar.gz
-          cd capybara-shootemup-macos
-          ./run.sh
-          # Or directly: ./shootemup
-          ```
-          
-          #### Windows
-          1. Extract the ZIP file
-          2. Double-click `run.bat` or `shootemup.exe`
-          
-          ### What's New
-          - See [CHANGELOG.md](CHANGELOG.md) for details
-          
-          ### System Requirements
-          - OpenGL 3.3+ compatible graphics
-          - 512MB RAM minimum
-          - 100MB disk space
-          
-          ### Documentation Included
-          - **USER_MANUAL.pdf** - Complete user guide with controls, gameplay, and features
-          - **GAMEPLAY.md** - Quick reference for controls
-          - **README.md** - Project overview
-          
-          ### Release Type
-          This is a **${{ steps.check_prerelease.outputs.release_type }}**
-          ${{ steps.check_prerelease.outputs.is_prerelease == 'true' && '⚠️ Pre-release version - use for testing only!' || '✅ Stable release - production ready!' }}
-        draft: false
+      run: |
+        # Create release notes
+        cat > release_notes.md << 'EOF'
+        ## Capybara Shoot'em Up - Release ${{ steps.get_version.outputs.version }}
+        
+        ### Download
+        Download the appropriate package for your platform:
+        - **Linux**: `capybara-shootemup-linux-x86_64.tar.gz`
+        - **macOS**: `capybara-shootemup-macos-universal.tar.gz`
+        - **Windows**: `capybara-shootemup-windows-x86_64.zip`
+        
+        ### Installation
+        
+        #### Linux
+        ```bash
+        tar xzf capybara-shootemup-linux-x86_64.tar.gz
+        cd capybara-shootemup-linux
+        ./run.sh
+        # Or directly: ./shootemup
+        ```
+        
+        #### macOS
+        ```bash
+        tar xzf capybara-shootemup-macos-universal.tar.gz
+        cd capybara-shootemup-macos
+        ./run.sh
+        # Or directly: ./shootemup
+        ```
+        
+        #### Windows
+        1. Extract the ZIP file
+        2. Double-click `run.bat` or `shootemup.exe`
+        
+        ### What's New
+        - See CHANGELOG.md for details
+        
+        ### System Requirements
+        - OpenGL 3.3+ compatible graphics
+        - 512MB RAM minimum
+        - 100MB disk space
+        
+        ### Documentation Included
+        - **USER_MANUAL.pdf** - Complete user guide with controls, gameplay, and features
+        - **GAMEPLAY.md** - Quick reference for controls
+        - **README.md** - Project overview
+        
+        ### Release Type
+        This is a **${{ steps.check_prerelease.outputs.release_type }}**
+        ${{ steps.check_prerelease.outputs.is_prerelease == 'true' && '⚠️ Pre-release version - use for testing only!' || '✅ Stable release - production ready!' }}
+        EOF
+        
+        # Create release using GitHub CLI
+        if [ "${{ steps.check_prerelease.outputs.is_prerelease }}" = "true" ]; then
+          gh release create "${{ steps.get_version.outputs.version }}" \
+            --title "Capybara Shoot'em Up ${{ steps.get_version.outputs.version }} (${{ steps.check_prerelease.outputs.release_type }})" \
+            --notes-file release_notes.md \
+            --prerelease
+        else
+          gh release create "${{ steps.get_version.outputs.version }}" \
+            --title "Capybara Shoot'em Up ${{ steps.get_version.outputs.version }} (${{ steps.check_prerelease.outputs.release_type }})" \
+            --notes-file release_notes.md \
+            --latest
+        fi
+        
+        # Get upload URL for artifacts (set output for dependent jobs)
+        echo "upload_url=$(gh api repos/${{ github.repository }}/releases/tags/${{ steps.get_version.outputs.version }} --jq .upload_url)" >> $GITHUB_OUTPUT
 
   build-linux-release:
     needs: create-release
@@ -188,14 +201,11 @@ jobs:
         tar czf capybara-shootemup-linux-x86_64.tar.gz capybara-shootemup-linux/
         
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./release/capybara-shootemup-linux-x86_64.tar.gz
-        asset_name: capybara-shootemup-linux-x86_64.tar.gz
-        asset_content_type: application/gzip
+      run: |
+        gh release upload ${{ needs.create-release.outputs.version }} \
+          release/capybara-shootemup-linux-x86_64.tar.gz
 
   build-macos-release:
     needs: create-release
@@ -266,14 +276,11 @@ jobs:
         tar czf capybara-shootemup-macos-universal.tar.gz capybara-shootemup-macos/
         
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./release/capybara-shootemup-macos-universal.tar.gz
-        asset_name: capybara-shootemup-macos-universal.tar.gz
-        asset_content_type: application/gzip
+      run: |
+        gh release upload ${{ needs.create-release.outputs.version }} \
+          release/capybara-shootemup-macos-universal.tar.gz
 
   build-windows-release:
     needs: create-release
@@ -357,12 +364,9 @@ jobs:
         Compress-Archive -Path release/capybara-shootemup-windows/* -DestinationPath release/capybara-shootemup-windows-x86_64.zip
         
     - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ needs.create-release.outputs.upload_url }}
-        asset_path: ./release/capybara-shootemup-windows-x86_64.zip
-        asset_name: capybara-shootemup-windows-x86_64.zip
-        asset_content_type: application/zip
+      run: |
+        gh release upload ${{ needs.create-release.outputs.version }} \
+          release/capybara-shootemup-windows-x86_64.zip
 
