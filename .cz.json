@@ -7,7 +7,6 @@
     "update_changelog_on_bump": true,
     "changelog_file": "CHANGELOG.md",
     "changelog_incremental": true,
-    "changelog_start_rev": "0.1.0",
     "bump_message": "bump: version $current_version → $new_version",
     "annotated_tag": true
   }
