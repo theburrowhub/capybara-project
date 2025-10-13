@@ -367,9 +367,9 @@ jobs:
         Compress-Archive -Path release/capybara-shootemup-windows/* -DestinationPath release/capybara-shootemup-windows-x86_64.zip
         
     - name: Upload Release Asset
+      shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
-        gh release upload ${{ needs.create-release.outputs.version }} \
-          release/capybara-shootemup-windows-x86_64.zip
+        gh release upload ${{ needs.create-release.outputs.version }} release/capybara-shootemup-windows-x86_64.zip
 
