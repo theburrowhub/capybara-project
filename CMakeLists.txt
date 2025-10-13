@@ -69,7 +69,9 @@ endif()
 # Platform-specific libraries
 set(PLATFORM_LIBS "")
 if(UNIX AND NOT APPLE)
-    set(PLATFORM_LIBS GL pthread dl rt X11 m)
+    # Find OpenGL on Linux
+    find_package(OpenGL REQUIRED)
+    set(PLATFORM_LIBS ${OPENGL_LIBRARIES} pthread dl rt X11 m)
 elseif(APPLE)
     find_library(OPENGL_FRAMEWORK OpenGL)
     find_library(COCOA_FRAMEWORK Cocoa)
