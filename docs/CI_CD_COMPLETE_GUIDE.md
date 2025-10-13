@@ -482,7 +482,6 @@ Project Root
 ├── Makefile                           # Traditional build + cz targets
 ├── build_static.sh                    # Local build script (Unix)
 ├── build_static.bat                   # Local build script (Windows)
-├── verify_cicd_setup.sh               # Setup verification
 │
 ├── .github/
 │   └── workflows/
@@ -669,7 +668,6 @@ git push && git push --tags
 ### Resources
 
 - **Quick help**: `make cz-help`
-- **Verify setup**: `./verify_cicd_setup.sh`
 - **This guide**: `docs/CI_CD_COMPLETE_GUIDE.md`
 
 ---
