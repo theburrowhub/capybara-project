@@ -4,6 +4,68 @@
 #include <string.h>
 #include <stdio.h>
 
+// Available resolutions
+static const Resolution RESOLUTIONS[] = {
+    {800, 600, "800x600"},
+    {1024, 768, "1024x768"},
+    {1200, 600, "1200x600"},
+    {1280, 720, "1280x720"},
+    {1366, 768, "1366x768"},
+    {1600, 900, "1600x900"},
+    {1920, 1080, "1920x1080"},
+    {2560, 1440, "2560x1440"}
+};
+
+const Resolution* GetAvailableResolutions(int* count) {
+    *count = sizeof(RESOLUTIONS) / sizeof(RESOLUTIONS[0]);
+    return RESOLUTIONS;
+}
+
+void ApplyResolution(Menu* menu) {
+    int count = 0;
+    const Resolution* resolutions = GetAvailableResolutions(&count);
+    
+    if (menu->selectedResolution >= 0 && menu->selectedResolution < count) {
+        const Resolution* res = &resolutions[menu->selectedResolution];
+        SetWindowSize(res->width, res->height);
+    }
+}
+
+void ApplyFullscreenMode(Menu* menu) {
+    bool isCurrentlyFullscreen = IsWindowFullscreen();
+    
+    switch (menu->fullscreenMode) {
+        case FULLSCREEN_OFF:
+            if (isCurrentlyFullscreen) {
+                ToggleFullscreen();
+            }
+            ClearWindowState(FLAG_WINDOW_UNDECORATED);
+            break;
+            
+        case FULLSCREEN_WINDOWED:
+            if (isCurrentlyFullscreen) {
+                ToggleFullscreen();
+            }
+            SetWindowState(FLAG_WINDOW_UNDECORATED);
+            SetWindowState(FLAG_WINDOW_TOPMOST);
+            {
+                int monitor = GetCurrentMonitor();
+                int monitorWidth = GetMonitorWidth(monitor);
+                int monitorHeight = GetMonitorHeight(monitor);
+                SetWindowSize(monitorWidth, monitorHeight);
+                SetWindowPosition(0, 0);
+            }
+            ClearWindowState(FLAG_WINDOW_TOPMOST);
+            break;
+            
+        case FULLSCREEN_EXCLUSIVE:
+            if (!isCurrentlyFullscreen) {
+                ToggleFullscreen();
+            }
+            break;
+    }
+}
+
 void InitMenu(Menu* menu) {
     menu->currentState = MENU_MAIN;
     menu->selectedOption = 0;
@@ -15,15 +77,29 @@ void InitMenu(Menu* menu) {
         menu->optionAlpha[i] = 0.8f;
     }
     
-    // Default options
+    // Default audio options
     menu->soundVolume = 1.0f;
     menu->musicVolume = 0.5f;
-    menu->fullscreen = false;
+    
+    // Default video options
+    menu->selectedResolution = 2; // 1200x600 by default
+    menu->fullscreenMode = FULLSCREEN_OFF;
+    menu->vsync = true;
 }
 
 void UpdateMenu(Menu* menu, MenuState* gameState) {
     float deltaTime = GetFrameTime();
     menu->animationTimer += deltaTime;
+    
+    // Global hotkeys for fullscreen (F11 or Alt+Enter)
+    if (IsKeyPressed(KEY_F11) || (IsKeyDown(KEY_LEFT_ALT) && IsKeyPressed(KEY_ENTER))) {
+        if (menu->fullscreenMode == FULLSCREEN_EXCLUSIVE) {
+            menu->fullscreenMode = FULLSCREEN_OFF;
+        } else {
+            menu->fullscreenMode = FULLSCREEN_EXCLUSIVE;
+        }
+        ApplyFullscreenMode(menu);
+    }
     
     // Update title bounce animation
     menu->titleBounce = sinf(menu->animationTimer * 2.0f) * 10.0f;
@@ -39,7 +115,6 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
     
     switch (menu->currentState) {
         case MENU_MAIN:
-            // Navigate options with arrow keys
             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
                 menu->selectedOption--;
                 if (menu->selectedOption < 0) {
@@ -53,7 +128,6 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 }
             }
             
-            // Select option with Enter or Space
             if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
                 switch (menu->selectedOption) {
                     case MENU_START_GAME:
@@ -61,6 +135,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                         break;
                     case MENU_SHOW_OPTIONS:
                         menu->currentState = MENU_OPTIONS;
+                        menu->selectedOption = 0;
                         break;
                     case MENU_SHOW_CREDITS:
                         menu->currentState = MENU_CREDITS;
@@ -70,7 +145,6 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             break;
             
         case MENU_OPTIONS:
-            // Update options values with arrow keys
             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
                 menu->selectedOption--;
                 if (menu->selectedOption < 0) menu->selectedOption = 2;
@@ -80,43 +154,126 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 if (menu->selectedOption > 2) menu->selectedOption = 0;
             }
             
-            // Adjust values with left/right
-            if (menu->selectedOption == 0) { // Sound volume
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
-                    menu->soundVolume = fmaxf(0.0f, menu->soundVolume - 0.1f);
-                }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
-                    menu->soundVolume = fminf(1.0f, menu->soundVolume + 0.1f);
-                }
-            } else if (menu->selectedOption == 1) { // Music volume
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
-                    menu->musicVolume = fmaxf(0.0f, menu->musicVolume - 0.1f);
-                }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
-                    menu->musicVolume = fminf(1.0f, menu->musicVolume + 0.1f);
-                }
-            } else if (menu->selectedOption == 2) { // Fullscreen
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
-                    IsKeyPressed(KEY_A) || IsKeyPressed(KEY_D) ||
-                    IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
-                    menu->fullscreen = !menu->fullscreen;
-                    if (menu->fullscreen) {
-                        ToggleFullscreen();
-                    } else {
-                        ToggleFullscreen();
-                    }
+            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                switch (menu->selectedOption) {
+                    case 0:
+                        menu->currentState = MENU_OPTIONS_SOUND;
+                        menu->selectedOption = 0;
+                        break;
+                    case 1:
+                        menu->currentState = MENU_OPTIONS_VIDEO;
+                        menu->selectedOption = 0;
+                        break;
+                    case 2:
+                        menu->currentState = MENU_OPTIONS_GAME;
+                        menu->selectedOption = 0;
+                        break;
                 }
             }
             
-            // Go back with ESC or Backspace
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
                 menu->currentState = MENU_MAIN;
                 menu->selectedOption = MENU_SHOW_OPTIONS;
             }
             break;
             
+        case MENU_OPTIONS_SOUND:
+            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+                menu->selectedOption--;
+                if (menu->selectedOption < 0) menu->selectedOption = 1;
+            }
+            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+                menu->selectedOption++;
+                if (menu->selectedOption > 1) menu->selectedOption = 0;
+            }
+            
+            if (menu->selectedOption == 0) {
+                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                    menu->soundVolume = fmaxf(0.0f, menu->soundVolume - 0.1f);
+                }
+                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                    menu->soundVolume = fminf(1.0f, menu->soundVolume + 0.1f);
+                }
+            } else if (menu->selectedOption == 1) {
+                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                    menu->musicVolume = fmaxf(0.0f, menu->musicVolume - 0.1f);
+                }
+                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                    menu->musicVolume = fminf(1.0f, menu->musicVolume + 0.1f);
+                }
+            }
+            
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+                menu->currentState = MENU_OPTIONS;
+                menu->selectedOption = 0;
+            }
+            break;
+            
+        case MENU_OPTIONS_VIDEO: {
+            int count = 0;
+            GetAvailableResolutions(&count);
+            
+            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+                menu->selectedOption--;
+                if (menu->selectedOption < 0) menu->selectedOption = 2;
+            }
+            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+                menu->selectedOption++;
+                if (menu->selectedOption > 2) menu->selectedOption = 0;
+            }
+            
+            if (menu->selectedOption == 0) {
+                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                    menu->selectedResolution--;
+                    if (menu->selectedResolution < 0) menu->selectedResolution = count - 1;
+                    ApplyResolution(menu);
+                }
+                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                    menu->selectedResolution++;
+                    if (menu->selectedResolution >= count) menu->selectedResolution = 0;
+                    ApplyResolution(menu);
+                }
+            } else if (menu->selectedOption == 1) {
+                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                    int mode = (int)menu->fullscreenMode - 1;
+                    if (mode < 0) mode = 2;
+                    menu->fullscreenMode = (FullscreenMode)mode;
+                    ApplyFullscreenMode(menu);
+                }
+                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                    int mode = (int)menu->fullscreenMode + 1;
+                    if (mode > 2) mode = 0;
+                    menu->fullscreenMode = (FullscreenMode)mode;
+                    ApplyFullscreenMode(menu);
+                }
+            } else if (menu->selectedOption == 2) {
+                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
+                    IsKeyPressed(KEY_A) || IsKeyPressed(KEY_D) ||
+                    IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                    menu->vsync = !menu->vsync;
+                    if (menu->vsync) {
+                        SetTargetFPS(60);
+                    } else {
+                        SetTargetFPS(0);
+                    }
+                }
+            }
+            
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+                menu->currentState = MENU_OPTIONS;
+                menu->selectedOption = 1;
+            }
+            break;
+        }
+            
+        case MENU_OPTIONS_GAME:
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+                menu->currentState = MENU_OPTIONS;
+                menu->selectedOption = 2;
+            }
+            break;
+            
         case MENU_CREDITS:
-            // Go back with any key
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
                 IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
                 menu->currentState = MENU_MAIN;
@@ -125,7 +282,6 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             break;
             
         case MENU_GAME:
-            // Game is running
             break;
     }
 }
@@ -138,24 +294,35 @@ void DrawMenu(const Menu* menu) {
         case MENU_OPTIONS:
             DrawOptions((Menu*)menu);
             break;
+        case MENU_OPTIONS_SOUND:
+            DrawOptionsSound((Menu*)menu);
+            break;
+        case MENU_OPTIONS_VIDEO:
+            DrawOptionsVideo((Menu*)menu);
+            break;
+        case MENU_OPTIONS_GAME:
+            DrawOptionsGame((Menu*)menu);
+            break;
         case MENU_CREDITS:
             DrawCredits(menu);
             break;
         case MENU_GAME:
-            // Game is rendering
             break;
     }
 }
 
 void DrawMainMenu(const Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
     // Draw background with gradient
-    DrawRectangleGradientV(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
                            (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
     
     // Draw animated stars in background
     for (int i = 0; i < 100; i++) {
-        int x = (i * 73 + (int)(menu->animationTimer * 20)) % SCREEN_WIDTH;
-        int y = (i * 37) % SCREEN_HEIGHT;
+        int x = (i * 73 + (int)(menu->animationTimer * 20)) % screenWidth;
+        int y = (i * 37) % screenHeight;
         int brightness = 100 + (i % 3) * 50;
         DrawPixel(x, y, (Color){brightness, brightness, brightness, 255});
     }
@@ -167,11 +334,11 @@ void DrawMainMenu(const Menu* menu) {
     float titleY = 100 + menu->titleBounce;
     
     // Draw title shadow
-    DrawText(title, (SCREEN_WIDTH - titleWidth) / 2 + 3, titleY + 3, 
+    DrawText(title, (screenWidth - titleWidth) / 2 + 3, titleY + 3, 
              titleSize, (Color){0, 0, 0, 128});
     
     // Draw title with gradient effect
-    DrawText(title, (SCREEN_WIDTH - titleWidth) / 2, titleY, 
+    DrawText(title, (screenWidth - titleWidth) / 2, titleY, 
              titleSize, (Color){255, 100, 100, 255});
     
     // Menu options
@@ -187,7 +354,7 @@ void DrawMainMenu(const Menu* menu) {
     
     for (int i = 0; i < MENU_TOTAL_OPTIONS; i++) {
         int optionWidth = MeasureText(options[i], optionSize);
-        int x = (SCREEN_WIDTH - optionWidth) / 2;
+        int x = (screenWidth - optionWidth) / 2;
         int y = startY + i * optionSpacing;
         
         // Draw selection indicator
@@ -218,25 +385,81 @@ void DrawMainMenu(const Menu* menu) {
     const char* instructions = "Use ARROW KEYS to navigate, ENTER to select";
     int instructionSize = 16;
     int instructionWidth = MeasureText(instructions, instructionSize);
-    DrawText(instructions, (SCREEN_WIDTH - instructionWidth) / 2, 
-             SCREEN_HEIGHT - 50, instructionSize, (Color){150, 150, 150, 200});
+    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
+             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
 void DrawOptions(Menu* menu) {
+    // Get screen dimensions
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
     // Draw background
-    DrawRectangleGradientV(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
                            (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
     
     // Draw title
     const char* title = "OPTIONS";
     int titleSize = 50;
     int titleWidth = MeasureText(title, titleSize);
-    DrawText(title, (SCREEN_WIDTH - titleWidth) / 2, 80, titleSize, WHITE);
+    DrawText(title, (screenWidth - titleWidth) / 2, 80, titleSize, WHITE);
     
-    // Option settings
+    // Menu options
+    const char* options[] = {
+        "SOUND OPTIONS",
+        "VIDEO OPTIONS",
+        "GAME OPTIONS"
+    };
+    
+    int optionSize = 30;
+    int optionSpacing = 60;
+    int startY = 200;
+    
+    for (int i = 0; i < 3; i++) {
+        int optionWidth = MeasureText(options[i], optionSize);
+        int x = (screenWidth - optionWidth) / 2;
+        int y = startY + i * optionSpacing;
+        
+        Color optionColor = (i == menu->selectedOption) ? YELLOW : WHITE;
+        
+        if (i == menu->selectedOption) {
+            float arrowOffset = sinf(menu->animationTimer * 4.0f) * 5.0f;
+            DrawText(">", x - 40 - arrowOffset, y, optionSize, WHITE);
+            DrawText("<", x + optionWidth + 20 + arrowOffset, y, optionSize, WHITE);
+            
+            DrawRectangle(x - 10, y - 5, optionWidth + 20, optionSize + 10, 
+                         (Color){255, 255, 255, 20});
+        }
+        
+        DrawText(options[i], x + 2, y + 2, optionSize, (Color){0, 0, 0, 128});
+        DrawText(options[i], x, y, optionSize, optionColor);
+    }
+    
+    const char* instructions = "Use ARROW KEYS to navigate, ENTER to select, ESC to go back";
+    int instructionSize = 16;
+    int instructionWidth = MeasureText(instructions, instructionSize);
+    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
+             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
+}
+
+void DrawOptionsSound(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
+                           (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
+    
+    const char* title = "SOUND OPTIONS";
+    int titleSize = 50;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, (screenWidth - titleWidth) / 2, 80, titleSize, WHITE);
+    
     int optionSize = 24;
     int startY = 200;
     int spacing = 80;
+    int barWidth = 200;
+    int barHeight = 20;
+    int barX = 450;
     
     // Sound Volume
     const char* soundText = "Sound Volume:";
@@ -244,15 +467,10 @@ void DrawOptions(Menu* menu) {
     Color soundColor = (menu->selectedOption == 0) ? YELLOW : WHITE;
     DrawText(soundText, 200, soundY, optionSize, soundColor);
     
-    // Draw sound volume bar
-    int barWidth = 200;
-    int barHeight = 20;
-    int barX = 450;
     DrawRectangle(barX, soundY, barWidth, barHeight, DARKGRAY);
     DrawRectangle(barX, soundY, (int)(barWidth * menu->soundVolume), barHeight, GREEN);
     DrawRectangleLines(barX, soundY, barWidth, barHeight, WHITE);
     
-    // Draw percentage
     char volumeText[16];
     snprintf(volumeText, sizeof(volumeText), "%d%%", (int)(menu->soundVolume * 100));
     DrawText(volumeText, barX + barWidth + 20, soundY, optionSize, WHITE);
@@ -263,41 +481,121 @@ void DrawOptions(Menu* menu) {
     Color musicColor = (menu->selectedOption == 1) ? YELLOW : WHITE;
     DrawText(musicText, 200, musicY, optionSize, musicColor);
     
-    // Draw music volume bar
     DrawRectangle(barX, musicY, barWidth, barHeight, DARKGRAY);
     DrawRectangle(barX, musicY, (int)(barWidth * menu->musicVolume), barHeight, GREEN);
     DrawRectangleLines(barX, musicY, barWidth, barHeight, WHITE);
     
-    // Draw percentage
     snprintf(volumeText, sizeof(volumeText), "%d%%", (int)(menu->musicVolume * 100));
     DrawText(volumeText, barX + barWidth + 20, musicY, optionSize, WHITE);
     
-    // Fullscreen
-    const char* fullscreenText = "Fullscreen:";
-    int fullscreenY = startY + spacing * 2;
-    Color fullscreenColor = (menu->selectedOption == 2) ? YELLOW : WHITE;
-    DrawText(fullscreenText, 200, fullscreenY, optionSize, fullscreenColor);
-    
-    // Draw checkbox
-    int checkboxSize = 20;
-    DrawRectangleLines(barX, fullscreenY, checkboxSize, checkboxSize, WHITE);
-    if (menu->fullscreen) {
-        DrawRectangle(barX + 3, fullscreenY + 3, checkboxSize - 6, checkboxSize - 6, GREEN);
-    }
-    const char* fullscreenStatus = menu->fullscreen ? "ON" : "OFF";
-    DrawText(fullscreenStatus, barX + checkboxSize + 10, fullscreenY, optionSize, WHITE);
-    
-    // Draw instructions
     const char* instructions = "Use ARROW KEYS to navigate, LEFT/RIGHT to adjust, ESC to go back";
     int instructionSize = 16;
     int instructionWidth = MeasureText(instructions, instructionSize);
-    DrawText(instructions, (SCREEN_WIDTH - instructionWidth) / 2, 
-             SCREEN_HEIGHT - 50, instructionSize, (Color){150, 150, 150, 200});
+    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
+             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
+}
+
+void DrawOptionsVideo(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
+                           (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
+    
+    const char* title = "VIDEO OPTIONS";
+    int titleSize = 50;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, (screenWidth - titleWidth) / 2, 80, titleSize, WHITE);
+    
+    int optionSize = 24;
+    int startY = 180;
+    int spacing = 70;
+    int labelX = 150;
+    int valueX = 500;
+    
+    // Resolution
+    const char* resText = "Resolution:";
+    int resY = startY;
+    Color resColor = (menu->selectedOption == 0) ? YELLOW : WHITE;
+    DrawText(resText, labelX, resY, optionSize, resColor);
+    
+    int count = 0;
+    const Resolution* resolutions = GetAvailableResolutions(&count);
+    const Resolution* currentRes = &resolutions[menu->selectedResolution];
+    DrawText(currentRes->name, valueX, resY, optionSize, WHITE);
+    DrawText("< >", valueX - 40, resY, optionSize, (Color){150, 150, 150, 200});
+    
+    // Fullscreen Mode
+    const char* fullscreenText = "Fullscreen Mode:";
+    int fullscreenY = startY + spacing;
+    Color fullscreenColor = (menu->selectedOption == 1) ? YELLOW : WHITE;
+    DrawText(fullscreenText, labelX, fullscreenY, optionSize, fullscreenColor);
+    
+    const char* modeNames[] = {"Windowed", "Borderless", "Fullscreen"};
+    DrawText(modeNames[menu->fullscreenMode], valueX, fullscreenY, optionSize, WHITE);
+    DrawText("< >", valueX - 40, fullscreenY, optionSize, (Color){150, 150, 150, 200});
+    
+    // VSync
+    const char* vsyncText = "VSync:";
+    int vsyncY = startY + spacing * 2;
+    Color vsyncColor = (menu->selectedOption == 2) ? YELLOW : WHITE;
+    DrawText(vsyncText, labelX, vsyncY, optionSize, vsyncColor);
+    
+    int checkboxSize = 20;
+    DrawRectangleLines(valueX, vsyncY, checkboxSize, checkboxSize, WHITE);
+    if (menu->vsync) {
+        DrawRectangle(valueX + 3, vsyncY + 3, checkboxSize - 6, checkboxSize - 6, GREEN);
+    }
+    const char* vsyncStatus = menu->vsync ? "ON" : "OFF";
+    DrawText(vsyncStatus, valueX + checkboxSize + 10, vsyncY, optionSize, WHITE);
+    
+    // Info text
+    const char* infoText = "Press F11 or Alt+Enter for quick fullscreen toggle";
+    int infoSize = 14;
+    int infoWidth = MeasureText(infoText, infoSize);
+    DrawText(infoText, (screenWidth - infoWidth) / 2, 
+             screenHeight - 90, infoSize, (Color){100, 150, 255, 200});
+    
+    const char* instructions = "Use ARROW KEYS to navigate, LEFT/RIGHT to change, ESC to go back";
+    int instructionSize = 16;
+    int instructionWidth = MeasureText(instructions, instructionSize);
+    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
+             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
+}
+
+void DrawOptionsGame(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
+                           (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
+    
+    const char* title = "GAME OPTIONS";
+    int titleSize = 50;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, (screenWidth - titleWidth) / 2, 80, titleSize, WHITE);
+    
+    // Empty for now
+    const char* emptyText = "No game options available yet";
+    int emptySize = 20;
+    int emptyWidth = MeasureText(emptyText, emptySize);
+    DrawText(emptyText, (screenWidth - emptyWidth) / 2, 
+             screenHeight / 2, emptySize, (Color){150, 150, 150, 200});
+    
+    const char* instructions = "Press ESC to go back";
+    int instructionSize = 16;
+    int instructionWidth = MeasureText(instructions, instructionSize);
+    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
+             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
 void DrawCredits(const Menu* menu) {
+    // Get screen dimensions
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
     // Draw background
-    DrawRectangleGradientV(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
                            (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
     
     // Draw title
@@ -329,7 +627,7 @@ void DrawCredits(const Menu* menu) {
     for (int i = 0; i < numCredits; i++) {
         if (strlen(credits[i]) > 0) {
             int textWidth = MeasureText(credits[i], creditSize);
-            int x = (SCREEN_WIDTH - textWidth) / 2;
+            int x = (screenWidth - textWidth) / 2;
             int y = startY + i * spacing;
             
             // Animated fade effect based on position
@@ -344,6 +642,6 @@ void DrawCredits(const Menu* menu) {
     const char* backText = "Press ESC or ENTER to go back";
     int backSize = 18;
     int backWidth = MeasureText(backText, backSize);
-    DrawText(backText, (SCREEN_WIDTH - backWidth) / 2, 
-             SCREEN_HEIGHT - 50, backSize, (Color){150, 150, 150, 200});
+    DrawText(backText, (screenWidth - backWidth) / 2, 
+             screenHeight - 50, backSize, (Color){150, 150, 150, 200});
 }
