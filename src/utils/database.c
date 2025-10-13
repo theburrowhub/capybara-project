@@ -5,9 +5,17 @@
 #include <time.h>
 #include <sqlite3.h>
 #include <sys/stat.h>
-#include <unistd.h>
-#include <pwd.h>
 #include <errno.h>
+
+// Platform-specific headers
+#ifdef _WIN32
+    #include <direct.h>
+    #include <windows.h>
+    #define mkdir(path, mode) _mkdir(path)
+#else
+    #include <unistd.h>
+    #include <pwd.h>
+#endif
 
 // Global database handle
 static sqlite3* db = NULL;
@@ -74,6 +82,19 @@ static const int PRESET_COUNT = sizeof(PRESETS) / sizeof(PRESETS[0]);
 
 // Get the user's home directory
 static const char* GetHomeDirectory(void) {
+#ifdef _WIN32
+    // Windows: use USERPROFILE or APPDATA
+    const char* home = getenv("USERPROFILE");
+    if (home) {
+        return home;
+    }
+    home = getenv("APPDATA");
+    if (home) {
+        return home;
+    }
+    return "C:\\";
+#else
+    // Unix/Linux/macOS
     const char* home = getenv("HOME");
     if (home) {
         return home;
@@ -85,6 +106,7 @@ static const char* GetHomeDirectory(void) {
     }
     
     return NULL;
+#endif
 }
 
 // Create directory if it doesn't exist
