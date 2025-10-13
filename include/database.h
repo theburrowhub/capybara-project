@@ -14,9 +14,18 @@ typedef enum {
 
 // User settings structure
 typedef struct {
+    // Audio settings
     float soundVolume;
     float musicVolume;
-    bool fullscreen;
+    
+    // Video settings
+    int resolutionWidth;
+    int resolutionHeight;
+    int fullscreenMode;  // 0=Off, 1=Windowed, 2=Exclusive
+    bool vsync;
+    
+    // Legacy field (kept for backwards compatibility)
+    bool fullscreen;  // Maps to fullscreenMode != 0
 } UserSettings;
 
 // High score entry structure

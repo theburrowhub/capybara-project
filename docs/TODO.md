@@ -11,11 +11,13 @@
 
 ## 🖥️ Display & Graphics
 - [x] Allow configurable screen size
-  - [x] Add resolution options in settings
+  - [x] Add resolution options in settings (8 presets from 800x600 to 2560x1440)
   - [x] Maintain aspect ratio when resizing
+  - [x] Settings persisted in database
 - [x] Implement fullscreen mode toggle (F11 or Alt+Enter)
-- [x] Add windowed fullscreen option
+- [x] Add windowed fullscreen option (3 modes: Windowed, Borderless, Exclusive)
 - [x] Implement proper scaling for different resolutions
+- [x] VSync toggle option
 
 ## 🎨 Sprites & Visual Assets
 - [x] Create/add simple sprites
@@ -61,11 +63,13 @@
   - [x] SQLite database for persistent storage
   - [x] Top 10 scores per difficulty level
   - [x] High scores menu screen
+  - [x] Automatic schema migration for existing databases
   - [ ] Player name input dialog
 - [x] User settings persistence
-  - [x] Sound volume saved to database
-  - [x] Music volume saved to database
-  - [x] Fullscreen preference saved to database
+  - [x] Audio settings (sound & music volume)
+  - [x] Video settings (resolution, fullscreen mode, vsync)
+  - [x] All settings saved to SQLite database
+  - [x] Automatic migration for legacy databases
 - [x] Statistics tracking (enemies killed, accuracy, time played)
 - [ ] Achievements/unlockables
 - [x] Pause menu with options
@@ -81,13 +85,14 @@
 ## 🎨 UI/UX Improvements
 - [x] Main menu screen
   - [x] Start game
-  - [x] Settings
+  - [x] Settings (with submenus)
   - [x] High scores
   - [x] Credits
-  - [ ] Exit
-- [-] Settings menu
-  - [ ] Graphics options
-  - [x] Audio options (with database persistence)
+  - [x] Exit (ESC in main menu)
+- [x] Settings menu
+  - [x] Sound options submenu (with database persistence)
+  - [x] Video options submenu (resolution, fullscreen, vsync with database persistence)
+  - [ ] Game options submenu (placeholder for future options)
   - [ ] Control configuration
 - [ ] HUD improvements
   - [ ] Mini-map or radar

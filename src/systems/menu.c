@@ -83,18 +83,39 @@ void InitMenu(Menu* menu) {
     if (DB_LoadSettings(&settings)) {
         menu->soundVolume = settings.soundVolume;
         menu->musicVolume = settings.musicVolume;
-        // Map fullscreen bool to fullscreenMode enum
-        menu->fullscreenMode = settings.fullscreen ? FULLSCREEN_EXCLUSIVE : FULLSCREEN_OFF;
+        menu->fullscreenMode = (FullscreenMode)settings.fullscreenMode;
+        menu->vsync = settings.vsync;
+        
+        // Find matching resolution index
+        int count = 0;
+        const Resolution* resolutions = GetAvailableResolutions(&count);
+        menu->selectedResolution = 2; // Default to 1200x600
+        for (int i = 0; i < count; i++) {
+            if (resolutions[i].width == settings.resolutionWidth && 
+                resolutions[i].height == settings.resolutionHeight) {
+                menu->selectedResolution = i;
+                break;
+            }
+        }
+        
+        // Apply loaded resolution
+        ApplyResolution(menu);
+        ApplyFullscreenMode(menu);
+        
+        // Apply VSync setting
+        if (menu->vsync) {
+            SetTargetFPS(60);
+        } else {
+            SetTargetFPS(0);
+        }
     } else {
         // Default options if loading fails
         menu->soundVolume = 1.0f;
         menu->musicVolume = 0.5f;
         menu->fullscreenMode = FULLSCREEN_OFF;
+        menu->selectedResolution = 2; // 1200x600 by default
+        menu->vsync = true;
     }
-    
-    // Default video options (not persisted in database yet)
-    menu->selectedResolution = 2; // 1200x600 by default
-    menu->vsync = true;
 }
 
 void UpdateMenu(Menu* menu, MenuState* gameState) {
@@ -109,6 +130,22 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             menu->fullscreenMode = FULLSCREEN_EXCLUSIVE;
         }
         ApplyFullscreenMode(menu);
+        
+        // Save fullscreen mode change
+        int count = 0;
+        const Resolution* resolutions = GetAvailableResolutions(&count);
+        const Resolution* currentRes = &resolutions[menu->selectedResolution];
+        
+        UserSettings settings = {
+            .soundVolume = menu->soundVolume,
+            .musicVolume = menu->musicVolume,
+            .resolutionWidth = currentRes->width,
+            .resolutionHeight = currentRes->height,
+            .fullscreenMode = (int)menu->fullscreenMode,
+            .vsync = menu->vsync,
+            .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+        };
+        DB_SaveSettings(&settings);
     }
     
     // Update title bounce animation
@@ -221,15 +258,23 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 }
             }
             
-            // Save settings to database when changed
-            if (settingsChanged) {
-                UserSettings settings = {
-                    .soundVolume = menu->soundVolume,
-                    .musicVolume = menu->musicVolume,
-                    .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
-                };
-                DB_SaveSettings(&settings);
-            }
+             // Save audio settings to database when changed
+             if (settingsChanged) {
+                 int count = 0;
+                 const Resolution* resolutions = GetAvailableResolutions(&count);
+                 const Resolution* currentRes = &resolutions[menu->selectedResolution];
+                 
+                 UserSettings settings = {
+                     .soundVolume = menu->soundVolume,
+                     .musicVolume = menu->musicVolume,
+                     .resolutionWidth = currentRes->width,
+                     .resolutionHeight = currentRes->height,
+                     .fullscreenMode = (int)menu->fullscreenMode,
+                     .vsync = menu->vsync,
+                     .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+                 };
+                 DB_SaveSettings(&settings);
+             }
             
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
                 menu->currentState = MENU_OPTIONS;
@@ -238,68 +283,78 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             break;
         }
             
-        case MENU_OPTIONS_VIDEO: {
-            int count = 0;
-            GetAvailableResolutions(&count);
-            
-            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
-                menu->selectedOption--;
-                if (menu->selectedOption < 0) menu->selectedOption = 2;
-            }
-            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
-                menu->selectedOption++;
-                if (menu->selectedOption > 2) menu->selectedOption = 0;
-            }
-            
-            bool settingsChanged = false;
-            if (menu->selectedOption == 0) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
-                    menu->selectedResolution--;
-                    if (menu->selectedResolution < 0) menu->selectedResolution = count - 1;
-                    ApplyResolution(menu);
-                }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
-                    menu->selectedResolution++;
-                    if (menu->selectedResolution >= count) menu->selectedResolution = 0;
-                    ApplyResolution(menu);
-                }
-            } else if (menu->selectedOption == 1) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
-                    int mode = (int)menu->fullscreenMode - 1;
-                    if (mode < 0) mode = 2;
-                    menu->fullscreenMode = (FullscreenMode)mode;
-                    ApplyFullscreenMode(menu);
-                    settingsChanged = true;
-                }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
-                    int mode = (int)menu->fullscreenMode + 1;
-                    if (mode > 2) mode = 0;
-                    menu->fullscreenMode = (FullscreenMode)mode;
-                    ApplyFullscreenMode(menu);
-                    settingsChanged = true;
-                }
-            } else if (menu->selectedOption == 2) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
-                    IsKeyPressed(KEY_A) || IsKeyPressed(KEY_D) ||
-                    IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
-                    menu->vsync = !menu->vsync;
-                    if (menu->vsync) {
-                        SetTargetFPS(60);
-                    } else {
-                        SetTargetFPS(0);
-                    }
-                }
-            }
-            
-            // Save fullscreen setting to database when changed
-            if (settingsChanged) {
-                UserSettings settings = {
-                    .soundVolume = menu->soundVolume,
-                    .musicVolume = menu->musicVolume,
-                    .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
-                };
-                DB_SaveSettings(&settings);
-            }
+         case MENU_OPTIONS_VIDEO: {
+             int count = 0;
+             GetAvailableResolutions(&count);
+             
+             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+                 menu->selectedOption--;
+                 if (menu->selectedOption < 0) menu->selectedOption = 2;
+             }
+             if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+                 menu->selectedOption++;
+                 if (menu->selectedOption > 2) menu->selectedOption = 0;
+             }
+             
+             bool settingsChanged = false;
+             if (menu->selectedOption == 0) {
+                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                     menu->selectedResolution--;
+                     if (menu->selectedResolution < 0) menu->selectedResolution = count - 1;
+                     ApplyResolution(menu);
+                     settingsChanged = true;
+                 }
+                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                     menu->selectedResolution++;
+                     if (menu->selectedResolution >= count) menu->selectedResolution = 0;
+                     ApplyResolution(menu);
+                     settingsChanged = true;
+                 }
+             } else if (menu->selectedOption == 1) {
+                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                     int mode = (int)menu->fullscreenMode - 1;
+                     if (mode < 0) mode = 2;
+                     menu->fullscreenMode = (FullscreenMode)mode;
+                     ApplyFullscreenMode(menu);
+                     settingsChanged = true;
+                 }
+                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                     int mode = (int)menu->fullscreenMode + 1;
+                     if (mode > 2) mode = 0;
+                     menu->fullscreenMode = (FullscreenMode)mode;
+                     ApplyFullscreenMode(menu);
+                     settingsChanged = true;
+                 }
+             } else if (menu->selectedOption == 2) {
+                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
+                     IsKeyPressed(KEY_A) || IsKeyPressed(KEY_D) ||
+                     IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                     menu->vsync = !menu->vsync;
+                     if (menu->vsync) {
+                         SetTargetFPS(60);
+                     } else {
+                         SetTargetFPS(0);
+                     }
+                     settingsChanged = true;
+                 }
+             }
+             
+             // Save video settings to database when changed
+             if (settingsChanged) {
+                 const Resolution* resolutions = GetAvailableResolutions(&count);
+                 const Resolution* currentRes = &resolutions[menu->selectedResolution];
+                 
+                 UserSettings settings = {
+                     .soundVolume = menu->soundVolume,
+                     .musicVolume = menu->musicVolume,
+                     .resolutionWidth = currentRes->width,
+                     .resolutionHeight = currentRes->height,
+                     .fullscreenMode = (int)menu->fullscreenMode,
+                     .vsync = menu->vsync,
+                     .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+                 };
+                 DB_SaveSettings(&settings);
+             }
             
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
                 menu->currentState = MENU_OPTIONS;

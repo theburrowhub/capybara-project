@@ -74,6 +74,26 @@ const char* DB_GetDatabasePath(void) {
     return dbPath;
 }
 
+// Migrate database schema to add new columns
+static void MigrateSchema(void) {
+    // Check if new columns exist, if not add them
+    const char* alterQueries[] = {
+        "ALTER TABLE settings ADD COLUMN resolution_width INTEGER DEFAULT 1200;",
+        "ALTER TABLE settings ADD COLUMN resolution_height INTEGER DEFAULT 600;",
+        "ALTER TABLE settings ADD COLUMN fullscreen_mode INTEGER DEFAULT 0;",
+        "ALTER TABLE settings ADD COLUMN vsync INTEGER DEFAULT 1;"
+    };
+    
+    for (int i = 0; i < 4; i++) {
+        char* errMsg = NULL;
+        int rc = sqlite3_exec(db, alterQueries[i], NULL, NULL, &errMsg);
+        if (rc != SQLITE_OK) {
+            // Ignore errors (column might already exist)
+            sqlite3_free(errMsg);
+        }
+    }
+}
+
 // Initialize the database
 bool DB_Init(void) {
     const char* path = DB_GetDatabasePath();
@@ -90,13 +110,17 @@ bool DB_Init(void) {
         return false;
     }
     
-    // Create settings table
+    // Create settings table with all columns
     const char* createSettingsTable = 
         "CREATE TABLE IF NOT EXISTS settings ("
         "    id INTEGER PRIMARY KEY CHECK (id = 1),"
         "    sound_volume REAL DEFAULT 1.0,"
         "    music_volume REAL DEFAULT 0.5,"
-        "    fullscreen INTEGER DEFAULT 0"
+        "    fullscreen INTEGER DEFAULT 0,"
+        "    resolution_width INTEGER DEFAULT 1200,"
+        "    resolution_height INTEGER DEFAULT 600,"
+        "    fullscreen_mode INTEGER DEFAULT 0,"
+        "    vsync INTEGER DEFAULT 1"
         ");";
     
     char* errMsg = NULL;
@@ -138,6 +162,9 @@ bool DB_Init(void) {
         // Continue anyway, index is just for performance
     }
     
+    // Migrate schema for existing databases
+    MigrateSchema();
+    
     printf("Database initialized at: %s\n", path);
     return true;
 }
@@ -156,7 +183,10 @@ bool DB_LoadSettings(UserSettings* settings) {
         return false;
     }
     
-    const char* query = "SELECT sound_volume, music_volume, fullscreen FROM settings WHERE id = 1;";
+    const char* query = 
+        "SELECT sound_volume, music_volume, fullscreen, "
+        "resolution_width, resolution_height, fullscreen_mode, vsync "
+        "FROM settings WHERE id = 1;";
     sqlite3_stmt* stmt = NULL;
     
     int rc = sqlite3_prepare_v2(db, query, -1, &stmt, NULL);
@@ -170,6 +200,10 @@ bool DB_LoadSettings(UserSettings* settings) {
         settings->soundVolume = (float)sqlite3_column_double(stmt, 0);
         settings->musicVolume = (float)sqlite3_column_double(stmt, 1);
         settings->fullscreen = sqlite3_column_int(stmt, 2) != 0;
+        settings->resolutionWidth = sqlite3_column_int(stmt, 3);
+        settings->resolutionHeight = sqlite3_column_int(stmt, 4);
+        settings->fullscreenMode = sqlite3_column_int(stmt, 5);
+        settings->vsync = sqlite3_column_int(stmt, 6) != 0;
         
         sqlite3_finalize(stmt);
         return true;
@@ -178,6 +212,10 @@ bool DB_LoadSettings(UserSettings* settings) {
         settings->soundVolume = 1.0f;
         settings->musicVolume = 0.5f;
         settings->fullscreen = false;
+        settings->resolutionWidth = 1200;
+        settings->resolutionHeight = 600;
+        settings->fullscreenMode = 0;  // FULLSCREEN_OFF
+        settings->vsync = true;
         
         sqlite3_finalize(stmt);
         
@@ -197,8 +235,10 @@ bool DB_SaveSettings(const UserSettings* settings) {
     }
     
     const char* query = 
-        "INSERT OR REPLACE INTO settings (id, sound_volume, music_volume, fullscreen) "
-        "VALUES (1, ?, ?, ?);";
+        "INSERT OR REPLACE INTO settings "
+        "(id, sound_volume, music_volume, fullscreen, "
+        "resolution_width, resolution_height, fullscreen_mode, vsync) "
+        "VALUES (1, ?, ?, ?, ?, ?, ?, ?);";
     
     sqlite3_stmt* stmt = NULL;
     
@@ -211,6 +251,10 @@ bool DB_SaveSettings(const UserSettings* settings) {
     sqlite3_bind_double(stmt, 1, settings->soundVolume);
     sqlite3_bind_double(stmt, 2, settings->musicVolume);
     sqlite3_bind_int(stmt, 3, settings->fullscreen ? 1 : 0);
+    sqlite3_bind_int(stmt, 4, settings->resolutionWidth);
+    sqlite3_bind_int(stmt, 5, settings->resolutionHeight);
+    sqlite3_bind_int(stmt, 6, settings->fullscreenMode);
+    sqlite3_bind_int(stmt, 7, settings->vsync ? 1 : 0);
     
     rc = sqlite3_step(stmt);
     sqlite3_finalize(stmt);
