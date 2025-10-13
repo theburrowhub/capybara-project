@@ -336,6 +336,14 @@ help:
 	@echo "  debug            - Build all with debug symbols"
 	@echo "  release          - Build all with optimizations"
 	@echo ""
+	@echo "VERSION MANAGEMENT (Commitizen):"
+	@echo "  cz-help          - Show commitizen help"
+	@echo "  cz-commit        - Interactive commit"
+	@echo "  cz-bump          - Auto-bump version"
+	@echo "  cz-alpha         - Create alpha release"
+	@echo "  cz-beta          - Create beta release"
+	@echo "  cz-release       - Promote to stable"
+	@echo ""
 	@echo "SHOWCASE TARGETS:"
 	@echo "  showcase         - Build and run enemy showcase"
 	@echo "  enemy_showcase   - Build only the enemy showcase"
@@ -406,4 +414,159 @@ clean-manual-all: clean-manual
 	@rm -f docs/USER_MANUAL.pdf docs/USER_MANUAL_SIMPLE.pdf
 	@echo "Manual PDFs removed."
 
-.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all populate_highscores run_populate_highscores force_populate_highscores
+# ============================================================================
+# Commitizen (Version Management) Targets
+# ============================================================================
+
+# Check if commitizen is installed
+cz-check:
+	@command -v cz >/dev/null 2>&1 || { \
+		echo "❌ Commitizen is not installed."; \
+		echo ""; \
+		echo "Install with:"; \
+		echo "  pip install commitizen"; \
+		echo "  or"; \
+		echo "  brew install commitizen"; \
+		echo ""; \
+		echo "Or run: make cz-install"; \
+		exit 1; \
+	}
+	@echo "✓ Commitizen is installed"
+	@cz version
+
+# Install commitizen
+cz-install:
+	@echo "Installing commitizen..."
+	@pip install --user commitizen
+	@echo ""
+	@echo "✓ Commitizen installed successfully!"
+	@echo ""
+	@echo "Usage: make cz-commit  # Interactive commit"
+	@echo "       make cz-bump    # Auto bump version"
+	@echo "       make cz-alpha   # Create alpha release"
+	@echo "       make cz-beta    # Create beta release"
+
+# Interactive commit with commitizen
+cz-commit: cz-check
+	@cz commit
+
+# Show current version
+cz-version: cz-check
+	@echo "Current version:"
+	@cz version --project
+
+# Automatic version bump (determines version from commits)
+cz-bump: cz-check
+	@echo "🔍 Analyzing commits to determine version bump..."
+	@cz bump --yes --changelog
+	@echo ""
+	@echo "✓ Version bumped and changelog updated!"
+	@echo ""
+	@echo "Next steps:"
+	@echo "  1. Review CHANGELOG.md"
+	@echo "  2. git push origin main"
+	@echo "  3. git push --tags"
+
+# Manual version bumps
+cz-bump-major: cz-check
+	@echo "📈 Bumping MAJOR version (breaking changes)..."
+	@cz bump --increment MAJOR --yes --changelog
+	@echo ""
+	@echo "✓ MAJOR version bump complete!"
+	@echo "Review changes and push: git push && git push --tags"
+
+cz-bump-minor: cz-check
+	@echo "📈 Bumping MINOR version (new features)..."
+	@cz bump --increment MINOR --yes --changelog
+	@echo ""
+	@echo "✓ MINOR version bump complete!"
+	@echo "Review changes and push: git push && git push --tags"
+
+cz-bump-patch: cz-check
+	@echo "📈 Bumping PATCH version (bug fixes)..."
+	@cz bump --increment PATCH --yes --changelog
+	@echo ""
+	@echo "✓ PATCH version bump complete!"
+	@echo "Review changes and push: git push && git push --tags"
+
+# Pre-release versions
+cz-alpha: cz-check
+	@echo "🔬 Creating ALPHA pre-release..."
+	@cz bump --prerelease alpha --yes --changelog
+	@echo ""
+	@echo "✓ Alpha version created!"
+	@echo "Review changes and push: git push && git push --tags"
+
+cz-beta: cz-check
+	@echo "🧪 Creating BETA pre-release..."
+	@cz bump --prerelease beta --yes --changelog
+	@echo ""
+	@echo "✓ Beta version created!"
+	@echo "Review changes and push: git push && git push --tags"
+
+cz-rc: cz-check
+	@echo "🚀 Creating RELEASE CANDIDATE..."
+	@cz bump --prerelease rc --yes --changelog
+	@echo ""
+	@echo "✓ Release candidate created!"
+	@echo "Review changes and push: git push && git push --tags"
+
+# Promote pre-release to stable
+cz-release: cz-check
+	@echo "🎉 Promoting to STABLE release..."
+	@cz bump --yes --changelog
+	@echo ""
+	@echo "✓ Stable release created!"
+	@echo "Review changes and push: git push && git push --tags"
+
+# Generate/update changelog only
+cz-changelog: cz-check
+	@echo "📝 Generating changelog..."
+	@cz changelog
+	@echo ""
+	@echo "✓ Changelog updated!"
+
+# Show commitizen help
+cz-help:
+	@echo "=========================================="
+	@echo "Commitizen Version Management"
+	@echo "=========================================="
+	@echo ""
+	@echo "SETUP:"
+	@echo "  make cz-install       - Install commitizen"
+	@echo "  make cz-check         - Check if installed"
+	@echo "  make cz-version       - Show current version"
+	@echo ""
+	@echo "COMMITS:"
+	@echo "  make cz-commit        - Interactive commit (follows conventions)"
+	@echo ""
+	@echo "VERSION BUMPS (Automatic):"
+	@echo "  make cz-bump          - Auto-detect version from commits"
+	@echo ""
+	@echo "VERSION BUMPS (Manual):"
+	@echo "  make cz-bump-major    - v1.0.0 → v2.0.0 (breaking changes)"
+	@echo "  make cz-bump-minor    - v1.0.0 → v1.1.0 (new features)"
+	@echo "  make cz-bump-patch    - v1.0.0 → v1.0.1 (bug fixes)"
+	@echo ""
+	@echo "PRE-RELEASES:"
+	@echo "  make cz-alpha         - v1.0.0 → v1.1.0-alpha.0"
+	@echo "  make cz-beta          - v1.0.0-alpha.0 → v1.0.0-beta.0"
+	@echo "  make cz-rc            - v1.0.0-beta.0 → v1.0.0-rc.0"
+	@echo "  make cz-release       - v1.0.0-rc.0 → v1.0.0"
+	@echo ""
+	@echo "OTHER:"
+	@echo "  make cz-changelog     - Update CHANGELOG.md only"
+	@echo ""
+	@echo "WORKFLOW:"
+	@echo "  1. make cz-commit     # Interactive commit"
+	@echo "  2. make cz-alpha      # Create alpha release"
+	@echo "  3. Test the release"
+	@echo "  4. make cz-beta       # Promote to beta"
+	@echo "  5. Test more"
+	@echo "  6. make cz-release    # Promote to stable"
+	@echo "  7. git push && git push --tags"
+	@echo ""
+	@echo "See docs/COMMITIZEN_GUIDE.md for detailed guide"
+	@echo "=========================================="
+
+.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all populate_highscores run_populate_highscores force_populate_highscores cz-install cz-commit cz-bump cz-bump-major cz-bump-minor cz-bump-patch cz-alpha cz-beta cz-rc cz-release cz-changelog cz-version cz-check cz-help cz-install cz-commit cz-bump cz-bump-major cz-bump-minor cz-bump-patch cz-alpha cz-beta cz-rc cz-release cz-changelog cz-version cz-check
