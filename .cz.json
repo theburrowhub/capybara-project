@@ -1,7 +1,7 @@
 {
   "commitizen": {
     "name": "cz_conventional_commits",
-    "version": "0.2.0a3",
+    "version": "0.2.0a4",
     "tag_format": "v$version",
     "version_files": [],
     "update_changelog_on_bump": true,
