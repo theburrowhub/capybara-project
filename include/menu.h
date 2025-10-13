@@ -57,6 +57,9 @@ typedef struct {
     FullscreenMode fullscreenMode;
     bool vsync;
     
+    // High scores options
+    int selectedDifficulty;  // 0=EASY, 1=NORMAL, 2=HARD, 3=INSANE
+    
     // Animation timers
     float animationTimer;
 } Menu;

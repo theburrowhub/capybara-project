@@ -62,8 +62,13 @@
 - [x] High score system with leaderboard
   - [x] SQLite database for persistent storage
   - [x] Top 10 scores per difficulty level
-  - [x] High scores menu screen
+  - [x] High scores menu screen with difficulty selector
+  - [x] Navigate between difficulties with LEFT/RIGHT arrows
+  - [x] Color-coded difficulty display (Green/Blue/Orange/Red)
   - [x] Automatic schema migration for existing databases
+  - [x] Preset high scores with legendary game developers (40 entries)
+  - [x] Automatic population on first run
+  - [x] High score populator tool with force mode
   - [ ] Player name input dialog
 - [x] User settings persistence
   - [x] Audio settings (sound & music volume)

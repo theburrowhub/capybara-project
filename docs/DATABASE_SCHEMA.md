@@ -107,6 +107,8 @@ typedef struct {
 - Only the **top 10 scores** per difficulty level are kept
 - When a new score is added, if it exceeds 10 entries for that difficulty, the lowest score is automatically removed
 - Scores are indexed and sorted by difficulty and score (descending) for optimal query performance
+- **Automatic population**: The database is automatically populated with 40 legendary developer presets on first run
+- The system only populates once - if scores already exist, they are preserved
 
 ## Notes
 

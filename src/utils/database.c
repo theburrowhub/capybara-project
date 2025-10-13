@@ -13,6 +13,65 @@
 static sqlite3* db = NULL;
 static char dbPath[512] = {0};
 
+// High score presets based on legendary game developers
+typedef struct {
+    const char* name;
+    int score;
+    DifficultyLevel difficulty;
+} HighScorePreset;
+
+static const HighScorePreset PRESETS[] = {
+    // INSANE Difficulty (TOP 1-10)
+    {"shigmoto", 100000, DIFFICULTY_INSANE},      // Shigeru Miyamoto
+    {"kojimaster", 96500, DIFFICULTY_INSANE},     // Hideo Kojima
+    {"carmatron", 94000, DIFFICULTY_INSANE},      // John Carmack
+    {"romeroid", 92500, DIFFICULTY_INSANE},       // John Romero
+    {"simeierX", 91000, DIFFICULTY_INSANE},       // Sid Meier
+    {"gabenator", 90000, DIFFICULTY_INSANE},      // Gabe Newell
+    {"yusonic", 87800, DIFFICULTY_INSANE},        // Yu Suzuki
+    {"simwright", 85300, DIFFICULTY_INSANE},      // Will Wright
+    {"howardcore", 82900, DIFFICULTY_INSANE},     // Todd Howard
+    {"hirofinal", 80400, DIFFICULTY_INSANE},      // Hironobu Sakaguchi
+    
+    // HARD Difficulty (TOP 11-20)
+    {"sakurush", 78700, DIFFICULTY_HARD},         // Masahiro Sakurai
+    {"levinecore", 77900, DIFFICULTY_HARD},       // Ken Levine
+    {"sonaknaka", 76800, DIFFICULTY_HARD},        // Yuji Naka
+    {"granYamauchi", 75600, DIFFICULTY_HARD},     // Kazunori Yamauchi
+    {"notchcode", 74800, DIFFICULTY_HARD},        // Markus Persson
+    {"robertadream", 73900, DIFFICULTY_HARD},     // Roberta Williams
+    {"jadevision", 72600, DIFFICULTY_HARD},       // Jade Raymond
+    {"hennigstory", 71800, DIFFICULTY_HARD},      // Amy Hennig
+    {"iwapac", 70900, DIFFICULTY_HARD},           // Toru Iwatani
+    {"iwataheart", 70000, DIFFICULTY_HARD},       // Satoru Iwata
+    
+    // NORMAL Difficulty (TOP 21-30)
+    {"boonfatal", 69500, DIFFICULTY_NORMAL},      // Ed Boon
+    {"barloggamer", 68700, DIFFICULTY_NORMAL},    // Cory Barlog
+    {"cliffyB", 68000, DIFFICULTY_NORMAL},        // Cliff Bleszinski
+    {"molygod", 67300, DIFFICULTY_NORMAL},        // Peter Molyneux
+    {"kondobeat", 66800, DIFFICULTY_NORMAL},      // Koji Kondo
+    {"mikahorror", 66000, DIFFICULTY_NORMAL},     // Shinji Mikami
+    {"russoAI", 65400, DIFFICULTY_NORMAL},        // Carmine Russo
+    {"aonulink", 65000, DIFFICULTY_NORMAL},       // Eiji Aonuma
+    {"kamiRage", 64700, DIFFICULTY_NORMAL},       // Hideki Kamiya
+    {"uedadreamer", 63800, DIFFICULTY_NORMAL},    // Fumito Ueda
+    
+    // EASY Difficulty (TOP 31-40)
+    {"masktaro", 63000, DIFFICULTY_EASY},         // Yoko Taro
+    {"nomustyle", 62500, DIFFICULTY_EASY},        // Tetsuya Nomura
+    {"kapover", 61900, DIFFICULTY_EASY},          // Jeff Kaplan
+    {"miyaborn", 61500, DIFFICULTY_EASY},         // Hidetaka Miyazaki
+    {"ledesmactrl", 60800, DIFFICULTY_EASY},      // Cory Ledesma
+    {"baertech", 60000, DIFFICULTY_EASY},         // Ralph Baer
+    {"yokoitech", 59500, DIFFICULTY_EASY},        // Gunpei Yokoi
+    {"spencore", 58700, DIFFICULTY_EASY},         // Phil Spencer
+    {"regginator", 58000, DIFFICULTY_EASY},       // Reggie Fils-Aimé
+    {"hulstcore", 57500, DIFFICULTY_EASY}         // Herman Hulst
+};
+
+static const int PRESET_COUNT = sizeof(PRESETS) / sizeof(PRESETS[0]);
+
 // Get the user's home directory
 static const char* GetHomeDirectory(void) {
     const char* home = getenv("HOME");
@@ -72,6 +131,50 @@ const char* DB_GetDatabasePath(void) {
     }
     
     return dbPath;
+}
+
+// Populate high scores with legendary developer presets
+static void PopulateHighScorePresets(void) {
+    if (!db) {
+        return;
+    }
+    
+    // Check if high_scores table is empty
+    const char* countQuery = "SELECT COUNT(*) FROM high_scores;";
+    sqlite3_stmt* stmt = NULL;
+    
+    int rc = sqlite3_prepare_v2(db, countQuery, -1, &stmt, NULL);
+    if (rc != SQLITE_OK) {
+        fprintf(stderr, "Failed to check high scores: %s\n", sqlite3_errmsg(db));
+        return;
+    }
+    
+    if (sqlite3_step(stmt) == SQLITE_ROW) {
+        int count = sqlite3_column_int(stmt, 0);
+        sqlite3_finalize(stmt);
+        
+        if (count > 0) {
+            // High scores already exist, don't populate
+            return;
+        }
+    } else {
+        sqlite3_finalize(stmt);
+        return;
+    }
+    
+    // Table is empty, populate with presets
+    printf("Populating high scores with legendary game developers...\n");
+    
+    int successCount = 0;
+    for (int i = 0; i < PRESET_COUNT; i++) {
+        const HighScorePreset* preset = &PRESETS[i];
+        
+        if (DB_AddHighScore(preset->name, preset->score, preset->difficulty)) {
+            successCount++;
+        }
+    }
+    
+    printf("✓ Added %d legendary developer high scores\n", successCount);
 }
 
 // Migrate database schema to add new columns
@@ -164,6 +267,9 @@ bool DB_Init(void) {
     
     // Migrate schema for existing databases
     MigrateSchema();
+    
+    // Populate high scores with presets if table is empty
+    PopulateHighScorePresets();
     
     printf("Database initialized at: %s\n", path);
     return true;

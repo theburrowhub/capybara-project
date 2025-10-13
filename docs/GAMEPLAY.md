@@ -2,13 +2,21 @@
 
 ## Controls
 
-### Keyboard Controls
+### In-Game Controls
 - **Movement**: WASD or Arrow Keys
 - **Shoot**: Left Mouse Button (hold for continuous fire)
 - **Pause**: P
 - **Debug Mode**: H (show hitboxes)
 - **Restart**: R (when game over)
-- **Exit**: ESC
+- **Quick Fullscreen**: F11 or ALT+ENTER
+
+### Menu Navigation
+- **Navigate Options**: UP/DOWN or W/S
+- **Select**: ENTER or SPACE
+- **Back**: ESC or BACKSPACE
+- **Adjust Settings**: LEFT/RIGHT or A/D
+- **Change Difficulty (High Scores)**: LEFT/RIGHT arrows to view different difficulty levels
+- **Exit Game**: ESC from main menu
 
 ### Planned Controller Support
 - Xbox/PlayStation controller support (see TODO.md)

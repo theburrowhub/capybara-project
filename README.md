@@ -53,6 +53,7 @@ make run
 
 ## Controls
 
+### In-Game
 | Action | Keys |
 |--------|------|
 | Move | WASD / Arrow Keys |
@@ -60,7 +61,15 @@ make run
 | Pause | P |
 | Debug | H (show hitboxes) |
 | Restart | R (when game over) |
-| Exit | ESC |
+
+### Menu
+| Action | Keys |
+|--------|------|
+| Navigate | UP/DOWN or W/S |
+| Select | ENTER or SPACE |
+| Adjust | LEFT/RIGHT or A/D |
+| Back | ESC or BACKSPACE |
+| Quick Fullscreen | F11 or ALT+ENTER |
 
 ## Requirements
 
@@ -101,6 +110,14 @@ make showcase
 make run_audio_gui   # Audio analysis GUI
 make run_audio_cli   # Audio analysis CLI
 ```
+
+### High Score Presets
+**Automatically populated!** The game includes preset scores from 40 legendary game developers:
+- Populated automatically on first run - no setup needed!
+- 10 scores per difficulty level (EASY, NORMAL, HARD, INSANE)
+- Based on gaming industry legends (Miyamoto, Kojima, Carmack, etc.)
+- Optional reset tool: `make force_populate_highscores`
+- See [High Scores Presets Documentation](docs/HIGH_SCORES_PRESETS.md)
 
 ## Debug Features
 

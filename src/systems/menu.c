@@ -78,6 +78,9 @@ void InitMenu(Menu* menu) {
         menu->optionAlpha[i] = 0.8f;
     }
     
+    // Initialize high scores options
+    menu->selectedDifficulty = 1;  // Start with NORMAL difficulty
+    
     // Load settings from database
     UserSettings settings;
     if (DB_LoadSettings(&settings)) {
@@ -371,7 +374,21 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             break;
             
         case MENU_HIGH_SCORES:
-            // Go back with any key
+            // Navigate between difficulties with left/right arrows
+            if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                menu->selectedDifficulty--;
+                if (menu->selectedDifficulty < 0) {
+                    menu->selectedDifficulty = 3;  // Wrap to INSANE
+                }
+            }
+            if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                menu->selectedDifficulty++;
+                if (menu->selectedDifficulty > 3) {
+                    menu->selectedDifficulty = 0;  // Wrap to EASY
+                }
+            }
+            
+            // Go back with ESC, Backspace, Enter or Space
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
                 IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
                 menu->currentState = MENU_MAIN;
@@ -700,28 +717,54 @@ void DrawOptionsGame(Menu* menu) {
 }
 
 void DrawHighScores(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
     // Draw background
-    DrawRectangleGradientV(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
                            (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
     
     // Draw title
     const char* title = "HIGH SCORES";
     int titleSize = 45;
     int titleWidth = MeasureText(title, titleSize);
-    DrawText(title, (SCREEN_WIDTH - titleWidth) / 2, 60, titleSize, WHITE);
+    DrawText(title, (screenWidth - titleWidth) / 2, 60, titleSize, WHITE);
     
-    // Draw difficulty label (for now, showing Normal difficulty)
-    const char* difficultyText = "Difficulty: NORMAL";
-    int difficultySize = 20;
-    int difficultyWidth = MeasureText(difficultyText, difficultySize);
-    DrawText(difficultyText, (SCREEN_WIDTH - difficultyWidth) / 2, 120, 
-             difficultySize, (Color){200, 200, 200, 255});
+    // Difficulty names and colors
+    const char* difficultyNames[] = {"EASY", "NORMAL", "HARD", "INSANE"};
+    Color difficultyColors[] = {
+        (Color){100, 255, 100, 255},  // Green for EASY
+        (Color){100, 200, 255, 255},  // Blue for NORMAL
+        (Color){255, 165, 0, 255},    // Orange for HARD
+        (Color){255, 50, 50, 255}     // Red for INSANE
+    };
     
-    // Load high scores from database
+    // Draw difficulty selector with arrows
+    const char* difficultyLabel = "Difficulty:";
+    int labelSize = 18;
+    int labelWidth = MeasureText(difficultyLabel, labelSize);
+    int difficultySize = 24;
+    const char* currentDifficulty = difficultyNames[menu->selectedDifficulty];
+    int difficultyWidth = MeasureText(currentDifficulty, difficultySize);
+    
+    int labelX = (screenWidth - labelWidth - 10 - difficultyWidth) / 2;
+    int difficultyX = labelX + labelWidth + 10;
+    int difficultyY = 115;
+    
+    // Draw label
+    DrawText(difficultyLabel, labelX, difficultyY + 3, labelSize, (Color){180, 180, 180, 255});
+    
+    // Draw difficulty with color and arrows
+    float arrowOffset = sinf(menu->animationTimer * 4.0f) * 3.0f;
+    DrawText("<", difficultyX - 30 - arrowOffset, difficultyY, difficultySize, WHITE);
+    DrawText(currentDifficulty, difficultyX, difficultyY, difficultySize, difficultyColors[menu->selectedDifficulty]);
+    DrawText(">", difficultyX + difficultyWidth + 10 + arrowOffset, difficultyY, difficultySize, WHITE);
+    
+    // Load high scores from database for selected difficulty
     HighScoreEntry entries[10];
     int count = 0;
     
-    if (DB_GetHighScores(DIFFICULTY_NORMAL, entries, 10, &count)) {
+    if (DB_GetHighScores((DifficultyLevel)menu->selectedDifficulty, entries, 10, &count)) {
         if (count > 0) {
             // Draw table header
             int headerY = 170;
@@ -772,24 +815,31 @@ void DrawHighScores(Menu* menu) {
             const char* emptyText = "No high scores yet. Start playing!";
             int emptySize = 22;
             int emptyWidth = MeasureText(emptyText, emptySize);
-            DrawText(emptyText, (SCREEN_WIDTH - emptyWidth) / 2, 
-                    SCREEN_HEIGHT / 2, emptySize, (Color){150, 150, 150, 255});
+            DrawText(emptyText, (screenWidth - emptyWidth) / 2, 
+                    screenHeight / 2, emptySize, (Color){150, 150, 150, 255});
         }
     } else {
         // Error loading scores
         const char* errorText = "Error loading high scores";
         int errorSize = 20;
         int errorWidth = MeasureText(errorText, errorSize);
-        DrawText(errorText, (SCREEN_WIDTH - errorWidth) / 2, 
-                SCREEN_HEIGHT / 2, errorSize, RED);
+        DrawText(errorText, (screenWidth - errorWidth) / 2, 
+                screenHeight / 2, errorSize, RED);
     }
+    
+    // Draw navigation instructions
+    const char* navText = "Use LEFT/RIGHT arrows to change difficulty";
+    int navSize = 14;
+    int navWidth = MeasureText(navText, navSize);
+    DrawText(navText, (screenWidth - navWidth) / 2, 
+             screenHeight - 80, navSize, (Color){100, 150, 255, 200});
     
     // Draw back instruction
     const char* backText = "Press ESC or ENTER to go back";
-    int backSize = 18;
+    int backSize = 16;
     int backWidth = MeasureText(backText, backSize);
-    DrawText(backText, (SCREEN_WIDTH - backWidth) / 2, 
-             SCREEN_HEIGHT - 50, backSize, (Color){150, 150, 150, 200});
+    DrawText(backText, (screenWidth - backWidth) / 2, 
+             screenHeight - 50, backSize, (Color){150, 150, 150, 200});
 }
 
 void DrawCredits(const Menu* menu) {
