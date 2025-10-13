@@ -12,6 +12,8 @@ typedef enum {
     MENU_OPTIONS_VIDEO,
     MENU_OPTIONS_GAME,
     MENU_CREDITS,
+    MENU_HIGH_SCORES,
+    MENU_NAME_INPUT,
     MENU_GAME
 } MenuState;
 
@@ -19,8 +21,9 @@ typedef enum {
 typedef enum {
     MENU_START_GAME = 0,
     MENU_SHOW_OPTIONS = 1,
-    MENU_SHOW_CREDITS = 2,
-    MENU_TOTAL_OPTIONS = 3
+    MENU_SHOW_HIGH_SCORES = 2,
+    MENU_SHOW_CREDITS = 3,
+    MENU_TOTAL_OPTIONS = 4
 } MenuOption;
 
 // Resolution presets
@@ -55,6 +58,17 @@ typedef struct {
     FullscreenMode fullscreenMode;
     bool vsync;
     
+    // High scores options
+    int selectedDifficulty;  // 0=EASY, 1=NORMAL, 2=HARD, 3=INSANE
+    
+    // Name input for high scores
+    char playerName[32];
+    int nameLength;
+    int pendingScore;
+    int pendingDifficulty;
+    bool nameInputActive;
+    float nameInputBlink;
+    
     // Animation timers
     float animationTimer;
 } Menu;
@@ -68,7 +82,14 @@ void DrawOptions(Menu* menu);
 void DrawOptionsSound(Menu* menu);
 void DrawOptionsVideo(Menu* menu);
 void DrawOptionsGame(Menu* menu);
+void DrawHighScores(Menu* menu);
+void DrawNameInput(Menu* menu);
 void DrawCredits(const Menu* menu);
+
+// Name input functions
+void StartNameInput(Menu* menu, int score, int difficulty);
+bool IsNameInputActive(const Menu* menu);
+void FinishNameInput(Menu* menu);
 
 // Resolution management
 const Resolution* GetAvailableResolutions(int* count);

@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -I./include $(shell pkg-config --cflags raylib)
-LIBS = $(shell pkg-config --libs raylib) -lm
+LIBS = $(shell pkg-config --libs raylib) -lm -lsqlite3
 
 # Directories
 SRC_DIR = src
@@ -30,7 +30,8 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/powerup.c \
 			  $(SRC_DIR)/systems/menu.c
 
-UTIL_SRCS = $(SRC_DIR)/utils/logger.c
+UTIL_SRCS = $(SRC_DIR)/utils/logger.c \
+            $(SRC_DIR)/utils/database.c
 
 # Shared audio analysis utilities
 AUDIO_ANALYSIS_SRCS = $(SRC_DIR)/utils/audio_analysis.c
@@ -93,6 +94,10 @@ PLAYER_SHOWCASE_SRCS = $(SRC_DIR)/demo/player_ship_showcase.c \
 # Player sprite generator source files
 PLAYER_GEN_SRCS = $(SRC_DIR)/tools/generate_player_sprite.c
 
+# High score populator source files
+HIGHSCORE_POPULATOR_SRCS = $(SRC_DIR)/tools/populate_highscores.c \
+                           $(SRC_DIR)/utils/database.c
+
 # Powerup showcase source files
 POWERUP_SHOWCASE_SRCS = $(SRC_DIR)/demo/powerup_showcase.c \
                         $(SRC_DIR)/systems/powerup.c \
@@ -118,6 +123,7 @@ PLAYER_GEN_OBJS = $(PLAYER_GEN_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 POWERUP_SHOWCASE_OBJS = $(POWERUP_SHOWCASE_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 AUDIO_GUI_OBJS = $(AUDIO_GUI_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 AUDIO_CLI_OBJS = $(AUDIO_CLI_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
+HIGHSCORE_POPULATOR_OBJS = $(HIGHSCORE_POPULATOR_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # Executable names
 TARGET = $(BIN_DIR)/shootemup
@@ -132,6 +138,7 @@ PLAYER_GEN_TARGET = $(BIN_DIR)/generate_player_sprite
 POWERUP_SHOWCASE_TARGET = $(BIN_DIR)/powerup_showcase
 AUDIO_GUI_TARGET = $(BIN_DIR)/audio_analysis_gui
 AUDIO_CLI_TARGET = $(BIN_DIR)/audio_analysis_cli
+HIGHSCORE_POPULATOR_TARGET = $(BIN_DIR)/populate_highscores
 
 # Platform-specific settings
 UNAME_S := $(shell uname -s)
@@ -143,7 +150,7 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 # Default target - build all binaries
-all: directories $(TARGET) $(SHOWCASE_TARGET) $(SPRITE_SHOWCASE_TARGET) $(SPRITE_GEN_TARGET) $(SPACESHIP_GEN_TARGET) $(PROJECTILE_GEN_TARGET) $(PROJECTILE_SHOWCASE_TARGET) $(PLAYER_SHOWCASE_TARGET) $(PLAYER_GEN_TARGET) $(POWERUP_SHOWCASE_TARGET) $(AUDIO_GUI_TARGET) $(AUDIO_CLI_TARGET)
+all: directories $(TARGET) $(SHOWCASE_TARGET) $(SPRITE_SHOWCASE_TARGET) $(SPRITE_GEN_TARGET) $(SPACESHIP_GEN_TARGET) $(PROJECTILE_GEN_TARGET) $(PROJECTILE_SHOWCASE_TARGET) $(PLAYER_SHOWCASE_TARGET) $(PLAYER_GEN_TARGET) $(POWERUP_SHOWCASE_TARGET) $(AUDIO_GUI_TARGET) $(AUDIO_CLI_TARGET) $(HIGHSCORE_POPULATOR_TARGET)
 
 # Build only the main game
 game: directories $(TARGET)
@@ -206,6 +213,10 @@ $(AUDIO_GUI_TARGET): $(AUDIO_GUI_OBJS) $(AUDIO_ANALYSIS_OBJS)
 # Link the audio analysis CLI executable
 $(AUDIO_CLI_TARGET): $(AUDIO_CLI_OBJS) $(AUDIO_ANALYSIS_OBJS)
 	$(CC) $(AUDIO_CLI_OBJS) $(AUDIO_ANALYSIS_OBJS) -o $@ $(LIBS) -lm
+
+# Link the high score populator executable
+$(HIGHSCORE_POPULATOR_TARGET): $(HIGHSCORE_POPULATOR_OBJS)
+	$(CC) $(HIGHSCORE_POPULATOR_OBJS) -o $@ -lsqlite3
 
 # Compile source files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
@@ -293,6 +304,17 @@ audio_cli: directories $(AUDIO_CLI_TARGET)
 run_audio_cli: audio_cli
 	./$(AUDIO_CLI_TARGET)
 
+# Build high score populator
+populate_highscores: directories $(HIGHSCORE_POPULATOR_TARGET)
+
+# Run high score populator
+run_populate_highscores: populate_highscores
+	./$(HIGHSCORE_POPULATOR_TARGET)
+
+# Force populate (clear and repopulate)
+force_populate_highscores: populate_highscores
+	./$(HIGHSCORE_POPULATOR_TARGET) --force
+
 # Debug build
 debug: CFLAGS += -g -DDEBUG
 debug: all
@@ -326,6 +348,11 @@ help:
 	@echo "  audio_cli        - Build audio analysis CLI"
 	@echo "  run_audio_gui    - Build and run audio analysis GUI"
 	@echo "  run_audio_cli    - Build and run audio analysis CLI"
+	@echo ""
+	@echo "DATABASE TOOLS:"
+	@echo "  populate_highscores       - Build high score populator"
+	@echo "  run_populate_highscores   - Populate database with preset scores"
+	@echo "  force_populate_highscores - Clear and repopulate high scores"
 	@echo ""
 	@echo "GENERATOR TARGETS:"
 	@echo "  generate_sprites     - Generate enemy sprites"
@@ -379,4 +406,4 @@ clean-manual-all: clean-manual
 	@rm -f docs/USER_MANUAL.pdf docs/USER_MANUAL_SIMPLE.pdf
 	@echo "Manual PDFs removed."
 
-.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all
+.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all populate_highscores run_populate_highscores force_populate_highscores

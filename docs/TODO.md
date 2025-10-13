@@ -11,11 +11,13 @@
 
 ## 🖥️ Display & Graphics
 - [x] Allow configurable screen size
-  - [x] Add resolution options in settings
+  - [x] Add resolution options in settings (8 presets from 800x600 to 2560x1440)
   - [x] Maintain aspect ratio when resizing
+  - [x] Settings persisted in database
 - [x] Implement fullscreen mode toggle (F11 or Alt+Enter)
-- [x] Add windowed fullscreen option
+- [x] Add windowed fullscreen option (3 modes: Windowed, Borderless, Exclusive)
 - [x] Implement proper scaling for different resolutions
+- [x] VSync toggle option
 
 ## 🎨 Sprites & Visual Assets
 - [x] Create/add simple sprites
@@ -57,29 +59,49 @@
 
 ## 💾 Game Systems
 - [ ] Save/Load game state
-- [ ] High score system with leaderboard
+- [x] High score system with leaderboard
+  - [x] SQLite database for persistent storage
+  - [x] Top 10 scores per difficulty level
+  - [x] High scores menu screen with difficulty selector
+  - [x] Navigate between difficulties with LEFT/RIGHT arrows
+  - [x] Color-coded difficulty display (Green/Blue/Orange/Red)
+  - [x] Automatic schema migration for existing databases
+  - [x] Preset high scores with legendary game developers (40 entries)
+  - [x] Automatic population on first run
+  - [x] High score populator tool with force mode
+  - [x] Player name input dialog
+    - [x] Shows automatically when achieving a high score
+    - [x] Text input with blinking cursor
+    - [x] Character counter (max 31 characters)
+    - [x] Submit with ENTER, cancel with ESC
+- [x] User settings persistence
+  - [x] Audio settings (sound & music volume)
+  - [x] Video settings (resolution, fullscreen mode, vsync)
+  - [x] All settings saved to SQLite database
+  - [x] Automatic migration for legacy databases
 - [x] Statistics tracking (enemies killed, accuracy, time played)
 - [ ] Achievements/unlockables
 - [x] Pause menu with options
 
 ## ⚙️ Technical Improvements
 - [x] Implement entity pooling for better performance
-- [ ] Add configuration file (JSON/INI) for game settings
+- [x] Add database for persistent storage (SQLite)
 - [ ] Improve collision detection with spatial partitioning
 - [x] Add delta time for frame-independent movement
 - [x] Implement proper game states (Menu, Playing, Paused, GameOver)
 - [x] Add debug mode with additional information display
 
 ## 🎨 UI/UX Improvements
-- [-] Main menu screen
+- [x] Main menu screen
   - [x] Start game
-  - [x] Settings
-  - [ ] High scores
+  - [x] Settings (with submenus)
+  - [x] High scores
   - [x] Credits
-  - [ ] Exit
-- [-] Settings menu
-  - [ ] Graphics options
-  - [x] Audio options
+  - [x] Exit (ESC in main menu)
+- [x] Settings menu
+  - [x] Sound options submenu (with database persistence)
+  - [x] Video options submenu (resolution, fullscreen, vsync with database persistence)
+  - [ ] Game options submenu (placeholder for future options)
   - [ ] Control configuration
 - [ ] HUD improvements
   - [ ] Mini-map or radar

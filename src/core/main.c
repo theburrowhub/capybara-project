@@ -6,7 +6,9 @@
 #include "powerup.h"
 #include "renderer.h"
 #include "menu.h"
+#include "database.h"
 #include <math.h>
+#include <stdio.h>
 
 // Base resolution for game rendering
 #define BASE_WIDTH 1200
@@ -44,6 +46,11 @@ RenderScale CalculateRenderScale(int windowWidth, int windowHeight) {
 }
 
 int main(void) {
+    // Initialize database
+    if (!DB_Init()) {
+        fprintf(stderr, "Warning: Failed to initialize database. Settings and high scores will not be saved.\n");
+    }
+    
     // Initialize window with default resolution
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Shoot'em Up - Prototype");
@@ -67,10 +74,11 @@ int main(void) {
     Game game;
     bool gameInitialized = false;
     bool shouldQuit = false;
+    bool awaitingNameInput = false;
     
     // Main loop
     while (!WindowShouldClose() && !shouldQuit) {
-        if (gameState == MENU_GAME) {
+        if (gameState == MENU_GAME && !awaitingNameInput) {
             // Initialize game if not already done
             if (!gameInitialized) {
                 InitGame(&game);
@@ -90,11 +98,20 @@ int main(void) {
             
             // Check if player wants to return to menu (ESC key when game is over)
             if (game.gameOver && IsKeyPressed(KEY_ESCAPE)) {
-                CleanupGame(&game);
-                gameInitialized = false;
-                gameState = MENU_MAIN;
-                menu.currentState = MENU_MAIN;
-                menu.selectedOption = 0;
+                // Check if score qualifies as a high score (using NORMAL difficulty for now)
+                if (DB_IsHighScore(game.score, DIFFICULTY_NORMAL)) {
+                    // Show name input dialog
+                    StartNameInput(&menu, game.score, DIFFICULTY_NORMAL);
+                    awaitingNameInput = true;
+                    gameState = MENU_NAME_INPUT;
+                } else {
+                    // No high score, go directly to menu
+                    CleanupGame(&game);
+                    gameInitialized = false;
+                    gameState = MENU_MAIN;
+                    menu.currentState = MENU_MAIN;
+                    menu.selectedOption = 0;
+                }
             }
             
             // Render game to texture at base resolution
@@ -121,7 +138,23 @@ int main(void) {
             ClearBackground(BLACK);
             DrawTexturePro(gameRenderTarget.texture, scale.sourceRec, scale.destRec, 
                           (Vector2){0, 0}, 0.0f, WHITE);
+            
+            // Draw name input overlay if active
+            if (awaitingNameInput) {
+                DrawNameInput(&menu);
+            }
+            
             EndDrawing();
+            
+            // Handle name input completion
+            if (awaitingNameInput && !IsNameInputActive(&menu)) {
+                // Name input finished, cleanup and return to menu
+                CleanupGame(&game);
+                gameInitialized = false;
+                awaitingNameInput = false;
+                gameState = MENU_MAIN;
+                menu.currentState = MENU_MAIN;
+            }
         } else {
             // Check if we should quit (ESC in main menu)
             if (menu.currentState == MENU_MAIN && IsKeyPressed(KEY_ESCAPE)) {
@@ -144,6 +177,7 @@ int main(void) {
         CleanupGame(&game);
     }
     UnloadRenderTexture(gameRenderTarget);
+    DB_Cleanup();
     CloseWindow();
     
     return 0;

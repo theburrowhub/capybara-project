@@ -53,6 +53,7 @@ make run
 
 ## Controls
 
+### In-Game
 | Action | Keys |
 |--------|------|
 | Move | WASD / Arrow Keys |
@@ -60,7 +61,15 @@ make run
 | Pause | P |
 | Debug | H (show hitboxes) |
 | Restart | R (when game over) |
-| Exit | ESC |
+
+### Menu
+| Action | Keys |
+|--------|------|
+| Navigate | UP/DOWN or W/S |
+| Select | ENTER or SPACE |
+| Adjust | LEFT/RIGHT or A/D |
+| Back | ESC or BACKSPACE |
+| Quick Fullscreen | F11 or ALT+ENTER |
 
 ## Requirements
 
@@ -101,6 +110,18 @@ make showcase
 make run_audio_gui   # Audio analysis GUI
 make run_audio_cli   # Audio analysis CLI
 ```
+
+### High Score System
+**Complete high score system with personalization!**
+
+Features:
+- **Automatically populated** with 40 legendary game developers on first run
+- **Name input dialog** when you achieve a high score - personalize your entry!
+- **Navigate difficulties** with LEFT/RIGHT arrows to see all leaderboards
+- 10 scores per difficulty level (EASY, NORMAL, HARD, INSANE)
+- Based on gaming industry legends (Miyamoto, Kojima, Carmack, etc.)
+- Optional reset tool: `make force_populate_highscores`
+- See [High Scores Documentation](docs/HIGH_SCORES_PRESETS.md) | [Name Input Dialog](docs/NAME_INPUT_DIALOG.md)
 
 ## Debug Features
 

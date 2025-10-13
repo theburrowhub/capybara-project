@@ -1,5 +1,6 @@
 #include "menu.h"
 #include "constants.h"
+#include "database.h"
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
@@ -77,19 +78,61 @@ void InitMenu(Menu* menu) {
         menu->optionAlpha[i] = 0.8f;
     }
     
-    // Default audio options
-    menu->soundVolume = 1.0f;
-    menu->musicVolume = 0.5f;
+    // Initialize high scores options
+    menu->selectedDifficulty = 1;  // Start with NORMAL difficulty
     
-    // Default video options
-    menu->selectedResolution = 2; // 1200x600 by default
-    menu->fullscreenMode = FULLSCREEN_OFF;
-    menu->vsync = true;
+    // Initialize name input
+    menu->playerName[0] = '\0';
+    menu->nameLength = 0;
+    menu->pendingScore = 0;
+    menu->pendingDifficulty = 0;
+    menu->nameInputActive = false;
+    menu->nameInputBlink = 0.0f;
+    
+    // Load settings from database
+    UserSettings settings;
+    if (DB_LoadSettings(&settings)) {
+        menu->soundVolume = settings.soundVolume;
+        menu->musicVolume = settings.musicVolume;
+        menu->fullscreenMode = (FullscreenMode)settings.fullscreenMode;
+        menu->vsync = settings.vsync;
+        
+        // Find matching resolution index
+        int count = 0;
+        const Resolution* resolutions = GetAvailableResolutions(&count);
+        menu->selectedResolution = 2; // Default to 1200x600
+        for (int i = 0; i < count; i++) {
+            if (resolutions[i].width == settings.resolutionWidth && 
+                resolutions[i].height == settings.resolutionHeight) {
+                menu->selectedResolution = i;
+                break;
+            }
+        }
+        
+        // Apply loaded resolution
+        ApplyResolution(menu);
+        ApplyFullscreenMode(menu);
+        
+        // Apply VSync setting
+        if (menu->vsync) {
+            SetTargetFPS(60);
+        } else {
+            SetTargetFPS(0);
+        }
+    } else {
+        // Default options if loading fails
+        menu->soundVolume = 1.0f;
+        menu->musicVolume = 0.5f;
+        menu->fullscreenMode = FULLSCREEN_OFF;
+        menu->selectedResolution = 2; // 1200x600 by default
+        menu->vsync = true;
+    }
 }
 
 void UpdateMenu(Menu* menu, MenuState* gameState) {
     float deltaTime = GetFrameTime();
     menu->animationTimer += deltaTime;
+    menu->nameInputBlink += deltaTime * 2.0f;  // Blink cursor
     
     // Global hotkeys for fullscreen (F11 or Alt+Enter)
     if (IsKeyPressed(KEY_F11) || (IsKeyDown(KEY_LEFT_ALT) && IsKeyPressed(KEY_ENTER))) {
@@ -99,6 +142,22 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             menu->fullscreenMode = FULLSCREEN_EXCLUSIVE;
         }
         ApplyFullscreenMode(menu);
+        
+        // Save fullscreen mode change
+        int count = 0;
+        const Resolution* resolutions = GetAvailableResolutions(&count);
+        const Resolution* currentRes = &resolutions[menu->selectedResolution];
+        
+        UserSettings settings = {
+            .soundVolume = menu->soundVolume,
+            .musicVolume = menu->musicVolume,
+            .resolutionWidth = currentRes->width,
+            .resolutionHeight = currentRes->height,
+            .fullscreenMode = (int)menu->fullscreenMode,
+            .vsync = menu->vsync,
+            .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+        };
+        DB_SaveSettings(&settings);
     }
     
     // Update title bounce animation
@@ -136,6 +195,9 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                     case MENU_SHOW_OPTIONS:
                         menu->currentState = MENU_OPTIONS;
                         menu->selectedOption = 0;
+                        break;
+                    case MENU_SHOW_HIGH_SCORES:
+                        menu->currentState = MENU_HIGH_SCORES;
                         break;
                     case MENU_SHOW_CREDITS:
                         menu->currentState = MENU_CREDITS;
@@ -177,7 +239,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             }
             break;
             
-        case MENU_OPTIONS_SOUND:
+        case MENU_OPTIONS_SOUND: {
             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
                 menu->selectedOption--;
                 if (menu->selectedOption < 0) menu->selectedOption = 1;
@@ -187,77 +249,124 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 if (menu->selectedOption > 1) menu->selectedOption = 0;
             }
             
+            bool settingsChanged = false;
             if (menu->selectedOption == 0) {
                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
                     menu->soundVolume = fmaxf(0.0f, menu->soundVolume - 0.1f);
+                    settingsChanged = true;
                 }
                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
                     menu->soundVolume = fminf(1.0f, menu->soundVolume + 0.1f);
+                    settingsChanged = true;
                 }
             } else if (menu->selectedOption == 1) {
                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
                     menu->musicVolume = fmaxf(0.0f, menu->musicVolume - 0.1f);
+                    settingsChanged = true;
                 }
                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
                     menu->musicVolume = fminf(1.0f, menu->musicVolume + 0.1f);
+                    settingsChanged = true;
                 }
             }
+            
+             // Save audio settings to database when changed
+             if (settingsChanged) {
+                 int count = 0;
+                 const Resolution* resolutions = GetAvailableResolutions(&count);
+                 const Resolution* currentRes = &resolutions[menu->selectedResolution];
+                 
+                 UserSettings settings = {
+                     .soundVolume = menu->soundVolume,
+                     .musicVolume = menu->musicVolume,
+                     .resolutionWidth = currentRes->width,
+                     .resolutionHeight = currentRes->height,
+                     .fullscreenMode = (int)menu->fullscreenMode,
+                     .vsync = menu->vsync,
+                     .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+                 };
+                 DB_SaveSettings(&settings);
+             }
             
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
                 menu->currentState = MENU_OPTIONS;
                 menu->selectedOption = 0;
             }
             break;
+        }
             
-        case MENU_OPTIONS_VIDEO: {
-            int count = 0;
-            GetAvailableResolutions(&count);
-            
-            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
-                menu->selectedOption--;
-                if (menu->selectedOption < 0) menu->selectedOption = 2;
-            }
-            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
-                menu->selectedOption++;
-                if (menu->selectedOption > 2) menu->selectedOption = 0;
-            }
-            
-            if (menu->selectedOption == 0) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
-                    menu->selectedResolution--;
-                    if (menu->selectedResolution < 0) menu->selectedResolution = count - 1;
-                    ApplyResolution(menu);
-                }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
-                    menu->selectedResolution++;
-                    if (menu->selectedResolution >= count) menu->selectedResolution = 0;
-                    ApplyResolution(menu);
-                }
-            } else if (menu->selectedOption == 1) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
-                    int mode = (int)menu->fullscreenMode - 1;
-                    if (mode < 0) mode = 2;
-                    menu->fullscreenMode = (FullscreenMode)mode;
-                    ApplyFullscreenMode(menu);
-                }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
-                    int mode = (int)menu->fullscreenMode + 1;
-                    if (mode > 2) mode = 0;
-                    menu->fullscreenMode = (FullscreenMode)mode;
-                    ApplyFullscreenMode(menu);
-                }
-            } else if (menu->selectedOption == 2) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
-                    IsKeyPressed(KEY_A) || IsKeyPressed(KEY_D) ||
-                    IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
-                    menu->vsync = !menu->vsync;
-                    if (menu->vsync) {
-                        SetTargetFPS(60);
-                    } else {
-                        SetTargetFPS(0);
-                    }
-                }
-            }
+         case MENU_OPTIONS_VIDEO: {
+             int count = 0;
+             GetAvailableResolutions(&count);
+             
+             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+                 menu->selectedOption--;
+                 if (menu->selectedOption < 0) menu->selectedOption = 2;
+             }
+             if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+                 menu->selectedOption++;
+                 if (menu->selectedOption > 2) menu->selectedOption = 0;
+             }
+             
+             bool settingsChanged = false;
+             if (menu->selectedOption == 0) {
+                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                     menu->selectedResolution--;
+                     if (menu->selectedResolution < 0) menu->selectedResolution = count - 1;
+                     ApplyResolution(menu);
+                     settingsChanged = true;
+                 }
+                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                     menu->selectedResolution++;
+                     if (menu->selectedResolution >= count) menu->selectedResolution = 0;
+                     ApplyResolution(menu);
+                     settingsChanged = true;
+                 }
+             } else if (menu->selectedOption == 1) {
+                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                     int mode = (int)menu->fullscreenMode - 1;
+                     if (mode < 0) mode = 2;
+                     menu->fullscreenMode = (FullscreenMode)mode;
+                     ApplyFullscreenMode(menu);
+                     settingsChanged = true;
+                 }
+                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                     int mode = (int)menu->fullscreenMode + 1;
+                     if (mode > 2) mode = 0;
+                     menu->fullscreenMode = (FullscreenMode)mode;
+                     ApplyFullscreenMode(menu);
+                     settingsChanged = true;
+                 }
+             } else if (menu->selectedOption == 2) {
+                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
+                     IsKeyPressed(KEY_A) || IsKeyPressed(KEY_D) ||
+                     IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                     menu->vsync = !menu->vsync;
+                     if (menu->vsync) {
+                         SetTargetFPS(60);
+                     } else {
+                         SetTargetFPS(0);
+                     }
+                     settingsChanged = true;
+                 }
+             }
+             
+             // Save video settings to database when changed
+             if (settingsChanged) {
+                 const Resolution* resolutions = GetAvailableResolutions(&count);
+                 const Resolution* currentRes = &resolutions[menu->selectedResolution];
+                 
+                 UserSettings settings = {
+                     .soundVolume = menu->soundVolume,
+                     .musicVolume = menu->musicVolume,
+                     .resolutionWidth = currentRes->width,
+                     .resolutionHeight = currentRes->height,
+                     .fullscreenMode = (int)menu->fullscreenMode,
+                     .vsync = menu->vsync,
+                     .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+                 };
+                 DB_SaveSettings(&settings);
+             }
             
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
                 menu->currentState = MENU_OPTIONS;
@@ -272,6 +381,68 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 menu->selectedOption = 2;
             }
             break;
+            
+        case MENU_HIGH_SCORES:
+            // Navigate between difficulties with left/right arrows
+            if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                menu->selectedDifficulty--;
+                if (menu->selectedDifficulty < 0) {
+                    menu->selectedDifficulty = 3;  // Wrap to INSANE
+                }
+            }
+            if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                menu->selectedDifficulty++;
+                if (menu->selectedDifficulty > 3) {
+                    menu->selectedDifficulty = 0;  // Wrap to EASY
+                }
+            }
+            
+            // Go back with ESC, Backspace, Enter or Space
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
+                IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                menu->currentState = MENU_MAIN;
+                menu->selectedOption = MENU_SHOW_HIGH_SCORES;
+            }
+            break;
+            
+        case MENU_NAME_INPUT: {
+            // Handle text input
+            int key = GetCharPressed();
+            while (key > 0) {
+                // Only allow alphanumeric and some special characters
+                if ((key >= 32 && key <= 125) && menu->nameLength < 31) {
+                    menu->playerName[menu->nameLength] = (char)key;
+                    menu->nameLength++;
+                    menu->playerName[menu->nameLength] = '\0';
+                }
+                key = GetCharPressed();
+            }
+            
+            // Handle backspace
+            if (IsKeyPressed(KEY_BACKSPACE) && menu->nameLength > 0) {
+                menu->nameLength--;
+                menu->playerName[menu->nameLength] = '\0';
+            }
+            
+            // Submit name with Enter
+            if (IsKeyPressed(KEY_ENTER) && menu->nameLength > 0) {
+                FinishNameInput(menu);
+                menu->currentState = MENU_MAIN;
+                menu->selectedOption = MENU_SHOW_HIGH_SCORES;
+                *gameState = MENU_MAIN;
+            }
+            
+            // Cancel with ESC (use default name)
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                strcpy(menu->playerName, "Player");
+                menu->nameLength = 6;
+                FinishNameInput(menu);
+                menu->currentState = MENU_MAIN;
+                menu->selectedOption = 0;
+                *gameState = MENU_MAIN;
+            }
+            break;
+        }
             
         case MENU_CREDITS:
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
@@ -302,6 +473,12 @@ void DrawMenu(const Menu* menu) {
             break;
         case MENU_OPTIONS_GAME:
             DrawOptionsGame((Menu*)menu);
+            break;
+        case MENU_HIGH_SCORES:
+            DrawHighScores((Menu*)menu);
+            break;
+        case MENU_NAME_INPUT:
+            DrawNameInput((Menu*)menu);
             break;
         case MENU_CREDITS:
             DrawCredits(menu);
@@ -345,6 +522,7 @@ void DrawMainMenu(const Menu* menu) {
     const char* options[MENU_TOTAL_OPTIONS] = {
         "START",
         "SETTINGS",
+        "HIGH SCORES",
         "CREDITS"
     };
     
@@ -589,6 +767,132 @@ void DrawOptionsGame(Menu* menu) {
              screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
+void DrawHighScores(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Draw background
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
+                           (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
+    
+    // Draw title
+    const char* title = "HIGH SCORES";
+    int titleSize = 45;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, (screenWidth - titleWidth) / 2, 60, titleSize, WHITE);
+    
+    // Difficulty names and colors
+    const char* difficultyNames[] = {"EASY", "NORMAL", "HARD", "INSANE"};
+    Color difficultyColors[] = {
+        (Color){100, 255, 100, 255},  // Green for EASY
+        (Color){100, 200, 255, 255},  // Blue for NORMAL
+        (Color){255, 165, 0, 255},    // Orange for HARD
+        (Color){255, 50, 50, 255}     // Red for INSANE
+    };
+    
+    // Draw difficulty selector with arrows
+    const char* difficultyLabel = "Difficulty:";
+    int labelSize = 18;
+    int labelWidth = MeasureText(difficultyLabel, labelSize);
+    int difficultySize = 24;
+    const char* currentDifficulty = difficultyNames[menu->selectedDifficulty];
+    int difficultyWidth = MeasureText(currentDifficulty, difficultySize);
+    
+    int labelX = (screenWidth - labelWidth - 10 - difficultyWidth) / 2;
+    int difficultyX = labelX + labelWidth + 10;
+    int difficultyY = 115;
+    
+    // Draw label
+    DrawText(difficultyLabel, labelX, difficultyY + 3, labelSize, (Color){180, 180, 180, 255});
+    
+    // Draw difficulty with color and arrows
+    float arrowOffset = sinf(menu->animationTimer * 4.0f) * 3.0f;
+    DrawText("<", difficultyX - 30 - arrowOffset, difficultyY, difficultySize, WHITE);
+    DrawText(currentDifficulty, difficultyX, difficultyY, difficultySize, difficultyColors[menu->selectedDifficulty]);
+    DrawText(">", difficultyX + difficultyWidth + 10 + arrowOffset, difficultyY, difficultySize, WHITE);
+    
+    // Load high scores from database for selected difficulty
+    HighScoreEntry entries[10];
+    int count = 0;
+    
+    if (DB_GetHighScores((DifficultyLevel)menu->selectedDifficulty, entries, 10, &count)) {
+        if (count > 0) {
+            // Draw table header
+            int headerY = 170;
+            int headerSize = 20;
+            DrawText("RANK", 150, headerY, headerSize, YELLOW);
+            DrawText("PLAYER", 250, headerY, headerSize, YELLOW);
+            DrawText("SCORE", 600, headerY, headerSize, YELLOW);
+            
+            // Draw high scores
+            int entrySize = 18;
+            int entrySpacing = 35;
+            int startY = 210;
+            
+            for (int i = 0; i < count; i++) {
+                int y = startY + i * entrySpacing;
+                
+                // Rank
+                char rankText[8];
+                snprintf(rankText, sizeof(rankText), "%d.", i + 1);
+                DrawText(rankText, 150, y, entrySize, WHITE);
+                
+                // Player name
+                DrawText(entries[i].playerName, 250, y, entrySize, WHITE);
+                
+                // Score
+                char scoreText[32];
+                snprintf(scoreText, sizeof(scoreText), "%d", entries[i].score);
+                DrawText(scoreText, 600, y, entrySize, WHITE);
+                
+                // Animated glow for top 3
+                if (i < 3) {
+                    float alpha = sinf(menu->animationTimer * 2.0f + i) * 0.2f + 0.3f;
+                    Color glowColor;
+                    if (i == 0) glowColor = (Color){255, 215, 0, (int)(alpha * 255)};      // Gold
+                    else if (i == 1) glowColor = (Color){192, 192, 192, (int)(alpha * 255)}; // Silver
+                    else glowColor = (Color){205, 127, 50, (int)(alpha * 255)};            // Bronze
+                    
+                    DrawRectangle(140, y - 3, 600, entrySize + 6, glowColor);
+                    
+                    // Redraw text on top of glow
+                    DrawText(rankText, 150, y, entrySize, WHITE);
+                    DrawText(entries[i].playerName, 250, y, entrySize, WHITE);
+                    DrawText(scoreText, 600, y, entrySize, WHITE);
+                }
+            }
+        } else {
+            // No high scores yet
+            const char* emptyText = "No high scores yet. Start playing!";
+            int emptySize = 22;
+            int emptyWidth = MeasureText(emptyText, emptySize);
+            DrawText(emptyText, (screenWidth - emptyWidth) / 2, 
+                    screenHeight / 2, emptySize, (Color){150, 150, 150, 255});
+        }
+    } else {
+        // Error loading scores
+        const char* errorText = "Error loading high scores";
+        int errorSize = 20;
+        int errorWidth = MeasureText(errorText, errorSize);
+        DrawText(errorText, (screenWidth - errorWidth) / 2, 
+                screenHeight / 2, errorSize, RED);
+    }
+    
+    // Draw navigation instructions
+    const char* navText = "Use LEFT/RIGHT arrows to change difficulty";
+    int navSize = 14;
+    int navWidth = MeasureText(navText, navSize);
+    DrawText(navText, (screenWidth - navWidth) / 2, 
+             screenHeight - 80, navSize, (Color){100, 150, 255, 200});
+    
+    // Draw back instruction
+    const char* backText = "Press ESC or ENTER to go back";
+    int backSize = 16;
+    int backWidth = MeasureText(backText, backSize);
+    DrawText(backText, (screenWidth - backWidth) / 2, 
+             screenHeight - 50, backSize, (Color){150, 150, 150, 200});
+}
+
 void DrawCredits(const Menu* menu) {
     // Get screen dimensions
     int screenWidth = GetScreenWidth();
@@ -644,4 +948,133 @@ void DrawCredits(const Menu* menu) {
     int backWidth = MeasureText(backText, backSize);
     DrawText(backText, (screenWidth - backWidth) / 2, 
              screenHeight - 50, backSize, (Color){150, 150, 150, 200});
+}
+
+void DrawNameInput(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Draw semi-transparent overlay
+    DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 180});
+    
+    // Draw dialog box
+    int boxWidth = 500;
+    int boxHeight = 300;
+    int boxX = (screenWidth - boxWidth) / 2;
+    int boxY = (screenHeight - boxHeight) / 2;
+    
+    // Box shadow
+    DrawRectangle(boxX + 5, boxY + 5, boxWidth, boxHeight, (Color){0, 0, 0, 150});
+    
+    // Box background with border
+    DrawRectangle(boxX, boxY, boxWidth, boxHeight, (Color){20, 20, 40, 255});
+    DrawRectangleLines(boxX, boxY, boxWidth, boxHeight, (Color){100, 150, 255, 255});
+    DrawRectangleLines(boxX + 2, boxY + 2, boxWidth - 4, boxHeight - 4, (Color){60, 90, 180, 255});
+    
+    // Title
+    const char* title = "NEW HIGH SCORE!";
+    int titleSize = 36;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, boxX + (boxWidth - titleWidth) / 2, boxY + 30, titleSize, YELLOW);
+    
+    // Score display
+    char scoreText[64];
+    snprintf(scoreText, sizeof(scoreText), "Score: %d", menu->pendingScore);
+    int scoreSize = 24;
+    int scoreWidth = MeasureText(scoreText, scoreSize);
+    DrawText(scoreText, boxX + (boxWidth - scoreWidth) / 2, boxY + 80, scoreSize, WHITE);
+    
+    // Difficulty display
+    const char* diffNames[] = {"EASY", "NORMAL", "HARD", "INSANE"};
+    Color diffColors[] = {
+        (Color){100, 255, 100, 255},
+        (Color){100, 200, 255, 255},
+        (Color){255, 165, 0, 255},
+        (Color){255, 50, 50, 255}
+    };
+    
+    char diffText[64];
+    snprintf(diffText, sizeof(diffText), "Difficulty: %s", diffNames[menu->pendingDifficulty]);
+    int diffSize = 20;
+    int diffWidth = MeasureText(diffText, diffSize);
+    DrawText(diffText, boxX + (boxWidth - diffWidth) / 2, boxY + 110, 
+             diffSize, diffColors[menu->pendingDifficulty]);
+    
+    // Prompt
+    const char* prompt = "Enter your name:";
+    int promptSize = 20;
+    int promptWidth = MeasureText(prompt, promptSize);
+    DrawText(prompt, boxX + (boxWidth - promptWidth) / 2, boxY + 150, promptSize, 
+             (Color){200, 200, 200, 255});
+    
+    // Input box
+    int inputBoxWidth = 400;
+    int inputBoxHeight = 40;
+    int inputBoxX = boxX + (boxWidth - inputBoxWidth) / 2;
+    int inputBoxY = boxY + 180;
+    
+    DrawRectangle(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight, (Color){10, 10, 20, 255});
+    DrawRectangleLines(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight, WHITE);
+    
+    // Name text
+    int nameSize = 24;
+    int nameY = inputBoxY + (inputBoxHeight - nameSize) / 2;
+    DrawText(menu->playerName, inputBoxX + 10, nameY, nameSize, WHITE);
+    
+    // Blinking cursor
+    if (menu->nameLength < 31) {
+        float blinkAlpha = (sinf(menu->nameInputBlink) + 1.0f) / 2.0f;
+        int cursorX = inputBoxX + 10 + MeasureText(menu->playerName, nameSize);
+        DrawText("_", cursorX, nameY, nameSize, (Color){255, 255, 255, (int)(blinkAlpha * 255)});
+    }
+    
+    // Character count
+    char countText[16];
+    snprintf(countText, sizeof(countText), "%d/31", menu->nameLength);
+    int countSize = 14;
+    int countWidth = MeasureText(countText, countSize);
+    DrawText(countText, inputBoxX + inputBoxWidth - countWidth - 10, inputBoxY + inputBoxHeight + 5, 
+             countSize, (Color){150, 150, 150, 255});
+    
+    // Instructions
+    const char* instruction1 = "Press ENTER to save";
+    const char* instruction2 = "Press ESC to use default name";
+    int instrSize = 16;
+    
+    int instr1Width = MeasureText(instruction1, instrSize);
+    int instr2Width = MeasureText(instruction2, instrSize);
+    
+    Color enterColor = menu->nameLength > 0 ? (Color){100, 255, 100, 255} : (Color){100, 100, 100, 255};
+    DrawText(instruction1, boxX + (boxWidth - instr1Width) / 2, boxY + boxHeight - 60, 
+             instrSize, enterColor);
+    DrawText(instruction2, boxX + (boxWidth - instr2Width) / 2, boxY + boxHeight - 35, 
+             instrSize, (Color){150, 150, 150, 200});
+}
+
+// Name input management functions
+void StartNameInput(Menu* menu, int score, int difficulty) {
+    menu->currentState = MENU_NAME_INPUT;
+    menu->nameInputActive = true;
+    menu->pendingScore = score;
+    menu->pendingDifficulty = difficulty;
+    menu->playerName[0] = '\0';
+    menu->nameLength = 0;
+    menu->nameInputBlink = 0.0f;
+}
+
+bool IsNameInputActive(const Menu* menu) {
+    return menu->nameInputActive;
+}
+
+void FinishNameInput(Menu* menu) {
+    if (menu->nameInputActive && menu->nameLength > 0) {
+        // Save high score with entered name
+        DB_AddHighScore(menu->playerName, menu->pendingScore, (DifficultyLevel)menu->pendingDifficulty);
+        printf("High score saved: %s - %d pts (Difficulty: %d)\n", 
+               menu->playerName, menu->pendingScore, menu->pendingDifficulty);
+    }
+    
+    menu->nameInputActive = false;
+    menu->pendingScore = 0;
+    menu->pendingDifficulty = 0;
 }
