@@ -1,106 +1,145 @@
 # Documentation Index
 
-Welcome to the Capybara Shoot'em Up documentation!
-
-## 📖 Documentation Overview
-
-### Getting Started
-- **[USER MANUAL (PDF)](USER_MANUAL.pdf)** - 📖 Complete illustrated player guide (compile with `make manual`)
-- **[BUILD.md](BUILD.md)** - Installation, compilation, and platform-specific setup
-- **[GAMEPLAY.md](GAMEPLAY.md)** - How to play, controls, and game mechanics
-
-### Game Content
-- **[LEVEL_SYSTEM.md](LEVEL_SYSTEM.md)** - 🎵 Multiple levels with unique music and wave plans
-- **[LEVEL1_PHASES.md](LEVEL1_PHASES.md)** - 🎓 Level 1 complete phase guide and design
-- **[LEVEL2_PHASES.md](LEVEL2_PHASES.md)** - 🔥 Level 2 complete phase guide and design
-- **[ENEMIES_AND_SPRITES.md](ENEMIES_AND_SPRITES.md)** - All 10 enemy types, behaviors, and sprite designs
-- **[WEAPONS_AND_DAMAGE.md](WEAPONS_AND_DAMAGE.md)** - Comprehensive weapon systems, damage mechanics, projectile types, and combat
-- **[POWERUPS.md](POWERUPS.md)** - ⭐ Complete powerup system with types, drop mechanics, visual design, and integration
-- **[PLAYER_SHIP.md](PLAYER_SHIP.md)** - Player ship design, systems, and capabilities
-- **[ENERGY_MODE_SYSTEM.md](ENERGY_MODE_SYSTEM.md)** - Offensive/Defensive energy modes and special abilities
-
-### Technical Documentation
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Project structure, design patterns, and module organization
-- **[API.md](API.md)** - Complete API reference for all modules and functions
-- **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** - 💾 SQLite database schema, settings, and high scores
-- **[HIGH_SCORES_PRESETS.md](HIGH_SCORES_PRESETS.md)** - 🏆 Legendary developer high score presets
-- **[HIGH_SCORES_UI.md](HIGH_SCORES_UI.md)** - 🎮 High scores menu interface and navigation
-- **[NAME_INPUT_DIALOG.md](NAME_INPUT_DIALOG.md)** - 💬 Name input dialog for high scores
-
-### Development & Tools
-- **[ENEMY_TEST_ARENA.md](ENEMY_TEST_ARENA.md)** - Interactive enemy testing showcase
-- **[DEBUG_FEATURES.md](DEBUG_FEATURES.md)** - Testing tools, debug modes, and development utilities
-- **[AUDIO_ANALYZER.md](AUDIO_ANALYZER.md)** - Audio analyzer with bass detection and configuration
-- **[HIGH_SCORES_PRESETS.md](HIGH_SCORES_PRESETS.md)** - Tool to populate database with legendary developer scores
-- **[TODO.md](TODO.md)** - Roadmap and planned features
+Complete documentation for Capybara Shoot'em Up.
 
 ## 🚀 Quick Links
 
-### For Players
-1. Start with [BUILD.md](BUILD.md) to compile the game
-2. Read [GAMEPLAY.md](GAMEPLAY.md) to learn the controls
-3. Check [ENEMIES_AND_SPRITES.md](ENEMIES_AND_SPRITES.md) to understand enemy types
+| Need | Read This |
+|------|-----------|
+| **Create a release** | [RELEASES.md](../RELEASES.md) - Quick reference |
+| **CI/CD complete guide** | [CI_CD_COMPLETE_GUIDE.md](CI_CD_COMPLETE_GUIDE.md) - Everything about releases and automation |
+| **Build locally** | [BUILD.md](BUILD.md) or [BUILDING.md](../BUILDING.md) |
+| **Learn gameplay** | [GAMEPLAY.md](GAMEPLAY.md) |
 
-### For Developers
-1. Review [ARCHITECTURE.md](ARCHITECTURE.md) for project structure
-2. Consult [API.md](API.md) for function references
-3. Use [DEBUG_FEATURES.md](DEBUG_FEATURES.md) for testing tools
-4. See [TODO.md](TODO.md) for contribution opportunities
+## 📖 Documentation Structure
 
-## 📁 Project Structure
+### Getting Started
+- **[README.md](../README.md)** - Project overview and quick start
+- **[RELEASES.md](../RELEASES.md)** - Quick guide to creating releases
+- **[BUILDING.md](../BUILDING.md)** - Building the game locally
+
+### CI/CD & Version Management
+- **[CI_CD_COMPLETE_GUIDE.md](CI_CD_COMPLETE_GUIDE.md)** - Complete CI/CD documentation
+  - Quick start
+  - Creating releases (alpha, beta, stable)
+  - Commitizen version management
+  - Workflows explained
+  - Building locally
+  - Troubleshooting
+  - Reference
+
+### Game Development
+- **[BUILD.md](BUILD.md)** - Detailed build instructions
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** - Project structure and design
+- **[API.md](API.md)** - Module interfaces and functions
+- **[DEBUG_FEATURES.md](DEBUG_FEATURES.md)** - Testing tools and debug modes
+- **[TODO.md](TODO.md)** - Planned features
+
+### Game Content
+- **[GAMEPLAY.md](GAMEPLAY.md)** - Controls, mechanics, and strategies
+- **[LEVEL_SYSTEM.md](LEVEL_SYSTEM.md)** - Multiple levels system
+- **[ENEMIES_AND_SPRITES.md](ENEMIES_AND_SPRITES.md)** - All 10 enemy types
+- **[WEAPONS_AND_DAMAGE.md](WEAPONS_AND_DAMAGE.md)** - Weapon systems and damage
+- **[POWERUPS.md](POWERUPS.md)** - 4 powerup types
+- **[PLAYER_SHIP.md](PLAYER_SHIP.md)** - Player ship mechanics
+- **[ENERGY_MODE_SYSTEM.md](ENERGY_MODE_SYSTEM.md)** - Energy modes
+
+### Specific Features
+- **[LEVEL1_PHASES.md](LEVEL1_PHASES.md)** - Level 1 wave progression
+- **[LEVEL2_PHASES.md](LEVEL2_PHASES.md)** - Level 2 wave progression
+- **[INTERLEVEL_TRANSITION.md](INTERLEVEL_TRANSITION.md)** - Between levels
+- **[HIGH_SCORES_UI.md](HIGH_SCORES_UI.md)** - High score system
+- **[HIGH_SCORES_PRESETS.md](HIGH_SCORES_PRESETS.md)** - Preset high scores
+- **[NAME_INPUT_DIALOG.md](NAME_INPUT_DIALOG.md)** - Name entry
+- **[AUDIO_ANALYZER.md](AUDIO_ANALYZER.md)** - Audio analysis tools
+- **[ENEMY_TEST_ARENA.md](ENEMY_TEST_ARENA.md)** - Enemy testing
+
+### User Documentation
+- **[USER_MANUAL.pdf](USER_MANUAL.pdf)** - Complete user manual (PDF)
+- **[USER_MANUAL_README.md](USER_MANUAL_README.md)** - About the manual
+- **[USER_MANUAL.tex](USER_MANUAL.tex)** - LaTeX source (full)
+- **[USER_MANUAL_SIMPLE.tex](USER_MANUAL_SIMPLE.tex)** - LaTeX source (simple)
+
+### Database
+- **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** - Database structure
+- **[RESUMEN_DB_HIGHSCORES.md](../RESUMEN_DB_HIGHSCORES.md)** - High scores DB summary
+
+## 🎯 Common Tasks
+
+### I want to create a release
+1. **Quick**: [RELEASES.md](../RELEASES.md)
+2. **Detailed**: [CI_CD_COMPLETE_GUIDE.md](CI_CD_COMPLETE_GUIDE.md) → "Creating Releases"
+
+### I want to build locally
+1. **Quick**: `make` or `./build_static.sh`
+2. **Guide**: [BUILD.md](BUILD.md) or [BUILDING.md](../BUILDING.md)
+
+### I want to understand the code
+1. **Architecture**: [ARCHITECTURE.md](ARCHITECTURE.md)
+2. **API**: [API.md](API.md)
+
+### I want to add a feature
+1. **Architecture**: [ARCHITECTURE.md](ARCHITECTURE.md)
+2. **TODO**: [TODO.md](TODO.md)
+3. **Debug**: [DEBUG_FEATURES.md](DEBUG_FEATURES.md)
+
+### I want to understand gameplay
+1. **Gameplay**: [GAMEPLAY.md](GAMEPLAY.md)
+2. **Enemies**: [ENEMIES_AND_SPRITES.md](ENEMIES_AND_SPRITES.md)
+3. **Weapons**: [WEAPONS_AND_DAMAGE.md](WEAPONS_AND_DAMAGE.md)
+
+## 📁 Documentation Organization
 
 ```
-capybara-project/
-├── docs/           # This documentation
-├── src/            # Source code
-│   ├── core/      # Main game loop
-│   ├── entities/  # Game objects
-│   ├── systems/   # Game systems
-│   └── utils/     # Utilities
-├── include/        # Header files
-├── assets/         # Sprites and resources
-├── bin/           # Compiled executable
-└── build/         # Build artifacts
+docs/
+├── INDEX.md (this file)
+│
+├── CI/CD & Releases
+│   └── CI_CD_COMPLETE_GUIDE.md
+│
+├── Building & Development
+│   ├── BUILD.md
+│   ├── ARCHITECTURE.md
+│   ├── API.md
+│   └── DEBUG_FEATURES.md
+│
+├── Game Content
+│   ├── GAMEPLAY.md
+│   ├── LEVEL_SYSTEM.md
+│   ├── ENEMIES_AND_SPRITES.md
+│   ├── WEAPONS_AND_DAMAGE.md
+│   ├── POWERUPS.md
+│   └── ...
+│
+└── User Manual
+    ├── USER_MANUAL.pdf
+    └── USER_MANUAL_*.tex
 ```
 
-## 🎮 Game Features
+## 🆕 Consolidated Documentation
 
-- **🎵 Multiple Levels**: 2 levels (extensible) with unique music tracks and wave plans
-- **Bass-Driven Gameplay**: Enemy waves sync with music bass patterns
-- **10 Enemy Types**: Each with unique behaviors and attack patterns
-- **4 Projectile Types**: Laser, Plasma, Missile, and Energy Orb
-- **⭐ Powerup System**: 4 types (energy, shield, hull, weapon) with smart drop mechanics
-- **🏆 High Score System**: SQLite database with top 10 per difficulty + legendary developer presets
-- **⚙️ Persistent Settings**: Video options (resolution, fullscreen, vsync) and audio saved to database
-- **Music-Reactive Spawning**: Difficulty adapts to audio intensity in real-time
-- **Epic Boss Battles**: Strategic boss encounters at musical climaxes
-- **Dynamic Difficulty**: Progressive scaling synchronized with audio
-- **Sprite System**: Both abstract and spaceship designs
-- **Debug Mode**: Invulnerability, phase selection, pause, and hitbox visualization
+All CI/CD documentation has been consolidated into [CI_CD_COMPLETE_GUIDE.md](CI_CD_COMPLETE_GUIDE.md):
+- CI/CD setup and configuration
+- Commitizen usage and workflows
+- Version management
+- Release processes
+- Workflow triggers
+- Troubleshooting
 
-## 🛠️ Building the Game
+**Result**: One comprehensive guide instead of multiple separate files.
 
-```bash
-# Quick build
-make
+## 📝 Contributing to Documentation
 
-# Run the game
-./bin/shootemup
-
-# Populate high scores with legendary developers
-make run_populate_highscores
-
-# View enemy showcase
-make showcase
-
-# View sprite showcase
-make showcase_sprites
-```
-
-## 📝 Contributing
-
-The modular architecture makes it easy to extend the game. Check the [TODO.md](TODO.md) for planned features and the [API.md](API.md) for implementation details.
+When updating documentation:
+1. Keep related info in the same file
+2. Update INDEX.md if adding new docs
+3. Link between related documents
+4. Remove outdated information instead of duplicating
 
 ---
 
-Return to [Main README](../README.md)
+**Most Popular Documents:**
+1. [CI_CD_COMPLETE_GUIDE.md](CI_CD_COMPLETE_GUIDE.md) - For releases
+2. [GAMEPLAY.md](GAMEPLAY.md) - For players
+3. [BUILD.md](BUILD.md) - For developers
+4. [ARCHITECTURE.md](ARCHITECTURE.md) - For contributors

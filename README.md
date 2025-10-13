@@ -23,6 +23,9 @@ Complete documentation is available in the [`docs/`](docs/INDEX.md) folder:
 - [Debug Features](docs/DEBUG_FEATURES.md) - Testing tools and debug modes
 - [TODO List](docs/TODO.md) - Planned features and improvements
 
+### CI/CD & Releases
+- [Complete CI/CD Guide](docs/CI_CD_COMPLETE_GUIDE.md) - Version management, releases, and automation
+
 ## Quick Start
 
 ```bash
@@ -39,6 +42,45 @@ make run
 # For advanced debugging (invulnerability, phase selection, etc.)
 ./run_debug_game.sh --help
 ```
+
+## 🚀 Creating Releases
+
+Multi-platform releases (Linux, macOS, Windows) are automated via GitHub Actions.
+
+### Quick Release
+
+```bash
+# 1. Install commitizen
+make cz-install
+
+# 2. Make commits (conventional format)
+make cz-commit
+
+# 3. Create release
+make cz-alpha     # Alpha: v1.0.0-alpha.0
+# or
+make cz-beta      # Beta: v1.0.0-beta.0
+# or
+make cz-release   # Stable: v1.0.0
+
+# 4. Push to trigger CI/CD
+git push origin main
+git push --tags
+
+# → Builds for Linux, macOS, Windows (~15 min)
+# → Check: https://github.com/YOUR_USERNAME/capybara-project/releases
+```
+
+### Release Commands
+
+| Command | Purpose | Example |
+|---------|---------|---------|
+| `make cz-alpha` | Create alpha release | v1.0.0-alpha.0 |
+| `make cz-beta` | Create beta release | v1.0.0-beta.0 |
+| `make cz-rc` | Create release candidate | v1.0.0-rc.0 |
+| `make cz-release` | Create stable release | v1.0.0 |
+
+**Complete guide**: [docs/CI_CD_COMPLETE_GUIDE.md](docs/CI_CD_COMPLETE_GUIDE.md)
 
 ## Key Features
 
