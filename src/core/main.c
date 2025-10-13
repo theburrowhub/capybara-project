@@ -74,10 +74,11 @@ int main(void) {
     Game game;
     bool gameInitialized = false;
     bool shouldQuit = false;
+    bool awaitingNameInput = false;
     
     // Main loop
     while (!WindowShouldClose() && !shouldQuit) {
-        if (gameState == MENU_GAME) {
+        if (gameState == MENU_GAME && !awaitingNameInput) {
             // Initialize game if not already done
             if (!gameInitialized) {
                 InitGame(&game);
@@ -97,18 +98,20 @@ int main(void) {
             
             // Check if player wants to return to menu (ESC key when game is over)
             if (game.gameOver && IsKeyPressed(KEY_ESCAPE)) {
-                // Save high score if it qualifies (using NORMAL difficulty for now)
+                // Check if score qualifies as a high score (using NORMAL difficulty for now)
                 if (DB_IsHighScore(game.score, DIFFICULTY_NORMAL)) {
-                    // For now, use a default player name
-                    // TODO: In the future, implement a name input dialog
-                    DB_AddHighScore("Player", game.score, DIFFICULTY_NORMAL);
+                    // Show name input dialog
+                    StartNameInput(&menu, game.score, DIFFICULTY_NORMAL);
+                    awaitingNameInput = true;
+                    gameState = MENU_NAME_INPUT;
+                } else {
+                    // No high score, go directly to menu
+                    CleanupGame(&game);
+                    gameInitialized = false;
+                    gameState = MENU_MAIN;
+                    menu.currentState = MENU_MAIN;
+                    menu.selectedOption = 0;
                 }
-                
-                CleanupGame(&game);
-                gameInitialized = false;
-                gameState = MENU_MAIN;
-                menu.currentState = MENU_MAIN;
-                menu.selectedOption = 0;
             }
             
             // Render game to texture at base resolution
@@ -135,7 +138,23 @@ int main(void) {
             ClearBackground(BLACK);
             DrawTexturePro(gameRenderTarget.texture, scale.sourceRec, scale.destRec, 
                           (Vector2){0, 0}, 0.0f, WHITE);
+            
+            // Draw name input overlay if active
+            if (awaitingNameInput) {
+                DrawNameInput(&menu);
+            }
+            
             EndDrawing();
+            
+            // Handle name input completion
+            if (awaitingNameInput && !IsNameInputActive(&menu)) {
+                // Name input finished, cleanup and return to menu
+                CleanupGame(&game);
+                gameInitialized = false;
+                awaitingNameInput = false;
+                gameState = MENU_MAIN;
+                menu.currentState = MENU_MAIN;
+            }
         } else {
             // Check if we should quit (ESC in main menu)
             if (menu.currentState == MENU_MAIN && IsKeyPressed(KEY_ESCAPE)) {

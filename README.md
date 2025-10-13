@@ -111,13 +111,17 @@ make run_audio_gui   # Audio analysis GUI
 make run_audio_cli   # Audio analysis CLI
 ```
 
-### High Score Presets
-**Automatically populated!** The game includes preset scores from 40 legendary game developers:
-- Populated automatically on first run - no setup needed!
+### High Score System
+**Complete high score system with personalization!**
+
+Features:
+- **Automatically populated** with 40 legendary game developers on first run
+- **Name input dialog** when you achieve a high score - personalize your entry!
+- **Navigate difficulties** with LEFT/RIGHT arrows to see all leaderboards
 - 10 scores per difficulty level (EASY, NORMAL, HARD, INSANE)
 - Based on gaming industry legends (Miyamoto, Kojima, Carmack, etc.)
 - Optional reset tool: `make force_populate_highscores`
-- See [High Scores Presets Documentation](docs/HIGH_SCORES_PRESETS.md)
+- See [High Scores Documentation](docs/HIGH_SCORES_PRESETS.md) | [Name Input Dialog](docs/NAME_INPUT_DIALOG.md)
 
 ## Debug Features
 

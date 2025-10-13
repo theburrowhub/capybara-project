@@ -13,6 +13,7 @@ typedef enum {
     MENU_OPTIONS_GAME,
     MENU_CREDITS,
     MENU_HIGH_SCORES,
+    MENU_NAME_INPUT,
     MENU_GAME
 } MenuState;
 
@@ -60,6 +61,14 @@ typedef struct {
     // High scores options
     int selectedDifficulty;  // 0=EASY, 1=NORMAL, 2=HARD, 3=INSANE
     
+    // Name input for high scores
+    char playerName[32];
+    int nameLength;
+    int pendingScore;
+    int pendingDifficulty;
+    bool nameInputActive;
+    float nameInputBlink;
+    
     // Animation timers
     float animationTimer;
 } Menu;
@@ -74,7 +83,13 @@ void DrawOptionsSound(Menu* menu);
 void DrawOptionsVideo(Menu* menu);
 void DrawOptionsGame(Menu* menu);
 void DrawHighScores(Menu* menu);
+void DrawNameInput(Menu* menu);
 void DrawCredits(const Menu* menu);
+
+// Name input functions
+void StartNameInput(Menu* menu, int score, int difficulty);
+bool IsNameInputActive(const Menu* menu);
+void FinishNameInput(Menu* menu);
 
 // Resolution management
 const Resolution* GetAvailableResolutions(int* count);

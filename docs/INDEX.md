@@ -25,6 +25,7 @@ Welcome to the Capybara Shoot'em Up documentation!
 - **[DATABASE_SCHEMA.md](DATABASE_SCHEMA.md)** - 💾 SQLite database schema, settings, and high scores
 - **[HIGH_SCORES_PRESETS.md](HIGH_SCORES_PRESETS.md)** - 🏆 Legendary developer high score presets
 - **[HIGH_SCORES_UI.md](HIGH_SCORES_UI.md)** - 🎮 High scores menu interface and navigation
+- **[NAME_INPUT_DIALOG.md](NAME_INPUT_DIALOG.md)** - 💬 Name input dialog for high scores
 
 ### Development & Tools
 - **[ENEMY_TEST_ARENA.md](ENEMY_TEST_ARENA.md)** - Interactive enemy testing showcase

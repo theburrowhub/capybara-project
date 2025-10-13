@@ -81,20 +81,46 @@ RANK    PLAYER          SCORE
 
 When a player finishes a game:
 1. Game checks if their score qualifies as a high score
-2. If yes, automatically saves to database (currently as "Player")
-3. Score appears in the appropriate difficulty level
-4. Lowest score is removed if more than 10 entries exist
-5. Player can immediately see their ranking
+2. If yes, **shows name input dialog** over the game screen
+3. Player enters their name (up to 31 characters)
+4. Press ENTER to save or ESC to use default "Player" name
+5. Score is saved to database with the entered name
+6. Score appears in the appropriate difficulty level
+7. Lowest score is removed if more than 10 entries exist
+8. Player returns to main menu and can view their ranking
+
+### 💬 Name Input Dialog
+
+**Visual Design:**
+- Semi-transparent overlay over game screen
+- Centered dialog box with border effects
+- Shows: "NEW HIGH SCORE!" in yellow
+- Displays achieved score and difficulty (color-coded)
+- Text input field with blinking cursor
+- Character counter (31 max)
+
+**Controls:**
+- Type any alphanumeric characters and symbols
+- BACKSPACE to delete characters
+- ENTER to submit (requires at least 1 character)
+- ESC to cancel and use default "Player" name
+
+**Features:**
+- Prevents submission of empty names
+- Visual feedback: ENTER button shows green when name is valid
+- Cursor blinks smoothly for better UX
+- Input field adapts to different screen sizes
 
 ### 🔮 Future Enhancements
 
 Planned improvements:
-- [ ] Player name input dialog for personalized scores
-- [ ] Difficulty selector in main game menu
+- [ ] Difficulty selector in main game menu (currently fixed to NORMAL)
 - [ ] Achievement indicators (beat specific developers)
 - [ ] Filter by date range
 - [ ] Export leaderboard to file
 - [ ] Online leaderboard integration
+- [ ] Name validation (profanity filter)
+- [ ] Save last used name as default suggestion
 
 ## Technical Implementation
 

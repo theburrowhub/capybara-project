@@ -69,7 +69,11 @@
   - [x] Preset high scores with legendary game developers (40 entries)
   - [x] Automatic population on first run
   - [x] High score populator tool with force mode
-  - [ ] Player name input dialog
+  - [x] Player name input dialog
+    - [x] Shows automatically when achieving a high score
+    - [x] Text input with blinking cursor
+    - [x] Character counter (max 31 characters)
+    - [x] Submit with ENTER, cancel with ESC
 - [x] User settings persistence
   - [x] Audio settings (sound & music volume)
   - [x] Video settings (resolution, fullscreen mode, vsync)

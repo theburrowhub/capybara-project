@@ -81,6 +81,14 @@ void InitMenu(Menu* menu) {
     // Initialize high scores options
     menu->selectedDifficulty = 1;  // Start with NORMAL difficulty
     
+    // Initialize name input
+    menu->playerName[0] = '\0';
+    menu->nameLength = 0;
+    menu->pendingScore = 0;
+    menu->pendingDifficulty = 0;
+    menu->nameInputActive = false;
+    menu->nameInputBlink = 0.0f;
+    
     // Load settings from database
     UserSettings settings;
     if (DB_LoadSettings(&settings)) {
@@ -124,6 +132,7 @@ void InitMenu(Menu* menu) {
 void UpdateMenu(Menu* menu, MenuState* gameState) {
     float deltaTime = GetFrameTime();
     menu->animationTimer += deltaTime;
+    menu->nameInputBlink += deltaTime * 2.0f;  // Blink cursor
     
     // Global hotkeys for fullscreen (F11 or Alt+Enter)
     if (IsKeyPressed(KEY_F11) || (IsKeyDown(KEY_LEFT_ALT) && IsKeyPressed(KEY_ENTER))) {
@@ -396,6 +405,45 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             }
             break;
             
+        case MENU_NAME_INPUT: {
+            // Handle text input
+            int key = GetCharPressed();
+            while (key > 0) {
+                // Only allow alphanumeric and some special characters
+                if ((key >= 32 && key <= 125) && menu->nameLength < 31) {
+                    menu->playerName[menu->nameLength] = (char)key;
+                    menu->nameLength++;
+                    menu->playerName[menu->nameLength] = '\0';
+                }
+                key = GetCharPressed();
+            }
+            
+            // Handle backspace
+            if (IsKeyPressed(KEY_BACKSPACE) && menu->nameLength > 0) {
+                menu->nameLength--;
+                menu->playerName[menu->nameLength] = '\0';
+            }
+            
+            // Submit name with Enter
+            if (IsKeyPressed(KEY_ENTER) && menu->nameLength > 0) {
+                FinishNameInput(menu);
+                menu->currentState = MENU_MAIN;
+                menu->selectedOption = MENU_SHOW_HIGH_SCORES;
+                *gameState = MENU_MAIN;
+            }
+            
+            // Cancel with ESC (use default name)
+            if (IsKeyPressed(KEY_ESCAPE)) {
+                strcpy(menu->playerName, "Player");
+                menu->nameLength = 6;
+                FinishNameInput(menu);
+                menu->currentState = MENU_MAIN;
+                menu->selectedOption = 0;
+                *gameState = MENU_MAIN;
+            }
+            break;
+        }
+            
         case MENU_CREDITS:
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
                 IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
@@ -428,6 +476,9 @@ void DrawMenu(const Menu* menu) {
             break;
         case MENU_HIGH_SCORES:
             DrawHighScores((Menu*)menu);
+            break;
+        case MENU_NAME_INPUT:
+            DrawNameInput((Menu*)menu);
             break;
         case MENU_CREDITS:
             DrawCredits(menu);
@@ -897,4 +948,133 @@ void DrawCredits(const Menu* menu) {
     int backWidth = MeasureText(backText, backSize);
     DrawText(backText, (screenWidth - backWidth) / 2, 
              screenHeight - 50, backSize, (Color){150, 150, 150, 200});
+}
+
+void DrawNameInput(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Draw semi-transparent overlay
+    DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 180});
+    
+    // Draw dialog box
+    int boxWidth = 500;
+    int boxHeight = 300;
+    int boxX = (screenWidth - boxWidth) / 2;
+    int boxY = (screenHeight - boxHeight) / 2;
+    
+    // Box shadow
+    DrawRectangle(boxX + 5, boxY + 5, boxWidth, boxHeight, (Color){0, 0, 0, 150});
+    
+    // Box background with border
+    DrawRectangle(boxX, boxY, boxWidth, boxHeight, (Color){20, 20, 40, 255});
+    DrawRectangleLines(boxX, boxY, boxWidth, boxHeight, (Color){100, 150, 255, 255});
+    DrawRectangleLines(boxX + 2, boxY + 2, boxWidth - 4, boxHeight - 4, (Color){60, 90, 180, 255});
+    
+    // Title
+    const char* title = "NEW HIGH SCORE!";
+    int titleSize = 36;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, boxX + (boxWidth - titleWidth) / 2, boxY + 30, titleSize, YELLOW);
+    
+    // Score display
+    char scoreText[64];
+    snprintf(scoreText, sizeof(scoreText), "Score: %d", menu->pendingScore);
+    int scoreSize = 24;
+    int scoreWidth = MeasureText(scoreText, scoreSize);
+    DrawText(scoreText, boxX + (boxWidth - scoreWidth) / 2, boxY + 80, scoreSize, WHITE);
+    
+    // Difficulty display
+    const char* diffNames[] = {"EASY", "NORMAL", "HARD", "INSANE"};
+    Color diffColors[] = {
+        (Color){100, 255, 100, 255},
+        (Color){100, 200, 255, 255},
+        (Color){255, 165, 0, 255},
+        (Color){255, 50, 50, 255}
+    };
+    
+    char diffText[64];
+    snprintf(diffText, sizeof(diffText), "Difficulty: %s", diffNames[menu->pendingDifficulty]);
+    int diffSize = 20;
+    int diffWidth = MeasureText(diffText, diffSize);
+    DrawText(diffText, boxX + (boxWidth - diffWidth) / 2, boxY + 110, 
+             diffSize, diffColors[menu->pendingDifficulty]);
+    
+    // Prompt
+    const char* prompt = "Enter your name:";
+    int promptSize = 20;
+    int promptWidth = MeasureText(prompt, promptSize);
+    DrawText(prompt, boxX + (boxWidth - promptWidth) / 2, boxY + 150, promptSize, 
+             (Color){200, 200, 200, 255});
+    
+    // Input box
+    int inputBoxWidth = 400;
+    int inputBoxHeight = 40;
+    int inputBoxX = boxX + (boxWidth - inputBoxWidth) / 2;
+    int inputBoxY = boxY + 180;
+    
+    DrawRectangle(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight, (Color){10, 10, 20, 255});
+    DrawRectangleLines(inputBoxX, inputBoxY, inputBoxWidth, inputBoxHeight, WHITE);
+    
+    // Name text
+    int nameSize = 24;
+    int nameY = inputBoxY + (inputBoxHeight - nameSize) / 2;
+    DrawText(menu->playerName, inputBoxX + 10, nameY, nameSize, WHITE);
+    
+    // Blinking cursor
+    if (menu->nameLength < 31) {
+        float blinkAlpha = (sinf(menu->nameInputBlink) + 1.0f) / 2.0f;
+        int cursorX = inputBoxX + 10 + MeasureText(menu->playerName, nameSize);
+        DrawText("_", cursorX, nameY, nameSize, (Color){255, 255, 255, (int)(blinkAlpha * 255)});
+    }
+    
+    // Character count
+    char countText[16];
+    snprintf(countText, sizeof(countText), "%d/31", menu->nameLength);
+    int countSize = 14;
+    int countWidth = MeasureText(countText, countSize);
+    DrawText(countText, inputBoxX + inputBoxWidth - countWidth - 10, inputBoxY + inputBoxHeight + 5, 
+             countSize, (Color){150, 150, 150, 255});
+    
+    // Instructions
+    const char* instruction1 = "Press ENTER to save";
+    const char* instruction2 = "Press ESC to use default name";
+    int instrSize = 16;
+    
+    int instr1Width = MeasureText(instruction1, instrSize);
+    int instr2Width = MeasureText(instruction2, instrSize);
+    
+    Color enterColor = menu->nameLength > 0 ? (Color){100, 255, 100, 255} : (Color){100, 100, 100, 255};
+    DrawText(instruction1, boxX + (boxWidth - instr1Width) / 2, boxY + boxHeight - 60, 
+             instrSize, enterColor);
+    DrawText(instruction2, boxX + (boxWidth - instr2Width) / 2, boxY + boxHeight - 35, 
+             instrSize, (Color){150, 150, 150, 200});
+}
+
+// Name input management functions
+void StartNameInput(Menu* menu, int score, int difficulty) {
+    menu->currentState = MENU_NAME_INPUT;
+    menu->nameInputActive = true;
+    menu->pendingScore = score;
+    menu->pendingDifficulty = difficulty;
+    menu->playerName[0] = '\0';
+    menu->nameLength = 0;
+    menu->nameInputBlink = 0.0f;
+}
+
+bool IsNameInputActive(const Menu* menu) {
+    return menu->nameInputActive;
+}
+
+void FinishNameInput(Menu* menu) {
+    if (menu->nameInputActive && menu->nameLength > 0) {
+        // Save high score with entered name
+        DB_AddHighScore(menu->playerName, menu->pendingScore, (DifficultyLevel)menu->pendingDifficulty);
+        printf("High score saved: %s - %d pts (Difficulty: %d)\n", 
+               menu->playerName, menu->pendingScore, menu->pendingDifficulty);
+    }
+    
+    menu->nameInputActive = false;
+    menu->pendingScore = 0;
+    menu->pendingDifficulty = 0;
 }

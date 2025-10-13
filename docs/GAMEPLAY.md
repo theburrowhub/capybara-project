@@ -18,6 +18,13 @@
 - **Change Difficulty (High Scores)**: LEFT/RIGHT arrows to view different difficulty levels
 - **Exit Game**: ESC from main menu
 
+### Name Input (High Score Dialog)
+When you achieve a high score, a dialog appears to enter your name:
+- **Type Name**: Any alphanumeric characters (max 31)
+- **Delete**: BACKSPACE
+- **Submit**: ENTER (requires at least 1 character)
+- **Use Default**: ESC (saves as "Player")
+
 ### Planned Controller Support
 - Xbox/PlayStation controller support (see TODO.md)
 
