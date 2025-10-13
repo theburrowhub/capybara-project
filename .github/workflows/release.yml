@@ -134,7 +134,7 @@ jobs:
     
     - name: Build and install raylib from source (static)
       run: |
-        git clone --depth 1 --branch 5.0 https://github.com/raysan5/raylib.git
+        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
         cd raylib
         mkdir build && cd build
         cmake .. \
@@ -147,14 +147,9 @@ jobs:
         
     - name: Configure CMake (Static Build)
       run: |
-        mkdir build
+        mkdir -p build
         cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=ON \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON -DBUILD_GAME=ON -DBUILD_TOOLS=ON -DBUILD_DEMOS=ON
           
     - name: Install LaTeX for manual
       run: |
@@ -214,7 +209,7 @@ jobs:
         
     - name: Build and install raylib from source
       run: |
-        git clone --depth 1 --branch 5.0 https://github.com/raysan5/raylib.git
+        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
         cd raylib
         mkdir build && cd build
         cmake .. \
@@ -228,16 +223,9 @@ jobs:
         
     - name: Configure CMake
       run: |
-        mkdir build
+        mkdir -p build
         cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=OFF \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
-          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=OFF -DBUILD_GAME=ON -DBUILD_TOOLS=ON -DBUILD_DEMOS=ON -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
           
     - name: Install LaTeX for manual
       run: |
@@ -304,11 +292,12 @@ jobs:
           mingw-w64-x86_64-pkg-config
           mingw-w64-x86_64-sqlite3
           make
+          git
           
     - name: Build and install raylib from source
       shell: msys2 {0}
       run: |
-        git clone --depth 1 --branch 5.0 https://github.com/raysan5/raylib.git
+        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
         cd raylib
         mkdir build && cd build
         cmake .. -G "MinGW Makefiles" \
@@ -321,14 +310,9 @@ jobs:
     - name: Configure CMake (Static Build)
       shell: msys2 {0}
       run: |
-        mkdir build
+        mkdir -p build
         cd build
-        cmake .. -G "MinGW Makefiles" \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=ON \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON
+        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON -DBUILD_GAME=ON -DBUILD_TOOLS=ON -DBUILD_DEMOS=ON
           
     - name: Install LaTeX for manual
       shell: msys2 {0}
