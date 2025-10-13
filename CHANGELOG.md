@@ -1,3 +1,9 @@
+## v0.2.0a2 (2025-10-13)
+
+### Refactor
+
+- update release process in GitHub Actions
+
 ## v0.2.0a1 (2025-10-13)
 
 ### Fix
