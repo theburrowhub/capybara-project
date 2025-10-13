@@ -9,6 +9,10 @@ build-release/
 *.exe
 *.dll
 
+# Debug and log files
+*.log
+*.txt
+
 # CMake
 CMakeCache.txt
 CMakeFiles/
@@ -22,10 +26,6 @@ _deps/
 # Executable
 bin
 shootemup
-
-# Debug and log files
-*.log
-*.txt
 
 # Configuration files
 .audio_analysis.conf
