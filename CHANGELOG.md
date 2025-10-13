@@ -1,3 +1,9 @@
+## v0.2.0a1 (2025-10-13)
+
+### Fix
+
+- update GitHub Actions workflow to include write permissions for contents
+
 ## v0.2.0a0 (2025-10-13)
 
 ### Feat
