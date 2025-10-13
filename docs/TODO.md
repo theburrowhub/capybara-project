@@ -57,29 +57,37 @@
 
 ## 💾 Game Systems
 - [ ] Save/Load game state
-- [ ] High score system with leaderboard
+- [x] High score system with leaderboard
+  - [x] SQLite database for persistent storage
+  - [x] Top 10 scores per difficulty level
+  - [x] High scores menu screen
+  - [ ] Player name input dialog
+- [x] User settings persistence
+  - [x] Sound volume saved to database
+  - [x] Music volume saved to database
+  - [x] Fullscreen preference saved to database
 - [x] Statistics tracking (enemies killed, accuracy, time played)
 - [ ] Achievements/unlockables
 - [x] Pause menu with options
 
 ## ⚙️ Technical Improvements
 - [x] Implement entity pooling for better performance
-- [ ] Add configuration file (JSON/INI) for game settings
+- [x] Add database for persistent storage (SQLite)
 - [ ] Improve collision detection with spatial partitioning
 - [x] Add delta time for frame-independent movement
 - [x] Implement proper game states (Menu, Playing, Paused, GameOver)
 - [x] Add debug mode with additional information display
 
 ## 🎨 UI/UX Improvements
-- [-] Main menu screen
+- [x] Main menu screen
   - [x] Start game
   - [x] Settings
-  - [ ] High scores
+  - [x] High scores
   - [x] Credits
   - [ ] Exit
 - [-] Settings menu
   - [ ] Graphics options
-  - [x] Audio options
+  - [x] Audio options (with database persistence)
   - [ ] Control configuration
 - [ ] HUD improvements
   - [ ] Mini-map or radar

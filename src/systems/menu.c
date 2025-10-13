@@ -1,5 +1,6 @@
 #include "menu.h"
 #include "constants.h"
+#include "database.h"
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
@@ -77,13 +78,22 @@ void InitMenu(Menu* menu) {
         menu->optionAlpha[i] = 0.8f;
     }
     
-    // Default audio options
-    menu->soundVolume = 1.0f;
-    menu->musicVolume = 0.5f;
+    // Load settings from database
+    UserSettings settings;
+    if (DB_LoadSettings(&settings)) {
+        menu->soundVolume = settings.soundVolume;
+        menu->musicVolume = settings.musicVolume;
+        // Map fullscreen bool to fullscreenMode enum
+        menu->fullscreenMode = settings.fullscreen ? FULLSCREEN_EXCLUSIVE : FULLSCREEN_OFF;
+    } else {
+        // Default options if loading fails
+        menu->soundVolume = 1.0f;
+        menu->musicVolume = 0.5f;
+        menu->fullscreenMode = FULLSCREEN_OFF;
+    }
     
-    // Default video options
+    // Default video options (not persisted in database yet)
     menu->selectedResolution = 2; // 1200x600 by default
-    menu->fullscreenMode = FULLSCREEN_OFF;
     menu->vsync = true;
 }
 
@@ -137,6 +147,9 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                         menu->currentState = MENU_OPTIONS;
                         menu->selectedOption = 0;
                         break;
+                    case MENU_SHOW_HIGH_SCORES:
+                        menu->currentState = MENU_HIGH_SCORES;
+                        break;
                     case MENU_SHOW_CREDITS:
                         menu->currentState = MENU_CREDITS;
                         break;
@@ -177,7 +190,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             }
             break;
             
-        case MENU_OPTIONS_SOUND:
+        case MENU_OPTIONS_SOUND: {
             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
                 menu->selectedOption--;
                 if (menu->selectedOption < 0) menu->selectedOption = 1;
@@ -187,20 +200,35 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 if (menu->selectedOption > 1) menu->selectedOption = 0;
             }
             
+            bool settingsChanged = false;
             if (menu->selectedOption == 0) {
                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
                     menu->soundVolume = fmaxf(0.0f, menu->soundVolume - 0.1f);
+                    settingsChanged = true;
                 }
                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
                     menu->soundVolume = fminf(1.0f, menu->soundVolume + 0.1f);
+                    settingsChanged = true;
                 }
             } else if (menu->selectedOption == 1) {
                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
                     menu->musicVolume = fmaxf(0.0f, menu->musicVolume - 0.1f);
+                    settingsChanged = true;
                 }
                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
                     menu->musicVolume = fminf(1.0f, menu->musicVolume + 0.1f);
+                    settingsChanged = true;
                 }
+            }
+            
+            // Save settings to database when changed
+            if (settingsChanged) {
+                UserSettings settings = {
+                    .soundVolume = menu->soundVolume,
+                    .musicVolume = menu->musicVolume,
+                    .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+                };
+                DB_SaveSettings(&settings);
             }
             
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
@@ -208,6 +236,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 menu->selectedOption = 0;
             }
             break;
+        }
             
         case MENU_OPTIONS_VIDEO: {
             int count = 0;
@@ -222,6 +251,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 if (menu->selectedOption > 2) menu->selectedOption = 0;
             }
             
+            bool settingsChanged = false;
             if (menu->selectedOption == 0) {
                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
                     menu->selectedResolution--;
@@ -239,12 +269,14 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                     if (mode < 0) mode = 2;
                     menu->fullscreenMode = (FullscreenMode)mode;
                     ApplyFullscreenMode(menu);
+                    settingsChanged = true;
                 }
                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
                     int mode = (int)menu->fullscreenMode + 1;
                     if (mode > 2) mode = 0;
                     menu->fullscreenMode = (FullscreenMode)mode;
                     ApplyFullscreenMode(menu);
+                    settingsChanged = true;
                 }
             } else if (menu->selectedOption == 2) {
                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
@@ -259,6 +291,16 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 }
             }
             
+            // Save fullscreen setting to database when changed
+            if (settingsChanged) {
+                UserSettings settings = {
+                    .soundVolume = menu->soundVolume,
+                    .musicVolume = menu->musicVolume,
+                    .fullscreen = (menu->fullscreenMode != FULLSCREEN_OFF)
+                };
+                DB_SaveSettings(&settings);
+            }
+            
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
                 menu->currentState = MENU_OPTIONS;
                 menu->selectedOption = 1;
@@ -270,6 +312,15 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
                 menu->currentState = MENU_OPTIONS;
                 menu->selectedOption = 2;
+            }
+            break;
+            
+        case MENU_HIGH_SCORES:
+            // Go back with any key
+            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
+                IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                menu->currentState = MENU_MAIN;
+                menu->selectedOption = MENU_SHOW_HIGH_SCORES;
             }
             break;
             
@@ -302,6 +353,9 @@ void DrawMenu(const Menu* menu) {
             break;
         case MENU_OPTIONS_GAME:
             DrawOptionsGame((Menu*)menu);
+            break;
+        case MENU_HIGH_SCORES:
+            DrawHighScores((Menu*)menu);
             break;
         case MENU_CREDITS:
             DrawCredits(menu);
@@ -345,6 +399,7 @@ void DrawMainMenu(const Menu* menu) {
     const char* options[MENU_TOTAL_OPTIONS] = {
         "START",
         "SETTINGS",
+        "HIGH SCORES",
         "CREDITS"
     };
     
@@ -587,6 +642,99 @@ void DrawOptionsGame(Menu* menu) {
     int instructionWidth = MeasureText(instructions, instructionSize);
     DrawText(instructions, (screenWidth - instructionWidth) / 2, 
              screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
+}
+
+void DrawHighScores(Menu* menu) {
+    // Draw background
+    DrawRectangleGradientV(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 
+                           (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
+    
+    // Draw title
+    const char* title = "HIGH SCORES";
+    int titleSize = 45;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, (SCREEN_WIDTH - titleWidth) / 2, 60, titleSize, WHITE);
+    
+    // Draw difficulty label (for now, showing Normal difficulty)
+    const char* difficultyText = "Difficulty: NORMAL";
+    int difficultySize = 20;
+    int difficultyWidth = MeasureText(difficultyText, difficultySize);
+    DrawText(difficultyText, (SCREEN_WIDTH - difficultyWidth) / 2, 120, 
+             difficultySize, (Color){200, 200, 200, 255});
+    
+    // Load high scores from database
+    HighScoreEntry entries[10];
+    int count = 0;
+    
+    if (DB_GetHighScores(DIFFICULTY_NORMAL, entries, 10, &count)) {
+        if (count > 0) {
+            // Draw table header
+            int headerY = 170;
+            int headerSize = 20;
+            DrawText("RANK", 150, headerY, headerSize, YELLOW);
+            DrawText("PLAYER", 250, headerY, headerSize, YELLOW);
+            DrawText("SCORE", 600, headerY, headerSize, YELLOW);
+            
+            // Draw high scores
+            int entrySize = 18;
+            int entrySpacing = 35;
+            int startY = 210;
+            
+            for (int i = 0; i < count; i++) {
+                int y = startY + i * entrySpacing;
+                
+                // Rank
+                char rankText[8];
+                snprintf(rankText, sizeof(rankText), "%d.", i + 1);
+                DrawText(rankText, 150, y, entrySize, WHITE);
+                
+                // Player name
+                DrawText(entries[i].playerName, 250, y, entrySize, WHITE);
+                
+                // Score
+                char scoreText[32];
+                snprintf(scoreText, sizeof(scoreText), "%d", entries[i].score);
+                DrawText(scoreText, 600, y, entrySize, WHITE);
+                
+                // Animated glow for top 3
+                if (i < 3) {
+                    float alpha = sinf(menu->animationTimer * 2.0f + i) * 0.2f + 0.3f;
+                    Color glowColor;
+                    if (i == 0) glowColor = (Color){255, 215, 0, (int)(alpha * 255)};      // Gold
+                    else if (i == 1) glowColor = (Color){192, 192, 192, (int)(alpha * 255)}; // Silver
+                    else glowColor = (Color){205, 127, 50, (int)(alpha * 255)};            // Bronze
+                    
+                    DrawRectangle(140, y - 3, 600, entrySize + 6, glowColor);
+                    
+                    // Redraw text on top of glow
+                    DrawText(rankText, 150, y, entrySize, WHITE);
+                    DrawText(entries[i].playerName, 250, y, entrySize, WHITE);
+                    DrawText(scoreText, 600, y, entrySize, WHITE);
+                }
+            }
+        } else {
+            // No high scores yet
+            const char* emptyText = "No high scores yet. Start playing!";
+            int emptySize = 22;
+            int emptyWidth = MeasureText(emptyText, emptySize);
+            DrawText(emptyText, (SCREEN_WIDTH - emptyWidth) / 2, 
+                    SCREEN_HEIGHT / 2, emptySize, (Color){150, 150, 150, 255});
+        }
+    } else {
+        // Error loading scores
+        const char* errorText = "Error loading high scores";
+        int errorSize = 20;
+        int errorWidth = MeasureText(errorText, errorSize);
+        DrawText(errorText, (SCREEN_WIDTH - errorWidth) / 2, 
+                SCREEN_HEIGHT / 2, errorSize, RED);
+    }
+    
+    // Draw back instruction
+    const char* backText = "Press ESC or ENTER to go back";
+    int backSize = 18;
+    int backWidth = MeasureText(backText, backSize);
+    DrawText(backText, (SCREEN_WIDTH - backWidth) / 2, 
+             SCREEN_HEIGHT - 50, backSize, (Color){150, 150, 150, 200});
 }
 
 void DrawCredits(const Menu* menu) {

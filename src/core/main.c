@@ -6,7 +6,9 @@
 #include "powerup.h"
 #include "renderer.h"
 #include "menu.h"
+#include "database.h"
 #include <math.h>
+#include <stdio.h>
 
 // Base resolution for game rendering
 #define BASE_WIDTH 1200
@@ -44,6 +46,11 @@ RenderScale CalculateRenderScale(int windowWidth, int windowHeight) {
 }
 
 int main(void) {
+    // Initialize database
+    if (!DB_Init()) {
+        fprintf(stderr, "Warning: Failed to initialize database. Settings and high scores will not be saved.\n");
+    }
+    
     // Initialize window with default resolution
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Shoot'em Up - Prototype");
@@ -90,6 +97,13 @@ int main(void) {
             
             // Check if player wants to return to menu (ESC key when game is over)
             if (game.gameOver && IsKeyPressed(KEY_ESCAPE)) {
+                // Save high score if it qualifies (using NORMAL difficulty for now)
+                if (DB_IsHighScore(game.score, DIFFICULTY_NORMAL)) {
+                    // For now, use a default player name
+                    // TODO: In the future, implement a name input dialog
+                    DB_AddHighScore("Player", game.score, DIFFICULTY_NORMAL);
+                }
+                
                 CleanupGame(&game);
                 gameInitialized = false;
                 gameState = MENU_MAIN;
@@ -144,6 +158,7 @@ int main(void) {
         CleanupGame(&game);
     }
     UnloadRenderTexture(gameRenderTarget);
+    DB_Cleanup();
     CloseWindow();
     
     return 0;

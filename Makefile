@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -I./include $(shell pkg-config --cflags raylib)
-LIBS = $(shell pkg-config --libs raylib) -lm
+LIBS = $(shell pkg-config --libs raylib) -lm -lsqlite3
 
 # Directories
 SRC_DIR = src
@@ -30,7 +30,8 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/powerup.c \
 			  $(SRC_DIR)/systems/menu.c
 
-UTIL_SRCS = $(SRC_DIR)/utils/logger.c
+UTIL_SRCS = $(SRC_DIR)/utils/logger.c \
+            $(SRC_DIR)/utils/database.c
 
 # Shared audio analysis utilities
 AUDIO_ANALYSIS_SRCS = $(SRC_DIR)/utils/audio_analysis.c

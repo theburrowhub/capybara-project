@@ -12,6 +12,7 @@ typedef enum {
     MENU_OPTIONS_VIDEO,
     MENU_OPTIONS_GAME,
     MENU_CREDITS,
+    MENU_HIGH_SCORES,
     MENU_GAME
 } MenuState;
 
@@ -19,8 +20,9 @@ typedef enum {
 typedef enum {
     MENU_START_GAME = 0,
     MENU_SHOW_OPTIONS = 1,
-    MENU_SHOW_CREDITS = 2,
-    MENU_TOTAL_OPTIONS = 3
+    MENU_SHOW_HIGH_SCORES = 2,
+    MENU_SHOW_CREDITS = 3,
+    MENU_TOTAL_OPTIONS = 4
 } MenuOption;
 
 // Resolution presets
@@ -68,6 +70,7 @@ void DrawOptions(Menu* menu);
 void DrawOptionsSound(Menu* menu);
 void DrawOptionsVideo(Menu* menu);
 void DrawOptionsGame(Menu* menu);
+void DrawHighScores(Menu* menu);
 void DrawCredits(const Menu* menu);
 
 // Resolution management
