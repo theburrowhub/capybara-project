@@ -1,0 +1,12 @@
+## v0.2.0a0 (2025-10-13)
+
+### Feat
+
+- add build scripts for static linking on Windows and Linux/macOS
+- add db for store selected options and high scores (#15)
+- add video and sound options to menu system (#13)
+- add main menu (#6)
+
+### Fix
+
+-  enemy sprite drawing logic for ENEMY_SWARM case

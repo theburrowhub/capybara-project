@@ -1,13 +1,13 @@
 {
   "commitizen": {
     "name": "cz_conventional_commits",
-    "version": "0.1.0",
+    "version": "0.2.0a0",
     "tag_format": "v$version",
     "version_files": [],
     "update_changelog_on_bump": true,
     "changelog_file": "CHANGELOG.md",
     "changelog_incremental": true,
-    "bump_message": "bump: version $current_version → $new_version",
+    "bump_message": "bump: version $current_version \u2192 $new_version",
     "annotated_tag": true
   }
 }
