@@ -2,6 +2,19 @@
 
 Complete guide for CI/CD pipeline, version management, and releases for Capybara Shoot'em Up.
 
+## Recent Updates 🎉
+
+The CI/CD pipelines have been **significantly refactored** for better maintainability:
+
+✅ **58% less code** - From 600+ lines to ~250 lines  
+✅ **Composite actions** - Reusable components eliminate duplication  
+✅ **Matrix strategy** - Single job definition for all platforms  
+✅ **CPack integration** - Automated packaging with CMake  
+✅ **Raylib caching** - 5-10 minutes faster builds  
+✅ **Commitizen integration** - Automatic version detection  
+
+See [Workflow README](../.github/workflows/README.md) for technical details.
+
 **Table of Contents**
 - [Quick Start](#quick-start)
 - [CI/CD Overview](#cicd-overview)
