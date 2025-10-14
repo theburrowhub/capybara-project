@@ -1,0 +1,76 @@
+name: 'Build and Install Raylib'
+description: 'Builds raylib 5.5 from source with static linking'
+
+inputs:
+  cache-key:
+    description: 'Cache key for raylib build'
+    required: false
+    default: 'raylib-5.5'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Cache raylib build
+      id: cache-raylib
+      uses: actions/cache@v4
+      with:
+        path: |
+          /usr/local/lib/libraylib.a
+          /usr/local/include/raylib.h
+          /usr/local/include/raymath.h
+          /usr/local/include/rlgl.h
+          /mingw64/lib/libraylib.a
+          /mingw64/include/raylib.h
+        key: ${{ runner.os }}-${{ inputs.cache-key }}-${{ runner.arch }}
+
+    - name: Build and install raylib (Linux)
+      if: runner.os == 'Linux' && steps.cache-raylib.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
+        cd raylib
+        mkdir build && cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_INSTALL_PREFIX=/usr/local
+        make -j$(nproc)
+        sudo make install
+        sudo ldconfig
+
+    - name: Build and install raylib (macOS)
+      if: runner.os == 'macOS' && steps.cache-raylib.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
+        cd raylib
+        mkdir build && cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_INSTALL_PREFIX=/usr/local \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
+        make -j$(sysctl -n hw.ncpu)
+        sudo make install
+
+    - name: Build and install raylib (Windows)
+      if: runner.os == 'Windows' && steps.cache-raylib.outputs.cache-hit != 'true'
+      shell: msys2 {0}
+      run: |
+        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
+        cd raylib
+        mkdir build && cd build
+        cmake .. -G "MinGW Makefiles" \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_SHARED_LIBS=OFF \
+          -DCMAKE_INSTALL_PREFIX=/mingw64
+        mingw32-make -j$(nproc)
+        mingw32-make install
+
+    - name: Verify raylib installation
+      shell: bash
+      run: |
+        echo "✓ Raylib installed successfully"
+        echo "Cache hit: ${{ steps.cache-raylib.outputs.cache-hit }}"
+

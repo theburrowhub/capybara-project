@@ -15,11 +15,28 @@ permissions:
   contents: write
   
 jobs:
+  build-manual:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Build LaTeX manual
+      uses: ./.github/actions/build-latex-manual
+      
+    - name: Upload manual as artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: user-manual
+        path: docs/USER_MANUAL.pdf
+        retention-days: 1
+
   create-release:
     runs-on: ubuntu-latest
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
       version: ${{ steps.get_version.outputs.version }}
+      is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
+      release_type: ${{ steps.check_prerelease.outputs.release_type }}
     
     steps:
     - name: Checkout code
@@ -27,13 +44,8 @@ jobs:
       
     - name: Get version
       id: get_version
-      run: |
-        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-          echo "version=${{ github.event.inputs.version }}" >> $GITHUB_OUTPUT
-        else
-          echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-        fi
-        
+      uses: ./.github/actions/get-version
+      
     - name: Determine if pre-release
       id: check_prerelease
       run: |
@@ -53,7 +65,6 @@ jobs:
         fi
         
     - name: Create Release
-      id: create_release
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
@@ -63,24 +74,24 @@ jobs:
         
         ### Download
         Download the appropriate package for your platform:
-        - **Linux**: `capybara-shootemup-linux-x86_64.tar.gz`
-        - **macOS**: `capybara-shootemup-macos-universal.tar.gz`
-        - **Windows**: `capybara-shootemup-windows-x86_64.zip`
+        - **Linux**: `capybara-shootemup-linux-x86_64-${{ steps.get_version.outputs.version_number }}.tar.gz`
+        - **macOS**: `capybara-shootemup-macos-universal-${{ steps.get_version.outputs.version_number }}.tar.gz`
+        - **Windows**: `capybara-shootemup-windows-x86_64-${{ steps.get_version.outputs.version_number }}.zip`
         
         ### Installation
         
         #### Linux
         ```bash
-        tar xzf capybara-shootemup-linux-x86_64.tar.gz
-        cd capybara-shootemup-linux
+        tar xzf capybara-shootemup-linux-x86_64-${{ steps.get_version.outputs.version_number }}.tar.gz
+        cd capybara-shootemup-linux-x86_64-${{ steps.get_version.outputs.version_number }}
         ./run.sh
         # Or directly: ./shootemup
         ```
         
         #### macOS
         ```bash
-        tar xzf capybara-shootemup-macos-universal.tar.gz
-        cd capybara-shootemup-macos
+        tar xzf capybara-shootemup-macos-universal-${{ steps.get_version.outputs.version_number }}.tar.gz
+        cd capybara-shootemup-macos-universal-${{ steps.get_version.outputs.version_number }}
         ./run.sh
         # Or directly: ./shootemup
         ```
@@ -119,257 +130,186 @@ jobs:
             --notes-file release_notes.md \
             --latest
         fi
-        
-        # Get upload URL for artifacts (set output for dependent jobs)
-        echo "upload_url=$(gh api repos/${{ github.repository }}/releases/tags/${{ steps.get_version.outputs.version }} --jq .upload_url)" >> $GITHUB_OUTPUT
 
-  build-linux-release:
-    needs: create-release
-    runs-on: ubuntu-latest
+  build-release:
+    needs: [build-manual, create-release]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: linux-x86_64
+            build_static: "ON"
+            shell: bash
+          - os: macos-latest
+            platform: macos
+            artifact_name: macos-universal
+            build_static: "OFF"
+            shell: bash
+          - os: windows-latest
+            platform: windows
+            artifact_name: windows-x86_64
+            build_static: "ON"
+            shell: msys2 {0}
+    
+    runs-on: ${{ matrix.os }}
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      
+    - name: Get version
+      id: version
+      uses: ./.github/actions/get-version
       
     - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y \
-          build-essential \
-          cmake \
-          pkg-config \
-          libasound2-dev \
-          libx11-dev \
-          libxrandr-dev \
-          libxi-dev \
-          libgl1-mesa-dev \
-          libglu1-mesa-dev \
-          libxcursor-dev \
-          libxinerama-dev \
-          libwayland-dev \
-          libxkbcommon-dev \
-          sqlite3 \
-          libsqlite3-dev
-    
-    - name: Build and install raylib from source (static)
-      run: |
-        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
-        cd raylib
-        mkdir build && cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DCMAKE_INSTALL_PREFIX=/usr/local
-        make -j$(nproc)
-        sudo make install
-        sudo ldconfig
-        
-    - name: Configure CMake (Static Build)
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON -DBUILD_GAME=ON -DBUILD_TOOLS=ON -DBUILD_DEMOS=ON
-          
-    - name: Install LaTeX for manual
-      run: |
-        sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended
-        
-    - name: Build
-      run: |
-        cd build
-        make -j$(nproc)
-        strip shootemup
-        
-    - name: Build User Manual
-      run: |
-        cd docs
-        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
-        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
-        mv USER_MANUAL_SIMPLE.pdf USER_MANUAL.pdf || true
-        cd ..
-        
-    - name: Create release package
-      run: |
-        mkdir -p release/capybara-shootemup-linux
-        cp build/shootemup release/capybara-shootemup-linux/
-        cp -r assets release/capybara-shootemup-linux/ || true
-        cp README.md release/capybara-shootemup-linux/
-        cp docs/GAMEPLAY.md release/capybara-shootemup-linux/ || true
-        cp docs/USER_MANUAL.pdf release/capybara-shootemup-linux/ || true
-        echo "#!/bin/bash" > release/capybara-shootemup-linux/run.sh
-        echo "cd \"\$(dirname \"\$0\")\"" >> release/capybara-shootemup-linux/run.sh
-        echo "./shootemup" >> release/capybara-shootemup-linux/run.sh
-        chmod +x release/capybara-shootemup-linux/run.sh
-        cd release
-        tar czf capybara-shootemup-linux-x86_64.tar.gz capybara-shootemup-linux/
-        
-    - name: Upload Release Asset
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh release upload ${{ needs.create-release.outputs.version }} \
-          release/capybara-shootemup-linux-x86_64.tar.gz
-
-  build-macos-release:
-    needs: create-release
-    runs-on: macos-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+      uses: ./.github/actions/install-deps
       
-    - name: Install dependencies
-      run: |
-        brew update
-        brew install cmake pkg-config sqlite3
-        
-    - name: Build and install raylib from source
-      run: |
-        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
-        cd raylib
-        mkdir build && cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DCMAKE_INSTALL_PREFIX=/usr/local \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
-          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
-        make -j$(sysctl -n hw.ncpu)
-        sudo make install
-        
-    - name: Configure CMake
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=OFF -DBUILD_GAME=ON -DBUILD_TOOLS=ON -DBUILD_DEMOS=ON -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
-          
-    - name: Install LaTeX for manual
-      run: |
-        brew install --cask mactex-no-gui || brew install basictex
-        eval "$(/usr/libexec/path_helper)"
-        
-    - name: Build
-      run: |
-        cd build
-        make -j$(sysctl -n hw.ncpu)
-        strip shootemup
-        
-    - name: Build User Manual
-      run: |
-        eval "$(/usr/libexec/path_helper)"
-        cd docs
-        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
-        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
-        mv USER_MANUAL_SIMPLE.pdf USER_MANUAL.pdf || true
-        cd ..
-        
-    - name: Create release package
-      run: |
-        mkdir -p release/capybara-shootemup-macos
-        cp build/shootemup release/capybara-shootemup-macos/
-        cp -r assets release/capybara-shootemup-macos/ || true
-        cp README.md release/capybara-shootemup-macos/
-        cp docs/GAMEPLAY.md release/capybara-shootemup-macos/ || true
-        cp docs/USER_MANUAL.pdf release/capybara-shootemup-macos/ || true
-        echo "#!/bin/bash" > release/capybara-shootemup-macos/run.sh
-        echo "cd \"\$(dirname \"\$0\")\"" >> release/capybara-shootemup-macos/run.sh
-        echo "./shootemup" >> release/capybara-shootemup-macos/run.sh
-        chmod +x release/capybara-shootemup-macos/run.sh
-        cd release
-        tar czf capybara-shootemup-macos-universal.tar.gz capybara-shootemup-macos/
-        
-    - name: Upload Release Asset
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        gh release upload ${{ needs.create-release.outputs.version }} \
-          release/capybara-shootemup-macos-universal.tar.gz
-
-  build-windows-release:
-    needs: create-release
-    runs-on: windows-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - name: Build and install raylib
+      uses: ./.github/actions/build-raylib
       
-    - name: Setup MSYS2
-      uses: msys2/setup-msys2@v2
+    - name: Download pre-built manual
+      uses: actions/download-artifact@v4
       with:
-        msystem: MINGW64
-        update: true
-        install: >-
-          mingw-w64-x86_64-gcc
-          mingw-w64-x86_64-cmake
-          mingw-w64-x86_64-make
-          mingw-w64-x86_64-pkg-config
-          mingw-w64-x86_64-sqlite3
-          make
-          git
-          
-    - name: Build and install raylib from source
+        name: user-manual
+        path: docs/
+      
+    - name: Configure CMake (Windows)
+      if: runner.os == 'Windows'
       shell: msys2 {0}
+      env:
+        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
       run: |
-        git clone --depth 1 --branch 5.5 https://github.com/raysan5/raylib.git
-        cd raylib
-        mkdir build && cd build
+        mkdir -p build
+        cd build
         cmake .. -G "MinGW Makefiles" \
           -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_SHARED_LIBS=OFF \
-          -DCMAKE_INSTALL_PREFIX=/mingw64
-        mingw32-make -j$(nproc)
-        mingw32-make install
-        
-    - name: Configure CMake (Static Build)
-      shell: msys2 {0}
+          -DBUILD_STATIC=${{ matrix.build_static }} \
+          -DBUILD_GAME=ON \
+          -DBUILD_TOOLS=ON \
+          -DBUILD_DEMOS=ON
+          
+    - name: Configure CMake (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      env:
+        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
       run: |
         mkdir -p build
         cd build
-        cmake .. -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release -DBUILD_STATIC=ON -DBUILD_GAME=ON -DBUILD_TOOLS=ON -DBUILD_DEMOS=ON
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_STATIC=${{ matrix.build_static }} \
+          -DBUILD_GAME=ON \
+          -DBUILD_TOOLS=ON \
+          -DBUILD_DEMOS=ON \
+          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
+          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
           
-    - name: Install LaTeX for manual
-      shell: msys2 {0}
+    - name: Configure CMake (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
       run: |
-        pacman -S --noconfirm mingw-w64-x86_64-texlive-core
-        
-    - name: Build
+        mkdir -p build
+        cd build
+        cmake .. \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DBUILD_STATIC=${{ matrix.build_static }} \
+          -DBUILD_GAME=ON \
+          -DBUILD_TOOLS=ON \
+          -DBUILD_DEMOS=ON
+          
+    - name: Build (Windows)
+      if: runner.os == 'Windows'
       shell: msys2 {0}
       run: |
         cd build
         mingw32-make -j$(nproc)
         strip shootemup.exe
         
-    - name: Build User Manual
-      shell: msys2 {0}
+    - name: Build (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
       run: |
-        cd docs
-        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
-        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
-        mv USER_MANUAL_SIMPLE.pdf USER_MANUAL.pdf || true
-        cd ..
+        cd build
+        make -j$(sysctl -n hw.ncpu)
+        strip shootemup
         
-    - name: Create release package
-      shell: msys2 {0}
+    - name: Build (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
       run: |
-        mkdir -p release/capybara-shootemup-windows
-        cp build/shootemup.exe release/capybara-shootemup-windows/
-        cp -r assets release/capybara-shootemup-windows/ || true
-        cp README.md release/capybara-shootemup-windows/
-        cp docs/GAMEPLAY.md release/capybara-shootemup-windows/ || true
-        cp docs/USER_MANUAL.pdf release/capybara-shootemup-windows/ || true
-        echo "@echo off" > release/capybara-shootemup-windows/run.bat
-        echo "cd /d %~dp0" >> release/capybara-shootemup-windows/run.bat
-        echo "shootemup.exe" >> release/capybara-shootemup-windows/run.bat
+        cd build
+        make -j$(nproc)
+        strip shootemup
         
-    - name: Create zip archive
-      shell: pwsh
+    - name: Create package with CPack (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      env:
+        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
       run: |
-        Compress-Archive -Path release/capybara-shootemup-windows/* -DestinationPath release/capybara-shootemup-windows-x86_64.zip
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=install_temp .
+        mingw32-make install
+        cpack
+        
+    - name: Create package with CPack (Unix)
+      if: runner.os != 'Windows'
+      shell: bash
+      env:
+        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
+      run: |
+        cd build
+        cmake -DCMAKE_INSTALL_PREFIX=install_temp .
+        make install
+        cpack
+        
+    - name: Find and rename package
+      shell: bash
+      run: |
+        cd build
+        # Find the generated package
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          PACKAGE=$(ls capybara-shootemup-windows-x86_64-*.zip 2>/dev/null | head -1)
+          FINAL_NAME="capybara-shootemup-windows-x86_64-${{ steps.version.outputs.version_number }}.zip"
+        else
+          PACKAGE=$(ls capybara-shootemup-*-x86_64-*.tar.gz 2>/dev/null | head -1)
+          if [ -z "$PACKAGE" ]; then
+            PACKAGE=$(ls capybara-shootemup-macos-universal-*.tar.gz 2>/dev/null | head -1)
+            FINAL_NAME="capybara-shootemup-macos-universal-${{ steps.version.outputs.version_number }}.tar.gz"
+          else
+            FINAL_NAME="capybara-shootemup-linux-x86_64-${{ steps.version.outputs.version_number }}.tar.gz"
+          fi
+        fi
+        
+        if [ -n "$PACKAGE" ] && [ -f "$PACKAGE" ]; then
+          echo "Found package: $PACKAGE"
+          mv "$PACKAGE" "$FINAL_NAME"
+          echo "Renamed to: $FINAL_NAME"
+          ls -lh "$FINAL_NAME"
+        else
+          echo "ERROR: Package not found"
+          ls -la
+          exit 1
+        fi
         
     - name: Upload Release Asset
-      shell: pwsh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      shell: bash
       run: |
-        gh release upload ${{ needs.create-release.outputs.version }} release/capybara-shootemup-windows-x86_64.zip
-
+        cd build
+        if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          PACKAGE="capybara-shootemup-windows-x86_64-${{ steps.version.outputs.version_number }}.zip"
+        elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+          PACKAGE="capybara-shootemup-macos-universal-${{ steps.version.outputs.version_number }}.tar.gz"
+        else
+          PACKAGE="capybara-shootemup-linux-x86_64-${{ steps.version.outputs.version_number }}.tar.gz"
+        fi
+        
+        echo "Uploading $PACKAGE to release ${{ needs.create-release.outputs.version }}"
+        gh release upload ${{ needs.create-release.outputs.version }} "$PACKAGE"
