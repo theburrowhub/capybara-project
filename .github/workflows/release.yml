@@ -272,28 +272,42 @@ jobs:
       shell: bash
       run: |
         cd build
+        echo "Current directory contents:"
+        ls -la
+        
         # Find the generated package
         if [ "${{ matrix.os }}" = "windows-latest" ]; then
+          echo "Looking for Windows ZIP package..."
           PACKAGE=$(ls capybara-shootemup-windows-x86_64-*.zip 2>/dev/null | head -1)
           FINAL_NAME="capybara-shootemup-windows-x86_64-${{ steps.version.outputs.version_number }}.zip"
+        elif [ "${{ matrix.os }}" = "macos-latest" ]; then
+          echo "Looking for macOS tar.gz package..."
+          PACKAGE=$(ls capybara-shootemup-macos-universal-*.tar.gz 2>/dev/null | head -1)
+          FINAL_NAME="capybara-shootemup-macos-universal-${{ steps.version.outputs.version_number }}.tar.gz"
         else
-          PACKAGE=$(ls capybara-shootemup-*-x86_64-*.tar.gz 2>/dev/null | head -1)
-          if [ -z "$PACKAGE" ]; then
-            PACKAGE=$(ls capybara-shootemup-macos-universal-*.tar.gz 2>/dev/null | head -1)
-            FINAL_NAME="capybara-shootemup-macos-universal-${{ steps.version.outputs.version_number }}.tar.gz"
-          else
-            FINAL_NAME="capybara-shootemup-linux-x86_64-${{ steps.version.outputs.version_number }}.tar.gz"
-          fi
+          echo "Looking for Linux tar.gz package..."
+          PACKAGE=$(ls capybara-shootemup-linux-x86_64-*.tar.gz 2>/dev/null | head -1)
+          FINAL_NAME="capybara-shootemup-linux-x86_64-${{ steps.version.outputs.version_number }}.tar.gz"
         fi
         
         if [ -n "$PACKAGE" ] && [ -f "$PACKAGE" ]; then
           echo "Found package: $PACKAGE"
-          mv "$PACKAGE" "$FINAL_NAME"
-          echo "Renamed to: $FINAL_NAME"
+          # Only rename if the names are different
+          if [ "$PACKAGE" != "$FINAL_NAME" ]; then
+            mv "$PACKAGE" "$FINAL_NAME"
+            echo "Renamed to: $FINAL_NAME"
+          else
+            echo "Package already has correct name: $FINAL_NAME"
+          fi
+          echo "Final package:"
           ls -lh "$FINAL_NAME"
         else
           echo "ERROR: Package not found"
-          ls -la
+          echo "Expected pattern based on OS: ${{ matrix.os }}"
+          echo "All .zip files:"
+          ls -la *.zip 2>/dev/null || echo "No ZIP files found"
+          echo "All .tar.gz files:"
+          ls -la *.tar.gz 2>/dev/null || echo "No tar.gz files found"
           exit 1
         fi
         
