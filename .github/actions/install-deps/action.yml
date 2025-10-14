@@ -1,0 +1,50 @@
+name: 'Install System Dependencies'
+description: 'Installs platform-specific build dependencies'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install Linux dependencies
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          build-essential \
+          cmake \
+          pkg-config \
+          libasound2-dev \
+          libx11-dev \
+          libxrandr-dev \
+          libxi-dev \
+          libgl1-mesa-dev \
+          libglu1-mesa-dev \
+          libxcursor-dev \
+          libxinerama-dev \
+          libwayland-dev \
+          libxkbcommon-dev \
+          sqlite3 \
+          libsqlite3-dev
+
+    - name: Install macOS dependencies
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        brew update
+        brew install cmake pkg-config sqlite3
+
+    - name: Setup MSYS2 (Windows)
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        update: true
+        install: >-
+          mingw-w64-x86_64-gcc
+          mingw-w64-x86_64-cmake
+          mingw-w64-x86_64-make
+          mingw-w64-x86_64-pkg-config
+          mingw-w64-x86_64-sqlite3
+          make
+          git
+

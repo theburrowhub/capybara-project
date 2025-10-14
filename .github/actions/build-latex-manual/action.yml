@@ -1,0 +1,53 @@
+name: 'Build LaTeX User Manual'
+description: 'Installs LaTeX and builds the user manual PDF'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install LaTeX (Linux)
+      if: runner.os == 'Linux'
+      shell: bash
+      run: |
+        sudo apt-get install -y texlive-latex-base texlive-latex-extra texlive-fonts-recommended
+
+    - name: Install LaTeX (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        brew install --cask mactex-no-gui || brew install basictex
+
+    - name: Install LaTeX (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      run: |
+        pacman -S --noconfirm mingw-w64-x86_64-texlive-core
+
+    - name: Build manual (Linux/Windows)
+      if: runner.os != 'macOS'
+      shell: bash
+      run: |
+        cd docs
+        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
+        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
+        mv USER_MANUAL_SIMPLE.pdf USER_MANUAL.pdf || true
+
+    - name: Build manual (macOS)
+      if: runner.os == 'macOS'
+      shell: bash
+      run: |
+        eval "$(/usr/libexec/path_helper)"
+        cd docs
+        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
+        pdflatex -interaction=nonstopmode USER_MANUAL_SIMPLE.tex || true
+        mv USER_MANUAL_SIMPLE.pdf USER_MANUAL.pdf || true
+
+    - name: Verify manual created
+      shell: bash
+      run: |
+        if [ -f docs/USER_MANUAL.pdf ]; then
+          echo "✓ User manual built successfully"
+          ls -lh docs/USER_MANUAL.pdf
+        else
+          echo "⚠️  User manual build failed, will continue without it"
+        fi
+

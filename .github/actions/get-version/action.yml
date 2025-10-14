@@ -1,0 +1,62 @@
+name: 'Get Project Version'
+description: 'Extracts version from commitizen config or git tag'
+
+inputs:
+  fallback_version:
+    description: 'Fallback version if none found'
+    required: false
+    default: 'v0.0.0-dev'
+
+outputs:
+  version:
+    description: "The project version"
+    value: ${{ steps.extract_version.outputs.version }}
+  version_number:
+    description: "Version without 'v' prefix"
+    value: ${{ steps.extract_version.outputs.version_number }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Extract version from commitizen config
+      id: extract_version
+      shell: bash
+      run: |
+        # Try to get version from .cz.json
+        if [ -f .cz.json ]; then
+          VERSION=$(jq -r '.commitizen.version' .cz.json 2>/dev/null || echo "")
+          if [ -n "$VERSION" ] && [ "$VERSION" != "null" ]; then
+            echo "version=v$VERSION" >> $GITHUB_OUTPUT
+            echo "version_number=$VERSION" >> $GITHUB_OUTPUT
+            echo "✓ Version from .cz.json: v$VERSION"
+            exit 0
+          fi
+        fi
+        
+        # Try to get from git tag if workflow is triggered by tag
+        if [ -n "$GITHUB_REF" ] && [[ "$GITHUB_REF" == refs/tags/* ]]; then
+          VERSION="${GITHUB_REF#refs/tags/}"
+          VERSION_NUMBER="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "✓ Version from git tag: $VERSION"
+          exit 0
+        fi
+        
+        # Try to get from manual workflow dispatch input
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+          VERSION_NUMBER="${VERSION#v}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+          echo "✓ Version from workflow input: $VERSION"
+          exit 0
+        fi
+        
+        # Fallback to git describe or default
+        VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo "${{ inputs.fallback_version }}")
+        VERSION_NUMBER="${VERSION#v}"
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+        echo "version_number=$VERSION_NUMBER" >> $GITHUB_OUTPUT
+        echo "⚠️  Using fallback version: $VERSION"
+
