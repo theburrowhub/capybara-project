@@ -1,3 +1,9 @@
+## v0.2.0a6 (2025-10-14)
+
+### Fix
+
+- correct package naming logic and enhance error reporting in release workflow
+
 ## v0.2.0a5 (2025-10-14)
 
 ## v0.2.0a4 (2025-10-13)
