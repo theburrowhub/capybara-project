@@ -31,7 +31,10 @@ runs:
       shell: bash
       run: |
         brew update
-        brew install cmake pkg-config sqlite3
+        # Only install if not already present (suppress warnings for already installed)
+        brew list cmake &>/dev/null || brew install cmake
+        brew list pkg-config &>/dev/null || brew install pkg-config
+        brew list sqlite3 &>/dev/null || brew install sqlite3
 
     - name: Setup MSYS2 (Windows)
       if: runner.os == 'Windows'
