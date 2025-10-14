@@ -326,20 +326,77 @@ endif()
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/assets DESTINATION .)
 install(DIRECTORY ${PROJECT_SOURCE_DIR}/docs DESTINATION .)
 
+# Get version from environment, git tag, or fallback
+set(PROJECT_VERSION "0.0.0-dev")
+if(DEFINED ENV{PROJECT_VERSION})
+    set(PROJECT_VERSION $ENV{PROJECT_VERSION})
+    message(STATUS "Using version from environment: ${PROJECT_VERSION}")
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.cz.json")
+    # Try to read version from commitizen config
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/.cz.json" CZ_CONFIG)
+    string(JSON CZ_VERSION ERROR_VARIABLE JSON_ERROR GET "${CZ_CONFIG}" "commitizen" "version")
+    if(NOT JSON_ERROR)
+        set(PROJECT_VERSION "${CZ_VERSION}")
+        message(STATUS "Using version from .cz.json: ${PROJECT_VERSION}")
+    endif()
+else()
+    # Try git describe as fallback
+    execute_process(
+        COMMAND git describe --tags --abbrev=0
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        OUTPUT_VARIABLE GIT_VERSION
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(GIT_VERSION)
+        string(REGEX REPLACE "^v" "" PROJECT_VERSION "${GIT_VERSION}")
+        message(STATUS "Using version from git: ${PROJECT_VERSION}")
+    else()
+        message(WARNING "No version found, using fallback: ${PROJECT_VERSION}")
+    endif()
+endif()
+
 # CPack configuration for packaging
-set(CPACK_PACKAGE_NAME "CapybaraShootEmUp")
-set(CPACK_PACKAGE_VERSION "1.0.0")
+set(CPACK_PACKAGE_NAME "capybara-shootemup")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_VENDOR "Capybara Project")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A side-scrolling shoot'em up game")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 
+# Package file naming
 if(WIN32)
     set(CPACK_GENERATOR "ZIP")
+    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-windows-x86_64-${PROJECT_VERSION}")
 elseif(APPLE)
-    set(CPACK_GENERATOR "ZIP")
+    set(CPACK_GENERATOR "TGZ")
+    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-macos-universal-${PROJECT_VERSION}")
 else()
     set(CPACK_GENERATOR "TGZ")
+    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-linux-x86_64-${PROJECT_VERSION}")
+endif()
+
+# What to include in packages
+set(CPACK_STRIP_FILES TRUE)
+set(CPACK_PACKAGE_EXECUTABLES "shootemup" "Capybara Shoot'em Up")
+
+# Install additional files
+install(FILES README.md DESTINATION . OPTIONAL)
+install(FILES docs/GAMEPLAY.md DESTINATION . OPTIONAL)
+install(FILES docs/USER_MANUAL.pdf DESTINATION . OPTIONAL)
+
+# Create run scripts during install
+if(BUILD_GAME)
+    if(UNIX)
+        install(CODE "
+            file(WRITE \"\${CMAKE_INSTALL_PREFIX}/run.sh\" \"#!/bin/bash\\ncd \\\"\\\$(dirname \\\"\\\$0\\\")\\\"\\n./shootemup\\n\")
+            execute_process(COMMAND chmod +x \"\${CMAKE_INSTALL_PREFIX}/run.sh\")
+        ")
+    elseif(WIN32)
+        install(CODE "
+            file(WRITE \"\${CMAKE_INSTALL_PREFIX}/run.bat\" \"@echo off\\ncd /d %~dp0\\nshootemup.exe\\n\")
+        ")
+    endif()
 endif()
 
 include(CPack)
