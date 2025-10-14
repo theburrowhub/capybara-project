@@ -1,3 +1,9 @@
+## v0.2.0a7 (2025-10-14)
+
+### Fix
+
+- improve dependency installation logic in GitHub Actions
+
 ## v0.2.0a6 (2025-10-14)
 
 ### Fix
