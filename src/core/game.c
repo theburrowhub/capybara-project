@@ -99,6 +99,7 @@ void InitGame(Game* game) {
     game->backgroundX = 0;
     game->gameOver = false;
     game->gamePaused = false;
+    game->justStarted = true;         // Prevent input on first frame
     game->bossEnemyIndex = -1;        // No boss initially
     game->bossSpawnTime = -1.0f;      // Boss not spawned yet
     game->bossEscapeTriggered = false;
@@ -255,13 +256,31 @@ void UpdateProjectiles(Game* game) {
 }
 
 void UpdateGame(Game* game) {
+    // Skip input processing on first frame after starting
+    if (game->justStarted) {
+        game->justStarted = false;
+        // Still update music
+        if (game->musicLoaded) {
+            UpdateMusicStream(game->backgroundMusic);
+        }
+        return;  // Skip all other updates on first frame
+    }
+    
     // Update music stream if loaded
     if (game->musicLoaded) {
         UpdateMusicStream(game->backgroundMusic);
     }
     
-    // Handle pause toggle (P key only)
-    if (IsKeyPressed(KEY_P)) {
+    // Handle pause toggle using InputManager (with NULL check)
+    bool pausePressed = false;
+    if (game->inputManager) {
+        pausePressed = InputManager_IsActionPressed(game->inputManager, ACTION_PAUSE);
+    } else {
+        // Fallback to direct keyboard input
+        pausePressed = IsKeyPressed(KEY_P);
+    }
+    
+    if (pausePressed) {
         game->gamePaused = !game->gamePaused;
         // Pause/resume music based on game state
         if (game->musicLoaded) {
@@ -289,7 +308,7 @@ void UpdateGame(Game* game) {
             
             // Update game components
             // Update new player ship
-            UpdatePlayerShip(game->playerShip, deltaTime);
+            UpdatePlayerShip(game->playerShip, deltaTime, game->inputManager);
             
             // Check for weapon powerup revive event and log it
             static bool wasJustRevived = false;
@@ -562,6 +581,9 @@ void UpdateGame(Game* game) {
 
 void CleanupGame(Game* game) {
     CloseLogger(game);
+    
+    // Clear input manager reference (it's owned by main.c, not freed here)
+    game->inputManager = NULL;
     
     // Cleanup audio
     if (game->musicLoaded) {

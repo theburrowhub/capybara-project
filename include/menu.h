@@ -2,6 +2,8 @@
 #define MENU_H
 
 #include "raylib.h"
+#include "input_config.h"
+#include "input_manager.h"
 #include <stdbool.h>
 
 // Menu states
@@ -11,10 +13,12 @@ typedef enum {
     MENU_OPTIONS_SOUND,
     MENU_OPTIONS_VIDEO,
     MENU_OPTIONS_GAME,
+    MENU_OPTIONS_CONTROLS,
     MENU_CREDITS,
     MENU_HIGH_SCORES,
     MENU_NAME_INPUT,
-    MENU_GAME
+    MENU_GAME,
+    MENU_PAUSE_CONFIRM  // Pause menu with exit confirmation
 } MenuState;
 
 // Menu option enum
@@ -23,7 +27,8 @@ typedef enum {
     MENU_SHOW_OPTIONS = 1,
     MENU_SHOW_HIGH_SCORES = 2,
     MENU_SHOW_CREDITS = 3,
-    MENU_TOTAL_OPTIONS = 4
+    MENU_EXIT_GAME = 4,
+    MENU_TOTAL_OPTIONS = 5
 } MenuOption;
 
 // Resolution presets
@@ -69,6 +74,21 @@ typedef struct {
     bool nameInputActive;
     float nameInputBlink;
     
+    // Controls configuration
+    InputManager* inputManager;
+    int selectedAction;         // Currently selected action to rebind
+    int selectedBinding;        // Which binding slot (0-3)
+    int controlsTab;            // 0 = Keyboard, 1 = Gamepad
+    bool waitingForInput;       // Waiting for key/button press
+    bool controlsModified;      // Whether controls have been changed
+    
+    // Pause menu
+    int pauseMenuOption;        // 0 = Resume, 1 = Exit to Menu
+    float pauseMenuCooldown;    // Cooldown timer to prevent immediate close (in seconds)
+    
+    // Main menu
+    bool justReturnedToMainMenu; // Prevent immediate exit on same ESC press
+    
     // Animation timers
     float animationTimer;
 } Menu;
@@ -82,9 +102,11 @@ void DrawOptions(Menu* menu);
 void DrawOptionsSound(Menu* menu);
 void DrawOptionsVideo(Menu* menu);
 void DrawOptionsGame(Menu* menu);
+void DrawOptionsControls(Menu* menu);
 void DrawHighScores(Menu* menu);
 void DrawNameInput(Menu* menu);
 void DrawCredits(const Menu* menu);
+void DrawPauseConfirm(const Menu* menu);
 
 // Name input functions
 void StartNameInput(Menu* menu, int score, int difficulty);

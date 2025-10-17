@@ -12,6 +12,7 @@ typedef struct PlayerShip PlayerShip;
 typedef struct ExplosionSystem ExplosionSystem;
 typedef struct PowerupSystem PowerupSystem;
 typedef struct LevelManager LevelManager;
+typedef struct InputManager InputManager;
 
 // Bullet structure
 typedef struct Bullet {
@@ -36,6 +37,7 @@ typedef struct {
 // Main game state structure
 struct Game {
     PlayerShip* playerShip;   // Enhanced player ship
+    InputManager* inputManager; // Input manager for controls
     Bullet* bullets;
     void* projectiles;        // Projectile* (using void* to avoid circular dependency)
     EnemyEx* enemies;         // Updated to use new enemy structure
@@ -77,6 +79,8 @@ struct Game {
     float levelCompleteTimer;  // Time since level complete overlay appeared
     bool transitioningToNextLevel; // Whether we're in the middle of transitioning
     float levelStartTime;      // Game time when current level started (for display)
+    // Input debouncing
+    bool justStarted;          // Prevent input on first frame after starting game
 };
 
 #endif // TYPES_H

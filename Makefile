@@ -28,7 +28,9 @@ SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
               $(SRC_DIR)/systems/combat_system.c \
               $(SRC_DIR)/systems/projectile_manager.c \
               $(SRC_DIR)/systems/powerup.c \
-			  $(SRC_DIR)/systems/menu.c
+              $(SRC_DIR)/systems/menu.c \
+              $(SRC_DIR)/systems/input_config.c \
+              $(SRC_DIR)/systems/input_manager.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c \
             $(SRC_DIR)/utils/database.c
@@ -58,6 +60,8 @@ SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/systems/collision.c \
                 $(SRC_DIR)/systems/explosion.c \
                 $(SRC_DIR)/systems/powerup.c \
+                $(SRC_DIR)/systems/input_config.c \
+                $(SRC_DIR)/systems/input_manager.c \
                 $(SRC_DIR)/utils/logger.c
 
 # Sprite showcase source files
@@ -89,7 +93,9 @@ PROJECTILE_SHOWCASE_SRCS = $(SRC_DIR)/demo/projectile_showcase.c \
 PLAYER_SHOWCASE_SRCS = $(SRC_DIR)/demo/player_ship_showcase.c \
                        $(SRC_DIR)/entities/player_ship.c \
                        $(SRC_DIR)/systems/projectile_types.c \
-                       $(SRC_DIR)/entities/enemy_types.c
+                       $(SRC_DIR)/entities/enemy_types.c \
+                       $(SRC_DIR)/systems/input_config.c \
+                       $(SRC_DIR)/systems/input_manager.c
 
 # Player sprite generator source files
 PLAYER_GEN_SRCS = $(SRC_DIR)/tools/generate_player_sprite.c
@@ -103,7 +109,9 @@ POWERUP_SHOWCASE_SRCS = $(SRC_DIR)/demo/powerup_showcase.c \
                         $(SRC_DIR)/systems/powerup.c \
                         $(SRC_DIR)/entities/player_ship.c \
                         $(SRC_DIR)/entities/enemy_types.c \
-                        $(SRC_DIR)/systems/projectile_types.c
+                        $(SRC_DIR)/systems/projectile_types.c \
+                        $(SRC_DIR)/systems/input_config.c \
+                        $(SRC_DIR)/systems/input_manager.c
 
 # Audio analysis GUI source files
 AUDIO_GUI_SRCS = $(SRC_DIR)/demo/audio_analysis_gui.c
