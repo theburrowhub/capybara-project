@@ -114,9 +114,6 @@ bool InputManager_IsActionPressed(const InputManager* manager, GameAction action
         if (action == ACTION_SPECIAL_ABILITY && IsGamepadButtonPressed(manager->gamepadId, 8)) {
             return true;  // X button (button 8)
         }
-        if (action == ACTION_PAUSE && IsGamepadButtonPressed(manager->gamepadId, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
-            return true;  // START button
-        }
         if (action == ACTION_SWITCH_ENERGY_MODE && IsGamepadButtonPressed(manager->gamepadId, GAMEPAD_BUTTON_LEFT_TRIGGER_2)) {
             return true;  // L2 (Left Lower Button)
         }
@@ -187,11 +184,6 @@ bool InputManager_IsActionDown(const InputManager* manager, GameAction action) {
         // Switch Weapon Mode: Always check L1 (Left Upper Button)
         if (action == ACTION_SWITCH_WEAPON_MODE && IsGamepadButtonDown(manager->gamepadId, GAMEPAD_BUTTON_LEFT_TRIGGER_1)) {
             return true;  // L1
-        }
-        
-        // Pause: Always check START button
-        if (action == ACTION_PAUSE && IsGamepadButtonDown(manager->gamepadId, GAMEPAD_BUTTON_MIDDLE_RIGHT)) {
-            return true;  // START button
         }
     }
     

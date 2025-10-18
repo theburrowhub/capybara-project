@@ -105,7 +105,7 @@ git push --tags
 |--------|------|
 | Move | WASD / Arrow Keys |
 | Shoot | Left Click (hold for continuous fire) |
-| Pause | P |
+| Pause & Exit Menu | ESC |
 | Debug | H (show hitboxes) |
 | Restart | R (when game over) |
 
@@ -176,7 +176,7 @@ The game includes several debug features for testing and development:
 
 - **Invulnerability Mode**: Set `DEBUG_INVULNERABILITY` to `true` in `constants.h`
 - **Start at Any Phase**: Set `DEBUG_START_PHASE` (1-17) in `constants.h`
-- **Pause Function**: Press P during gameplay
+- **Pause & Exit Menu**: Press ESC during gameplay to pause and access the exit menu
 - **Hitbox Visualization**: Press H to show collision boxes
 
 See [Debug Features Documentation](docs/DEBUG_FEATURES.md) for detailed usage.

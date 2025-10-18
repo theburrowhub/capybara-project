@@ -11,7 +11,6 @@
 | **Special Ability** | E, **K key** | **R1 / Right Bumper** (always active) |
 | **Switch Weapon Mode** | R, **U key** | L1 / Left Bumper (always active) |
 | **Switch Energy Mode** | Q, **I key** | L2 / Left Trigger (always active) |
-| **Pause** | P | Gamepad START Button (always active) |
 | **Pause & Exit Menu** | ESC | Gamepad START Button |
 | **Debug Mode** | H | - | - |
 | **Restart** | R (when game over) | - | - |
@@ -74,22 +73,17 @@ When you achieve a high score, a dialog appears to enter your name:
 - **Weapon**: Rapid-fire projectiles with heat management
 
 ### Pause & Exit Menu
-**Pause Game:**
-- Press **P** key or **START button** to pause the game at any time
-- While paused:
+- Press **ESC** key or **START button** during gameplay to open the pause/exit dialog
+- When the dialog appears:
+  - The game automatically pauses
   - All game updates are frozen (enemies, projectiles, timers)
   - Music pauses
-  - "PAUSED" overlay appears on screen
-  - Press P or START again to resume
-
-**Exit to Menu:**
-- Press **ESC** key or **START button** during gameplay to open the pause/exit confirmation dialog
-- A dialog appears with two options:
-  - **RESUME GAME** - Continue playing (default)
-  - **EXIT TO MENU** - Return to main menu
+  - A dialog appears with two options:
+    - **RESUME GAME** - Continue playing (default)
+    - **EXIT TO MENU** - Return to main menu (game will restart from beginning when you start again)
 - Navigate with UP/DOWN, D-Pad, or Left Stick
 - Select with ENTER or A Button
-- Cancel with ESC, START, or B Button (returns to game)
+- Cancel with ESC, START, or B Button (resumes the game)
 - Prevents accidental exits!
 
 ### Weapon Heat System

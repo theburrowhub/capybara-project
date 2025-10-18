@@ -432,18 +432,10 @@ void DrawGame(Game* game) {
     DrawText("Q - Mode", controlsX, hudY + 50, 11, WHITE);
     DrawText("E - Special", controlsX, hudY + 65, 11, WHITE);
     
-    DrawText("P - Pause", controlsX + 120, hudY + 20, 11, WHITE);
-    DrawText("ESC - Menu", controlsX + 120, hudY + 35, 11, WHITE);
+    DrawText("ESC - Menu", controlsX + 120, hudY + 20, 11, WHITE);
     
     // Draw level complete overlay (semi-transparent, non-invasive)
     DrawLevelCompleteOverlay(game);
-    
-    // Draw pause overlay
-    if (game->gamePaused) {
-        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(BLACK, 0.5f));
-        DrawText("PAUSED", SCREEN_WIDTH/2 - 100, PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2 - 50, 60, WHITE);
-        DrawText("Press P to Resume", SCREEN_WIDTH/2 - 100, PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2 + 20, 25, WHITE);
-    }
     
     // Draw game over screen if needed
     if (game->gameOver) {

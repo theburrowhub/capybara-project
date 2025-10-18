@@ -26,21 +26,26 @@ CORE_SRCS = $(SRC_DIR)/core/main.c \
 ENTITY_SRCS = $(SRC_DIR)/entities/player_ship.c \
               $(SRC_DIR)/entities/enemy_types.c
 
-SYSTEM_SRCS = $(SRC_DIR)/systems/weapon.c \
-              $(SRC_DIR)/systems/collision.c \
-              $(SRC_DIR)/systems/renderer.c \
-              $(SRC_DIR)/systems/wave_system.c \
-              $(SRC_DIR)/systems/level_system.c \
-              $(SRC_DIR)/systems/level1_waves.c \
-              $(SRC_DIR)/systems/level2_waves.c \
-              $(SRC_DIR)/systems/projectile_types.c \
-              $(SRC_DIR)/systems/explosion.c \
-              $(SRC_DIR)/systems/combat_system.c \
-              $(SRC_DIR)/systems/projectile_manager.c \
-              $(SRC_DIR)/systems/powerup.c \
-              $(SRC_DIR)/systems/menu.c \
-              $(SRC_DIR)/systems/input_config.c \
-              $(SRC_DIR)/systems/input_manager.c
+GAMEPLAY_SRCS = $(SRC_DIR)/gameplay/weapon.c \
+                $(SRC_DIR)/gameplay/wave_system.c \
+                $(SRC_DIR)/gameplay/level_system.c \
+                $(SRC_DIR)/gameplay/level1_waves.c \
+                $(SRC_DIR)/gameplay/level2_waves.c \
+                $(SRC_DIR)/gameplay/powerup.c
+
+PHYSICS_SRCS = $(SRC_DIR)/physics/collision.c \
+               $(SRC_DIR)/physics/combat_system.c
+
+RENDERING_SRCS = $(SRC_DIR)/rendering/renderer.c
+
+EFFECTS_SRCS = $(SRC_DIR)/effects/projectile_types.c \
+               $(SRC_DIR)/effects/explosion.c \
+               $(SRC_DIR)/effects/projectile_manager.c
+
+UI_SRCS = $(SRC_DIR)/ui/menu.c
+
+INPUT_SRCS = $(SRC_DIR)/input/input_config.c \
+             $(SRC_DIR)/input/input_manager.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c \
             $(SRC_DIR)/utils/database.c
@@ -50,7 +55,7 @@ AUDIO_ANALYSIS_SRCS = $(SRC_DIR)/utils/audio_analysis.c
 AUDIO_ANALYSIS_OBJS = $(AUDIO_ANALYSIS_SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 # All source files for main game
-SRCS = $(CORE_SRCS) $(ENTITY_SRCS) $(SYSTEM_SRCS) $(UTIL_SRCS)
+SRCS = $(CORE_SRCS) $(ENTITY_SRCS) $(GAMEPLAY_SRCS) $(PHYSICS_SRCS) $(RENDERING_SRCS) $(EFFECTS_SRCS) $(UI_SRCS) $(INPUT_SRCS) $(UTIL_SRCS)
 
 # Object files for main game
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
@@ -59,53 +64,53 @@ OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/entities/enemy_types.c \
                 $(SRC_DIR)/entities/player_ship.c \
-                $(SRC_DIR)/systems/projectile_types.c \
-                $(SRC_DIR)/systems/weapon.c \
-                $(SRC_DIR)/systems/wave_system.c \
-                $(SRC_DIR)/systems/level_system.c \
-                $(SRC_DIR)/systems/level1_waves.c \
-                $(SRC_DIR)/systems/level2_waves.c \
-                $(SRC_DIR)/systems/combat_system.c \
-                $(SRC_DIR)/systems/projectile_manager.c \
-                $(SRC_DIR)/systems/collision.c \
-                $(SRC_DIR)/systems/explosion.c \
-                $(SRC_DIR)/systems/powerup.c \
-                $(SRC_DIR)/systems/input_config.c \
-                $(SRC_DIR)/systems/input_manager.c \
+                $(SRC_DIR)/effects/projectile_types.c \
+                $(SRC_DIR)/gameplay/weapon.c \
+                $(SRC_DIR)/gameplay/wave_system.c \
+                $(SRC_DIR)/gameplay/level_system.c \
+                $(SRC_DIR)/gameplay/level1_waves.c \
+                $(SRC_DIR)/gameplay/level2_waves.c \
+                $(SRC_DIR)/physics/combat_system.c \
+                $(SRC_DIR)/effects/projectile_manager.c \
+                $(SRC_DIR)/physics/collision.c \
+                $(SRC_DIR)/effects/explosion.c \
+                $(SRC_DIR)/gameplay/powerup.c \
+                $(SRC_DIR)/input/input_config.c \
+                $(SRC_DIR)/input/input_manager.c \
                 $(SRC_DIR)/utils/logger.c
 
 # Sprite showcase source files
 SPRITE_SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase_sprites.c \
                        $(SRC_DIR)/entities/enemy_types.c \
-                       $(SRC_DIR)/systems/projectile_types.c
+                       $(SRC_DIR)/effects/projectile_types.c
 
 # Sprite generator source files
 SPRITE_GEN_SRCS = $(SRC_DIR)/tools/generate_enemy_sprites.c \
                   $(SRC_DIR)/entities/enemy_types.c \
-                  $(SRC_DIR)/systems/projectile_types.c
+                  $(SRC_DIR)/effects/projectile_types.c
 
 # Spaceship sprite generator source files
 SPACESHIP_GEN_SRCS = $(SRC_DIR)/tools/generate_spaceship_sprites.c \
                      $(SRC_DIR)/entities/enemy_types.c \
-                     $(SRC_DIR)/systems/projectile_types.c
+                     $(SRC_DIR)/effects/projectile_types.c
 
 # Projectile generator source files
 PROJECTILE_GEN_SRCS = $(SRC_DIR)/tools/generate_projectile_sprites.c \
-                      $(SRC_DIR)/systems/projectile_types.c \
+                      $(SRC_DIR)/effects/projectile_types.c \
                       $(SRC_DIR)/entities/enemy_types.c
 
 # Projectile showcase source files
 PROJECTILE_SHOWCASE_SRCS = $(SRC_DIR)/demo/projectile_showcase.c \
-                           $(SRC_DIR)/systems/projectile_types.c \
+                           $(SRC_DIR)/effects/projectile_types.c \
                            $(SRC_DIR)/entities/enemy_types.c
 
 # Player ship showcase source files
 PLAYER_SHOWCASE_SRCS = $(SRC_DIR)/demo/player_ship_showcase.c \
                        $(SRC_DIR)/entities/player_ship.c \
-                       $(SRC_DIR)/systems/projectile_types.c \
+                       $(SRC_DIR)/effects/projectile_types.c \
                        $(SRC_DIR)/entities/enemy_types.c \
-                       $(SRC_DIR)/systems/input_config.c \
-                       $(SRC_DIR)/systems/input_manager.c
+                       $(SRC_DIR)/input/input_config.c \
+                       $(SRC_DIR)/input/input_manager.c
 
 # Player sprite generator source files
 PLAYER_GEN_SRCS = $(SRC_DIR)/tools/generate_player_sprite.c
@@ -116,12 +121,12 @@ HIGHSCORE_POPULATOR_SRCS = $(SRC_DIR)/tools/populate_highscores.c \
 
 # Powerup showcase source files
 POWERUP_SHOWCASE_SRCS = $(SRC_DIR)/demo/powerup_showcase.c \
-                        $(SRC_DIR)/systems/powerup.c \
+                        $(SRC_DIR)/gameplay/powerup.c \
                         $(SRC_DIR)/entities/player_ship.c \
                         $(SRC_DIR)/entities/enemy_types.c \
-                        $(SRC_DIR)/systems/projectile_types.c \
-                        $(SRC_DIR)/systems/input_config.c \
-                        $(SRC_DIR)/systems/input_manager.c
+                        $(SRC_DIR)/effects/projectile_types.c \
+                        $(SRC_DIR)/input/input_config.c \
+                        $(SRC_DIR)/input/input_manager.c
 
 # Audio analysis GUI source files
 AUDIO_GUI_SRCS = $(SRC_DIR)/demo/audio_analysis_gui.c
@@ -191,7 +196,12 @@ game: deprecation-warning directories $(TARGET)
 directories:
 	@mkdir -p $(BUILD_DIR)/core
 	@mkdir -p $(BUILD_DIR)/entities
-	@mkdir -p $(BUILD_DIR)/systems
+	@mkdir -p $(BUILD_DIR)/gameplay
+	@mkdir -p $(BUILD_DIR)/physics
+	@mkdir -p $(BUILD_DIR)/rendering
+	@mkdir -p $(BUILD_DIR)/effects
+	@mkdir -p $(BUILD_DIR)/ui
+	@mkdir -p $(BUILD_DIR)/input
 	@mkdir -p $(BUILD_DIR)/utils
 	@mkdir -p $(BUILD_DIR)/demo
 	@mkdir -p $(BUILD_DIR)/tools
