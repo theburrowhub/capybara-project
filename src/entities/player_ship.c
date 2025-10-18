@@ -105,11 +105,22 @@ void InitPlayerShip(PlayerShip* ship) {
     // Revive tracking
     ship->justRevived = false;
     ship->reviveEffectTimer = 0.0f;
+    
+    // Start freeze period (2 seconds at game start)
+    ship->startFreezeTimer = 2.0f;
 }
 
 void UpdatePlayerShip(PlayerShip* ship, float deltaTime, const InputManager* inputManager) {
     // Update survival time
     ship->survivalTime += deltaTime;
+    
+    // Update start freeze timer
+    if (ship->startFreezeTimer > 0.0f) {
+        ship->startFreezeTimer -= deltaTime;
+        if (ship->startFreezeTimer < 0.0f) {
+            ship->startFreezeTimer = 0.0f;
+        }
+    }
     
     // Update revive effect timer
     if (ship->reviveEffectTimer > 0.0f) {
@@ -120,8 +131,10 @@ void UpdatePlayerShip(PlayerShip* ship, float deltaTime, const InputManager* inp
         }
     }
     
-    // Handle input
-    HandlePlayerInput(ship, inputManager);
+    // Handle input (only if freeze period is over)
+    if (ship->startFreezeTimer <= 0.0f) {
+        HandlePlayerInput(ship, inputManager);
+    }
     
     // Update physics
     UpdateShipPhysics(ship, deltaTime);

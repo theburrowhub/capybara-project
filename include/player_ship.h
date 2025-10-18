@@ -113,6 +113,9 @@ typedef struct PlayerShip {
     // Revive tracking (weapon powerup revive system)
     bool justRevived;        // Flag set when a revive happens
     float reviveEffectTimer; // Timer for revive visual effect
+    
+    // Start freeze period
+    float startFreezeTimer;  // Initial freeze period at game start (1-2 seconds)
 } PlayerShip;
 
 // Ship configuration

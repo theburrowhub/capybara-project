@@ -8,6 +8,8 @@
 #include "weapon.h"
 #include "explosion.h"
 #include "powerup.h"
+#include "input_manager.h"
+#include "input_config.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -328,6 +330,31 @@ void DrawGame(Game* game) {
     // Draw play zone separator line
     DrawLine(0, PLAY_ZONE_BOTTOM, SCREEN_WIDTH, PLAY_ZONE_BOTTOM, Fade(WHITE, 0.3f));
     
+    // Show "GET READY!" message during start freeze period
+    if (game->playerShip && game->playerShip->startFreezeTimer > 0.0f) {
+        const char* readyText = "GET READY!";
+        int fontSize = 48;
+        int textWidth = MeasureText(readyText, fontSize);
+        
+        // Pulsing effect
+        float pulse = (sinf(game->gameTime * 4.0f) + 1.0f) / 2.0f;  // 0 to 1
+        int alpha = (int)(150 + pulse * 105);  // 150 to 255
+        
+        // Draw with glow effect
+        DrawText(readyText, (SCREEN_WIDTH - textWidth) / 2 + 3, (SCREEN_HEIGHT / 2) + 3, 
+                fontSize, Fade(BLACK, 0.5f));
+        DrawText(readyText, (SCREEN_WIDTH - textWidth) / 2, SCREEN_HEIGHT / 2, 
+                fontSize, (Color){255, 255, 0, alpha});
+                
+        // Show countdown
+        int countdown = (int)ceil(game->playerShip->startFreezeTimer);
+        const char* countText = TextFormat("%d", countdown);
+        int countSize = 36;
+        int countWidth = MeasureText(countText, countSize);
+        DrawText(countText, (SCREEN_WIDTH - countWidth) / 2, (SCREEN_HEIGHT / 2) + 60, 
+                countSize, (Color){255, 200, 100, alpha});
+    }
+    
     // === BOTTOM HUD (from left to right) ===
     int hudY = PLAY_ZONE_BOTTOM + 5;  // Start HUD 5 pixels below play zone
     
@@ -424,15 +451,66 @@ void DrawGame(Game* game) {
         DrawRectangleLines(weaponX + 80, hudY + 72, 100, 8, WHITE);
     }
     
-    // Right section: Controls
+    // Right section: Dynamic Controls (based on active input method)
     int controlsX = 750;
+    int controlsCol2X = controlsX + 140;  // Second column with better spacing
     DrawText("CONTROLS:", controlsX, hudY + 5, 12, GRAY);
-    DrawText("WASD/Arrows - Move", controlsX, hudY + 20, 11, WHITE);
-    DrawText("SPACE - Fire", controlsX, hudY + 35, 11, WHITE);
-    DrawText("Q - Mode", controlsX, hudY + 50, 11, WHITE);
-    DrawText("E - Special", controlsX, hudY + 65, 11, WHITE);
     
-    DrawText("ESC - Menu", controlsX + 120, hudY + 20, 11, WHITE);
+    // Get active input method and show appropriate controls
+    if (game->inputManager) {
+        ActiveInputMethod inputMethod = InputManager_GetActiveInputMethod(game->inputManager);
+        
+        char moveStr[64], fireStr[64], modeStr[64], specialStr[64];
+        
+        // Get control strings based on active input method
+        if (inputMethod == INPUT_METHOD_GAMEPAD) {
+            // Gamepad controls - Two columns layout
+            InputManager_GetActionString(game->inputManager, ACTION_MOVE_UP, moveStr, sizeof(moveStr));
+            InputManager_GetActionString(game->inputManager, ACTION_FIRE, fireStr, sizeof(fireStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SWITCH_ENERGY_MODE, modeStr, sizeof(modeStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SPECIAL_ABILITY, specialStr, sizeof(specialStr));
+            
+            // Left column
+            DrawText(TextFormat("%s - Move", moveStr), controlsX, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Fire", fireStr), controlsX, hudY + 35, 11, WHITE);
+            
+            // Right column
+            DrawText(TextFormat("%s - Mode", modeStr), controlsCol2X, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Special", specialStr), controlsCol2X, hudY + 35, 11, WHITE);
+            
+            // Bottom row
+            DrawText("Start - Menu", controlsX, hudY + 50, 11, WHITE);
+        } else {
+            // Keyboard controls - Two columns layout
+            InputManager_GetActionString(game->inputManager, ACTION_MOVE_UP, moveStr, sizeof(moveStr));
+            InputManager_GetActionString(game->inputManager, ACTION_FIRE, fireStr, sizeof(fireStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SWITCH_ENERGY_MODE, modeStr, sizeof(modeStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SPECIAL_ABILITY, specialStr, sizeof(specialStr));
+            
+            // Left column
+            DrawText("WASD/Arrows - Move", controlsX, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Fire", fireStr), controlsX, hudY + 35, 11, WHITE);
+            
+            // Right column
+            DrawText(TextFormat("%s - Mode", modeStr), controlsCol2X, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Special", specialStr), controlsCol2X, hudY + 35, 11, WHITE);
+            
+            // Bottom row
+            DrawText("ESC - Menu", controlsX, hudY + 50, 11, WHITE);
+        }
+    } else {
+        // Fallback if input manager is not available (shouldn't happen)
+        // Left column
+        DrawText("WASD/Arrows - Move", controlsX, hudY + 20, 11, WHITE);
+        DrawText("SPACE - Fire", controlsX, hudY + 35, 11, WHITE);
+        
+        // Right column
+        DrawText("Q - Mode", controlsCol2X, hudY + 20, 11, WHITE);
+        DrawText("E - Special", controlsCol2X, hudY + 35, 11, WHITE);
+        
+        // Bottom row
+        DrawText("ESC - Menu", controlsX, hudY + 50, 11, WHITE);
+    }
     
     // Draw level complete overlay (semi-transparent, non-invasive)
     DrawLevelCompleteOverlay(game);
