@@ -94,22 +94,37 @@ set(ENTITY_SRCS
     src/entities/enemy_types.c
 )
 
-set(SYSTEM_SRCS
-    src/systems/weapon.c
-    src/systems/collision.c
-    src/systems/renderer.c
-    src/systems/wave_system.c
-    src/systems/level_system.c
-    src/systems/level1_waves.c
-    src/systems/level2_waves.c
-    src/systems/projectile_types.c
-    src/systems/explosion.c
-    src/systems/combat_system.c
-    src/systems/projectile_manager.c
-    src/systems/powerup.c
-    src/systems/menu.c
-    src/systems/input_config.c
-    src/systems/input_manager.c
+set(INPUT_SRCS
+    src/input/input_config.c
+    src/input/input_manager.c
+)
+
+set(GAMEPLAY_SRCS
+    src/gameplay/weapon.c
+    src/gameplay/wave_system.c
+    src/gameplay/level_system.c
+    src/gameplay/level1_waves.c
+    src/gameplay/level2_waves.c
+    src/gameplay/powerup.c
+)
+
+set(RENDERING_SRCS
+    src/rendering/renderer.c
+)
+
+set(PHYSICS_SRCS
+    src/physics/collision.c
+    src/physics/combat_system.c
+)
+
+set(EFFECTS_SRCS
+    src/effects/projectile_types.c
+    src/effects/explosion.c
+    src/effects/projectile_manager.c
+)
+
+set(UI_SRCS
+    src/ui/menu.c
 )
 
 set(UTIL_SRCS
@@ -145,7 +160,12 @@ if(BUILD_GAME)
     add_executable(shootemup
         ${CORE_SRCS}
         ${ENTITY_SRCS}
-        ${SYSTEM_SRCS}
+        ${INPUT_SRCS}
+        ${GAMEPLAY_SRCS}
+        ${RENDERING_SRCS}
+        ${PHYSICS_SRCS}
+        ${EFFECTS_SRCS}
+        ${UI_SRCS}
         ${UTIL_SRCS}
     )
     
@@ -167,7 +187,7 @@ if(BUILD_TOOLS)
     add_executable(generate_enemy_sprites
         src/tools/generate_enemy_sprites.c
         src/entities/enemy_types.c
-        src/systems/projectile_types.c
+        src/effects/projectile_types.c
     )
     link_game_libraries(generate_enemy_sprites)
     
@@ -175,14 +195,14 @@ if(BUILD_TOOLS)
     add_executable(generate_spaceship_sprites
         src/tools/generate_spaceship_sprites.c
         src/entities/enemy_types.c
-        src/systems/projectile_types.c
+        src/effects/projectile_types.c
     )
     link_game_libraries(generate_spaceship_sprites)
     
     # Projectile sprite generator
     add_executable(generate_projectile_sprites
         src/tools/generate_projectile_sprites.c
-        src/systems/projectile_types.c
+        src/effects/projectile_types.c
         src/entities/enemy_types.c
     )
     link_game_libraries(generate_projectile_sprites)
@@ -201,26 +221,32 @@ if(BUILD_TOOLS)
     target_link_libraries(populate_highscores ${SQLITE3_LIBRARIES})
 endif()
 
+# Demo common source
+set(DEMO_COMMON_SRCS
+    src/demo/demo_common.c
+)
+
 # Demo executables
 if(BUILD_DEMOS)
     # Enemy showcase
     add_executable(enemy_showcase
         src/demo/enemy_showcase.c
+        ${DEMO_COMMON_SRCS}
         src/entities/enemy_types.c
         src/entities/player_ship.c
-        src/systems/projectile_types.c
-        src/systems/weapon.c
-        src/systems/wave_system.c
-        src/systems/level_system.c
-        src/systems/level1_waves.c
-        src/systems/level2_waves.c
-        src/systems/combat_system.c
-        src/systems/projectile_manager.c
-        src/systems/collision.c
-        src/systems/explosion.c
-        src/systems/powerup.c
-        src/systems/input_config.c
-        src/systems/input_manager.c
+        src/effects/projectile_types.c
+        src/gameplay/weapon.c
+        src/gameplay/wave_system.c
+        src/gameplay/level_system.c
+        src/gameplay/level1_waves.c
+        src/gameplay/level2_waves.c
+        src/physics/combat_system.c
+        src/effects/projectile_manager.c
+        src/physics/collision.c
+        src/effects/explosion.c
+        src/gameplay/powerup.c
+        src/input/input_config.c
+        src/input/input_manager.c
         src/utils/logger.c
     )
     link_game_libraries(enemy_showcase)
@@ -228,39 +254,55 @@ if(BUILD_DEMOS)
     # Enemy showcase sprites
     add_executable(enemy_showcase_sprites
         src/demo/enemy_showcase_sprites.c
+        ${DEMO_COMMON_SRCS}
         src/entities/enemy_types.c
-        src/systems/projectile_types.c
+        src/effects/projectile_types.c
+        src/effects/explosion.c
+        src/effects/projectile_manager.c
+        src/input/input_config.c
+        src/input/input_manager.c
     )
     link_game_libraries(enemy_showcase_sprites)
     
     # Projectile showcase
     add_executable(projectile_showcase
         src/demo/projectile_showcase.c
-        src/systems/projectile_types.c
+        ${DEMO_COMMON_SRCS}
+        src/effects/projectile_types.c
         src/entities/enemy_types.c
+        src/effects/explosion.c
+        src/effects/projectile_manager.c
+        src/input/input_config.c
+        src/input/input_manager.c
     )
     link_game_libraries(projectile_showcase)
     
     # Player ship showcase
     add_executable(player_showcase
         src/demo/player_ship_showcase.c
+        ${DEMO_COMMON_SRCS}
         src/entities/player_ship.c
-        src/systems/projectile_types.c
+        src/effects/projectile_types.c
         src/entities/enemy_types.c
-        src/systems/input_config.c
-        src/systems/input_manager.c
+        src/effects/explosion.c
+        src/effects/projectile_manager.c
+        src/input/input_config.c
+        src/input/input_manager.c
     )
     link_game_libraries(player_showcase)
     
     # Powerup showcase
     add_executable(powerup_showcase
         src/demo/powerup_showcase.c
-        src/systems/powerup.c
+        ${DEMO_COMMON_SRCS}
+        src/gameplay/powerup.c
         src/entities/player_ship.c
         src/entities/enemy_types.c
-        src/systems/projectile_types.c
-        src/systems/input_config.c
-        src/systems/input_manager.c
+        src/effects/projectile_types.c
+        src/effects/explosion.c
+        src/effects/projectile_manager.c
+        src/input/input_config.c
+        src/input/input_manager.c
     )
     link_game_libraries(powerup_showcase)
     
