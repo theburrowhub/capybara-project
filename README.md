@@ -1,6 +1,18 @@
 # Shoot'em Up Game - Capybara Project
 
-A side-scrolling shoot'em up game built with Raylib in C, featuring dynamic difficulty scaling, weapon heat management, and procedurally generated obstacles.
+A side-scrolling shoot'em up game built with Raylib in C, featuring **JSON-based data-driven level design**, dynamic difficulty scaling, weapon heat management, and music-synchronized enemy waves.
+
+## ✨ Key Features
+
+- **📝 JSON-Based Levels**: Create new levels without recompiling - just edit JSON files!
+- **🎵 Music-Reactive Gameplay**: Enemy waves synchronized with bass analysis
+- **🎮 Multiple Weapon Modes**: Single, Double, Spread, Rapid, Dual, and Charge modes
+- **💥 10 Unique Enemy Types**: Each with distinct behaviors and movement patterns
+- **🎯 Boss Battles**: Epic encounters with special escape mechanics
+- **🎁 4 Powerup Types**: Shield, Spread Shot, Extra Life, and Double Score
+- **🎹 Gamepad Support**: Full controller support with configurable bindings
+- **📊 High Score System**: Persistent SQLite database for scores and settings
+- **🛠️ Debug Tools**: Interactive testing arenas and showcases
 
 ## 📚 Documentation
 

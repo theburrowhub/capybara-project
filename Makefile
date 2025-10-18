@@ -29,8 +29,7 @@ ENTITY_SRCS = $(SRC_DIR)/entities/player_ship.c \
 GAMEPLAY_SRCS = $(SRC_DIR)/gameplay/weapon.c \
                 $(SRC_DIR)/gameplay/wave_system.c \
                 $(SRC_DIR)/gameplay/level_system.c \
-                $(SRC_DIR)/gameplay/level1_waves.c \
-                $(SRC_DIR)/gameplay/level2_waves.c \
+                $(SRC_DIR)/gameplay/level_system_json.c \
                 $(SRC_DIR)/gameplay/powerup.c
 
 PHYSICS_SRCS = $(SRC_DIR)/physics/collision.c \
@@ -48,7 +47,9 @@ INPUT_SRCS = $(SRC_DIR)/input/input_config.c \
              $(SRC_DIR)/input/input_manager.c
 
 UTIL_SRCS = $(SRC_DIR)/utils/logger.c \
-            $(SRC_DIR)/utils/database.c
+            $(SRC_DIR)/utils/database.c \
+            $(SRC_DIR)/utils/cJSON.c \
+            $(SRC_DIR)/utils/json_loader.c
 
 # Shared audio analysis utilities
 AUDIO_ANALYSIS_SRCS = $(SRC_DIR)/utils/audio_analysis.c
@@ -68,8 +69,7 @@ SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/gameplay/weapon.c \
                 $(SRC_DIR)/gameplay/wave_system.c \
                 $(SRC_DIR)/gameplay/level_system.c \
-                $(SRC_DIR)/gameplay/level1_waves.c \
-                $(SRC_DIR)/gameplay/level2_waves.c \
+                $(SRC_DIR)/gameplay/level_system_json.c \
                 $(SRC_DIR)/physics/combat_system.c \
                 $(SRC_DIR)/effects/projectile_manager.c \
                 $(SRC_DIR)/physics/collision.c \
@@ -77,7 +77,9 @@ SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase.c \
                 $(SRC_DIR)/gameplay/powerup.c \
                 $(SRC_DIR)/input/input_config.c \
                 $(SRC_DIR)/input/input_manager.c \
-                $(SRC_DIR)/utils/logger.c
+                $(SRC_DIR)/utils/logger.c \
+                $(SRC_DIR)/utils/cJSON.c \
+                $(SRC_DIR)/utils/json_loader.c
 
 # Sprite showcase source files
 SPRITE_SHOWCASE_SRCS = $(SRC_DIR)/demo/enemy_showcase_sprites.c \

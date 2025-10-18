@@ -2,23 +2,67 @@
 
 ## Overview
 
-The game now supports **multiple levels** with different audio tracks, enemy waves, and flight plans. Each level is self-contained with its own configuration, spawn events, and music.
+The game uses a **JSON-based data-driven level system** that supports multiple levels with different audio tracks, enemy waves, and configurations. Each level is defined in a separate JSON file, making it easy to add, modify, or reorder levels without recompiling the game.
 
 ## Architecture
 
+### JSON Configuration Files
+
+#### Meta Orchestration (`assets/levels/meta.json`)
+
+The meta file defines the level order and structure:
+
+```json
+{
+  "version": "1.0",
+  "levels": [
+    {"id": 1, "file": "level1.json"},
+    {"id": 2, "file": "level2.json"}
+  ]
+}
+```
+
+#### Individual Level Files (`assets/levels/levelX.json`)
+
+Each level is defined in its own JSON file:
+
+```json
+{
+  "levelNumber": 1,
+  "name": "Initiation",
+  "description": "Welcome to the front lines...",
+  "audioPath": "assets/audio/level1.mp3",
+  "duration": 553.82,
+  "targetScore": 5000,
+  "waves": [
+    {
+      "time": 3.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 120,
+      "pattern": "straight"
+    }
+    // ... more spawn events
+  ]
+}
+```
+
 ### Level Configuration (`LevelConfig`)
 
-Each level is defined by a `LevelConfig` structure:
+Levels are loaded from JSON and stored in memory as `LevelConfig` structures:
 
 ```c
 typedef struct LevelConfig {
-    int levelNumber;         // 1, 2, 3, etc.
-    const char* name;        // "Initiation", "Escalation", etc.
-    const char* audioPath;   // Path to MP3 file
-    const char* bassLogPath; // Path to bass analysis log
-    float duration;          // Duration in seconds
-    int targetScore;         // Score needed to progress
-    const char* description; // Level description
+    int levelNumber;          // 1, 2, 3, etc.
+    const char* name;         // "Initiation", "Escalation", etc.
+    const char* audioPath;    // Path to MP3 file
+    const char* bassLogPath;  // Legacy field (may be NULL)
+    float duration;           // Duration in seconds
+    int targetScore;          // Score needed to progress
+    const char* description;  // Level description
+    const char* jsonFilePath; // Path to level's JSON file
 } LevelConfig;
 ```
 
@@ -36,15 +80,75 @@ typedef struct LevelManager {
 } LevelManager;
 ```
 
+## Creating New Levels
+
+### Step 1: Create a Level JSON File
+
+Create a new file in `assets/levels/` (e.g., `level3.json`) with the following structure:
+
+```json
+{
+  "levelNumber": 3,
+  "name": "Your Level Name",
+  "description": "Your level description",
+  "audioPath": "assets/audio/level3.mp3",
+  "duration": 600.0,
+  "targetScore": 15000,
+  "waves": [
+    {
+      "time": 5.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 5,
+      "interval": 100,
+      "pattern": "straight"
+    }
+    // Add more spawn events...
+  ]
+}
+```
+
+### Step 2: Update Meta Orchestration
+
+Add your level to `assets/levels/meta.json`:
+
+```json
+{
+  "version": "1.0",
+  "levels": [
+    {"id": 1, "file": "level1.json"},
+    {"id": 2, "file": "level2.json"},
+    {"id": 3, "file": "level3.json"}
+  ]
+}
+```
+
+### Step 3: Add Audio File
+
+Place your level's music file in `assets/audio/level3.mp3`.
+
+That's it! The game will automatically load and play your new level. No recompilation required!
+
+### Spawn Event Fields
+
+- `time`: Time in seconds when the spawn should occur
+- `type`: Enemy type string (e.g., "ENEMY_GRUNT", "ENEMY_BOSS", etc.)
+- `x`: Horizontal spawn position (typically `SCREEN_WIDTH + 50 = 1250`)
+- `y`: Vertical spawn position (0-600)
+- `count`: Number of enemies to spawn in formation
+- `interval`: Vertical spacing between enemies in formation
+- `pattern`: Movement pattern ("straight", "zigzag", "boss", etc.)
+
 ## Available Levels
 
 ### Level 1: Initiation
+- **Configuration**: `assets/levels/level1.json`
 - **Audio**: `assets/audio/level1.mp3`
 - **Duration**: 553.82 seconds (~9 minutes)
-- **Bass Log**: `assets/audio/level1.log`
 - **Target Score**: 5,000 points
 - **Description**: Welcome to the front lines. Learn the ropes and survive.
-- **Wave Plan**: `CreateLevel1Waveplan()` in `src/systems/level1_waves.c`
+- **Wave Events**: 136 spawn events defined in JSON
 
 **Characteristics**:
 - Tutorial warm-up phase (0-55s)
@@ -54,12 +158,12 @@ typedef struct LevelManager {
 - Victory lap at the end
 
 ### Level 2: Escalation
+- **Configuration**: `assets/levels/level2.json`
 - **Audio**: `assets/audio/level2.mp3`
 - **Duration**: 612.13 seconds (~10 minutes)
-- **Bass Log**: `assets/audio/level2.log`
 - **Target Score**: 10,000 points
 - **Description**: The enemy forces intensify. Show them what you've learned.
-- **Wave Plan**: `CreateLevel2Waveplan()` in `src/systems/level2_waves.c`
+- **Wave Events**: 127 spawn events defined in JSON
 
 **Characteristics**:
 - **NO warm-up** - combat starts at 0.4 seconds! 🔥

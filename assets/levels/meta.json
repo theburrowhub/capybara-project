@@ -1,0 +1,8 @@
+{
+  "version": "1.0",
+  "levels": [
+    {"id": 1, "file": "level1.json"},
+    {"id": 2, "file": "level2.json"}
+  ]
+}
+
