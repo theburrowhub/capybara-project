@@ -1,3 +1,13 @@
+# ============================================================================
+# NOTICE: This Makefile is DEPRECATED
+# ============================================================================
+# CMake is now the primary build system for this project.
+# Please use ./build.sh (Unix/macOS) or build.bat (Windows) instead.
+#
+# This Makefile is kept for backward compatibility but may be removed in v2.0.0
+# See CMAKE_MIGRATION.md and docs/BUILD.md for migration guide.
+# ============================================================================
+
 # Compiler and flags
 CC = gcc
 CFLAGS = -Wall -Wextra -std=c99 -I./include $(shell pkg-config --cflags raylib)
@@ -158,10 +168,24 @@ ifeq ($(UNAME_S),Darwin)
 endif
 
 # Default target - build all binaries
-all: directories $(TARGET) $(SHOWCASE_TARGET) $(SPRITE_SHOWCASE_TARGET) $(SPRITE_GEN_TARGET) $(SPACESHIP_GEN_TARGET) $(PROJECTILE_GEN_TARGET) $(PROJECTILE_SHOWCASE_TARGET) $(PLAYER_SHOWCASE_TARGET) $(PLAYER_GEN_TARGET) $(POWERUP_SHOWCASE_TARGET) $(AUDIO_GUI_TARGET) $(AUDIO_CLI_TARGET) $(HIGHSCORE_POPULATOR_TARGET)
+all: deprecation-warning directories $(TARGET) $(SHOWCASE_TARGET) $(SPRITE_SHOWCASE_TARGET) $(SPRITE_GEN_TARGET) $(SPACESHIP_GEN_TARGET) $(PROJECTILE_GEN_TARGET) $(PROJECTILE_SHOWCASE_TARGET) $(PLAYER_SHOWCASE_TARGET) $(PLAYER_GEN_TARGET) $(POWERUP_SHOWCASE_TARGET) $(AUDIO_GUI_TARGET) $(AUDIO_CLI_TARGET) $(HIGHSCORE_POPULATOR_TARGET)
+
+# Show deprecation warning
+deprecation-warning:
+	@echo "=========================================="
+	@echo "⚠️  DEPRECATION NOTICE"
+	@echo "=========================================="
+	@echo "This Makefile is deprecated."
+	@echo "Please use CMake instead:"
+	@echo "  ./build.sh          (recommended)"
+	@echo "  or manually: cmake -B build && cmake --build build"
+	@echo ""
+	@echo "See CMAKE_MIGRATION.md for details."
+	@echo "=========================================="
+	@echo ""
 
 # Build only the main game
-game: directories $(TARGET)
+game: deprecation-warning directories $(TARGET)
 
 # Create build and bin directories
 directories:
@@ -235,13 +259,14 @@ clean:
 	rm -rf $(BUILD_DIR)
 	rm -rf $(BIN_DIR)
 	rm -f $(TARGET)
-	rm -f *.log *.txt
+	rm -f *.log
+	# Note: Don't delete *.txt as it would remove CMakeLists.txt
 
 # Rebuild everything
-rebuild: clean all
+rebuild: deprecation-warning clean all
 
 # Run the game
-run: game
+run: deprecation-warning game
 	./$(TARGET)
 
 # Run the enemy showcase
@@ -577,4 +602,4 @@ cz-help:
 	@echo "See docs/COMMITIZEN_GUIDE.md for detailed guide"
 	@echo "=========================================="
 
-.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all populate_highscores run_populate_highscores force_populate_highscores cz-install cz-commit cz-bump cz-bump-major cz-bump-minor cz-bump-patch cz-alpha cz-beta cz-rc cz-release cz-changelog cz-version cz-check cz-help cz-install cz-commit cz-bump cz-bump-major cz-bump-minor cz-bump-patch cz-alpha cz-beta cz-rc cz-release cz-changelog cz-version cz-check
+.PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all populate_highscores run_populate_highscores force_populate_highscores cz-install cz-commit cz-bump cz-bump-major cz-bump-minor cz-bump-patch cz-alpha cz-beta cz-rc cz-release cz-changelog cz-version cz-check cz-help deprecation-warning
