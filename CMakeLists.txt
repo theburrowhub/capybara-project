@@ -103,8 +103,7 @@ set(GAMEPLAY_SRCS
     src/gameplay/weapon.c
     src/gameplay/wave_system.c
     src/gameplay/level_system.c
-    src/gameplay/level1_waves.c
-    src/gameplay/level2_waves.c
+    src/gameplay/level_system_json.c
     src/gameplay/powerup.c
 )
 
@@ -130,6 +129,8 @@ set(UI_SRCS
 set(UTIL_SRCS
     src/utils/logger.c
     src/utils/database.c
+    src/utils/cJSON.c
+    src/utils/json_loader.c
 )
 
 set(AUDIO_ANALYSIS_SRCS
@@ -238,8 +239,7 @@ if(BUILD_DEMOS)
         src/gameplay/weapon.c
         src/gameplay/wave_system.c
         src/gameplay/level_system.c
-        src/gameplay/level1_waves.c
-        src/gameplay/level2_waves.c
+        src/gameplay/level_system_json.c
         src/physics/combat_system.c
         src/effects/projectile_manager.c
         src/physics/collision.c
@@ -248,6 +248,8 @@ if(BUILD_DEMOS)
         src/input/input_config.c
         src/input/input_manager.c
         src/utils/logger.c
+        src/utils/cJSON.c
+        src/utils/json_loader.c
     )
     link_game_libraries(enemy_showcase)
     

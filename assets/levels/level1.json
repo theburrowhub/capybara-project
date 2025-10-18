@@ -1,0 +1,1234 @@
+{
+  "levelNumber": 1,
+  "name": "Initiation",
+  "description": "Welcome to the front lines. Learn the ropes and survive.",
+  "audioPath": "assets/audio/level1.mp3",
+  "duration": 553.82,
+  "targetScore": 5000,
+  "waves": [
+    {
+      "time": 3.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 120.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 6.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 200,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 6.3,
+      "type": "ENEMY_GRUNT",
+      "x": 1350,
+      "y": 200,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 6.6,
+      "type": "ENEMY_GRUNT",
+      "x": 1450,
+      "y": 200,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 10.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 10.2,
+      "type": "ENEMY_GRUNT",
+      "x": 1350,
+      "y": 220,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 10.2,
+      "type": "ENEMY_GRUNT",
+      "x": 1350,
+      "y": 380,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 10.4,
+      "type": "ENEMY_GRUNT",
+      "x": 1450,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 15.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 5,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 19.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 220,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 19.2,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 380,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 19.4,
+      "type": "ENEMY_GRUNT",
+      "x": 1400,
+      "y": 220,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 19.6,
+      "type": "ENEMY_GRUNT",
+      "x": 1400,
+      "y": 380,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 24.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 360,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 24.2,
+      "type": "ENEMY_GRUNT",
+      "x": 1320,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 24.4,
+      "type": "ENEMY_GRUNT",
+      "x": 1390,
+      "y": 240,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 28.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 280,
+      "count": 3,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 28.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 240,
+      "count": 3,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 33.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 220,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 33.2,
+      "type": "ENEMY_GRUNT",
+      "x": 1320,
+      "y": 280,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 33.4,
+      "type": "ENEMY_GRUNT",
+      "x": 1390,
+      "y": 340,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 37.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 37.2,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 220,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 37.2,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 380,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 37.4,
+      "type": "ENEMY_SWARM",
+      "x": 1350,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 42.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 180,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 42.3,
+      "type": "ENEMY_SWARM",
+      "x": 1320,
+      "y": 260,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 42.6,
+      "type": "ENEMY_SWARM",
+      "x": 1390,
+      "y": 340,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 42.9,
+      "type": "ENEMY_SWARM",
+      "x": 1460,
+      "y": 420,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 47.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 47.2,
+      "type": "ENEMY_GRUNT",
+      "x": 1320,
+      "y": 260,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 47.2,
+      "type": "ENEMY_GRUNT",
+      "x": 1320,
+      "y": 340,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 47.4,
+      "type": "ENEMY_GRUNT",
+      "x": 1390,
+      "y": 220,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 47.4,
+      "type": "ENEMY_GRUNT",
+      "x": 1390,
+      "y": 380,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 52.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 85.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 56.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 200,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 58.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 400,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 65.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 65.5,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 350,
+      "count": 2,
+      "interval": 100.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 73.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 80.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 120.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 84.0,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 200,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 84.5,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 350,
+      "count": 3,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 90.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 90.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 400,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 96.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 102.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 200,
+      "count": 3,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 102.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 400,
+      "count": 4,
+      "interval": 85.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 106.7,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 111.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 105.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 111.5,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 350,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 118.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 124.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 200,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 124.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 400,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 131.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 138.5,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 250,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 139.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 350,
+      "count": 4,
+      "interval": 90.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 145.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 145.5,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 200,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 152.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 152.5,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 380,
+      "count": 3,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 159.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 165.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 4,
+      "interval": 85.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 166.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 166.5,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 370,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 172.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 172.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 200,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 178.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 178.5,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 400,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 185.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 200.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 212.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 222.5,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 223.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 200,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 228.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 228.5,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 370,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 233.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 238.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 220,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 238.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 390,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 243.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 300,
+      "count": 4,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 250.0,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 250,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 250.5,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 360,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 256.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 256.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 200,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 262.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 280,
+      "count": 4,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 267.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 240,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 267.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 380,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 274.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 120.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 277.5,
+      "type": "ENEMY_SHIELD",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 150.0,
+      "pattern": "formation"
+    },
+    {
+      "time": 278.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 200,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 283.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 283.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 289.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 289.5,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 400,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 295.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 220,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 300.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 300.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 370,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 306.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 320.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 332.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 4,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 346.1,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 355.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 365.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 373.5,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 250,
+      "count": 2,
+      "interval": 150.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 374.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 350,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 380.0,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 250,
+      "count": 2,
+      "interval": 150.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 380.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 370,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 387.0,
+      "type": "ENEMY_SHIELD",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 150.0,
+      "pattern": "formation"
+    },
+    {
+      "time": 387.5,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 200,
+      "count": 4,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 394.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 150.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 394.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 200,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 401.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 250,
+      "count": 5,
+      "interval": 90.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 401.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 370,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 408.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 280,
+      "count": 4,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 414.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 417.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 423.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 428.0,
+      "type": "ENEMY_BOSS",
+      "x": 1300,
+      "y": 300.0,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "boss"
+    },
+    {
+      "time": 433.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 440.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 350,
+      "count": 4,
+      "interval": 85.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 447.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 100.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 454.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 458.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 458.5,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 370,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 465.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 472.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 260,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 483.0,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 150.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 483.5,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 200,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 490.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 150.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 490.5,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 250,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 497.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 280,
+      "count": 4,
+      "interval": 110.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 497.5,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 380,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 504.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 240,
+      "count": 4,
+      "interval": 95.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 509.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 4,
+      "interval": 100.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 520.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 535.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 3,
+      "interval": 110.0,
+      "pattern": "straight"
+    }
+  ]
+}

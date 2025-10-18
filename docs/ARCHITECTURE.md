@@ -21,7 +21,8 @@ capybara-project/
 │   └── utils/          # General utilities (logging, database)
 ├── assets/             # Game assets
 │   ├── sprites/        # Generated sprite images
-│   └── audio/          # Audio files (not tracked)
+│   ├── audio/          # Audio files (music and sound effects)
+│   └── levels/         # JSON level configuration files
 ├── bin/                # Executable output
 ├── build/              # Compilation artifacts
 └── docs/               # Documentation
@@ -44,10 +45,9 @@ capybara-project/
 ### Gameplay Modules (`src/gameplay/`)
 - **weapon.c**: Weapon modes (Single, Double, Spread, Rapid, Dual, Charge), heat management, bullet physics
 - **powerup.c**: Powerup system with 4 types, drop mechanics, collection, and visual effects
-- **wave_system.c**: Dynamic enemy wave spawning, bass-driven difficulty scaling
-- **level_system.c**: Level management and progression
-- **level1_waves.c**: Level 1 wave patterns and phase definitions
-- **level2_waves.c**: Level 2 wave patterns and phase definitions
+- **wave_system.c**: Dynamic enemy wave spawning from JSON configurations
+- **level_system.c**: JSON-based level management, loading level configurations from files
+- **level_system_json.c**: Wave plan loader from JSON files
 
 ### Rendering Modules (`src/rendering/`)
 - **renderer.c**: Main rendering pipeline, HUD, background, game over screen, level transitions
@@ -68,6 +68,8 @@ capybara-project/
 - **logger.c**: Debug logging, collision tracking, event logging
 - **database.c**: SQLite database for high scores and settings persistence
 - **audio_analysis.c**: Bass detection, audio analysis, music-reactive gameplay
+- **cJSON.c**: JSON parsing library for level configuration files
+- **json_loader.c**: JSON level and wave orchestration loader
 
 ### Demo Programs (`src/demo/`)
 - **demo_common.c**: Shared utilities for demo programs (camera init, system init, starfield)
