@@ -271,16 +271,8 @@ void UpdateGame(Game* game) {
         UpdateMusicStream(game->backgroundMusic);
     }
     
-    // Handle pause toggle using InputManager (with NULL check)
-    bool pausePressed = false;
-    if (game->inputManager) {
-        pausePressed = InputManager_IsActionPressed(game->inputManager, ACTION_PAUSE);
-    } else {
-        // Fallback to direct keyboard input
-        pausePressed = IsKeyPressed(KEY_P);
-    }
-    
-    if (pausePressed) {
+    // Handle pause toggle using InputManager
+    if (game->inputManager && InputManager_IsActionPressed(game->inputManager, ACTION_PAUSE)) {
         game->gamePaused = !game->gamePaused;
         // Pause/resume music based on game state
         if (game->musicLoaded) {

@@ -1,3 +1,30 @@
+## v0.3.0 (2025-10-18)
+
+### Refactor
+
+- **MAJOR**: Reorganize src/ directory structure with domain-based organization
+  - Created 8 specialized directories: input/, gameplay/, rendering/, physics/, effects/, ui/
+  - Moved 16 files from mixed src/systems/ to appropriate domain directories
+  - Eliminated src/systems/ directory
+- **Input System**: Consolidate input handling and eliminate duplication
+  - Removed duplicate input detection from menu.c (~100 lines)
+  - Removed keyboard fallbacks from player_ship.c and game.c
+  - Unified all input through InputManager (single source of truth)
+- **Demo Utilities**: Create shared demo_common module
+  - Added 9 reusable functions for demo initialization
+  - Eliminated ~200 lines of duplicate initialization code across 5 demos
+- **Documentation**: Complete update of architecture and API docs
+  - Updated ARCHITECTURE.md with new directory structure
+  - Reorganized API.md by domain with new sections
+  - Added demo utilities documentation
+
+### Impact
+
+- Eliminated ~350+ lines of duplicate code
+- Improved code organization and maintainability
+- Zero breaking changes to public APIs
+- All 13 build targets compile successfully
+
 ## v0.2.0a7 (2025-10-14)
 
 ### Fix

@@ -88,54 +88,7 @@ static bool MenuInput_Back(void) {
            (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT));  // B button
 }
 
-// Detect keyboard input only (no mouse)
-static bool DetectKeyboardInput(InputBinding* outBinding) {
-    // Check keyboard keys (common keys only)
-    for (int key = 32; key <= 96; key++) {  // Space to `
-        if (IsKeyPressed(key)) {
-            outBinding->type = INPUT_TYPE_KEY;
-            outBinding->value = key;
-            outBinding->axisThreshold = 0.5f;
-            return true;
-        }
-    }
-    
-    // Check arrow keys and special keys (including ESC - it's bindable)
-    int specialKeys[] = {
-        KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT,
-        KEY_ENTER, KEY_TAB, KEY_BACKSPACE, KEY_ESCAPE,
-        KEY_LEFT_SHIFT, KEY_RIGHT_SHIFT,
-        KEY_LEFT_CONTROL, KEY_RIGHT_CONTROL,
-        KEY_LEFT_ALT, KEY_RIGHT_ALT
-    };
-    for (size_t i = 0; i < sizeof(specialKeys) / sizeof(specialKeys[0]); i++) {
-        if (IsKeyPressed(specialKeys[i])) {
-            outBinding->type = INPUT_TYPE_KEY;
-            outBinding->value = specialKeys[i];
-            outBinding->axisThreshold = 0.5f;
-            return true;
-        }
-    }
-    
-    return false;
-}
-
-// Detect gamepad input only
-static bool DetectGamepadInput(InputBinding* outBinding) {
-    if (!IsGamepadAvailable(0)) return false;
-    
-    // Check all standard gamepad buttons (including B button - it's bindable)
-    for (int button = 0; button < 32; button++) {
-        if (IsGamepadButtonPressed(0, button)) {
-            outBinding->type = INPUT_TYPE_GAMEPAD_BUTTON;
-            outBinding->value = button;
-            outBinding->axisThreshold = 0.5f;
-            return true;
-        }
-    }
-    
-    return false;
-}
+// Note: Input detection now uses InputManager_DetectInput() to avoid duplication
 
 // Available resolutions
 static const Resolution RESOLUTIONS[] = {
@@ -603,13 +556,20 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 
                 // Now detect input for binding (ESC and B button ARE bindable for game actions)
                 InputBinding newBinding;
-                bool detected = false;
+                // Use unified InputManager_DetectInput which handles both keyboard and gamepad
+                bool detected = InputManager_DetectInput(&newBinding);
                 
-                // Detect based on current tab
-                if (menu->controlsTab == 0) {
-                    detected = DetectKeyboardInput(&newBinding);
-                } else {
-                    detected = DetectGamepadInput(&newBinding);
+                // Filter based on current tab (keyboard vs gamepad)
+                if (detected) {
+                    bool isKeyboard = (newBinding.type == INPUT_TYPE_KEY);
+                    bool isGamepad = (newBinding.type == INPUT_TYPE_GAMEPAD_BUTTON || 
+                                     newBinding.type == INPUT_TYPE_GAMEPAD_AXIS);
+                    
+                    // Only accept input that matches the current tab
+                    if ((menu->controlsTab == 0 && !isKeyboard) || 
+                        (menu->controlsTab == 1 && !isGamepad)) {
+                        detected = false;
+                    }
                 }
                 
                 if (detected) {

@@ -7,13 +7,18 @@ The Capybara Shoot'em Up game follows a modular architecture with clear separati
 ```
 capybara-project/
 ├── include/              # Header files (interfaces)
-├── src/                 # Implementation files
-│   ├── core/           # Core game logic
-│   ├── entities/       # Game objects
-│   ├── systems/        # Game systems
-│   ├── demo/           # Showcase/demo programs
+├── src/                 # Implementation files (organized by domain)
+│   ├── core/           # Core game logic (main, game)
+│   ├── entities/       # Game objects (player, enemies)
+│   ├── input/          # Input handling (manager, config)
+│   ├── gameplay/       # Game mechanics (waves, weapons, powerups)
+│   ├── rendering/      # Rendering pipeline
+│   ├── physics/        # Collision and combat
+│   ├── effects/        # Visual effects (explosions, projectiles)
+│   ├── ui/             # User interface (menus)
+│   ├── demo/           # Showcase/demo programs + shared utilities
 │   ├── tools/          # Sprite generation tools
-│   └── utils/          # Utilities
+│   └── utils/          # General utilities (logging, database)
 ├── assets/             # Game assets
 │   ├── sprites/        # Generated sprite images
 │   └── audio/          # Audio files (not tracked)
@@ -32,25 +37,41 @@ capybara-project/
 - **player_ship.c**: Player ship logic, movement, energy/shield management, HUD rendering
 - **enemy_types.c**: 10 enemy types with unique behaviors, AI patterns, and visual designs
 
-### System Modules (`src/systems/`)
+### Input Modules (`src/input/`)
+- **input_manager.c**: Unified input handling for keyboard and gamepad
+- **input_config.c**: Input configuration, key binding, save/load settings
+
+### Gameplay Modules (`src/gameplay/`)
 - **weapon.c**: Weapon modes (Single, Double, Spread, Rapid, Dual, Charge), heat management, bullet physics
 - **powerup.c**: Powerup system with 4 types, drop mechanics, collection, and visual effects
-- **collision.c**: Collision detection between all entities, damage application, powerup collection
-- **combat_system.c**: Combat logic, damage calculation, enemy destruction
 - **wave_system.c**: Dynamic enemy wave spawning, bass-driven difficulty scaling
-- **static_waves.c**: Predefined wave patterns and phase progression
-- **projectile_manager.c**: Projectile pooling and management
-- **projectile_types.c**: 4 projectile types (Laser, Plasma, Missile, Energy Orb)
-- **explosion.c**: Explosion visual effects for enemy destruction
-- **renderer.c**: Main rendering pipeline, HUD, background, game over screen
-- **menu.c**: Menu system (if implemented)
+- **level_system.c**: Level management and progression
+- **level1_waves.c**: Level 1 wave patterns and phase definitions
+- **level2_waves.c**: Level 2 wave patterns and phase definitions
+
+### Rendering Modules (`src/rendering/`)
+- **renderer.c**: Main rendering pipeline, HUD, background, game over screen, level transitions
+
+### Physics Modules (`src/physics/`)
+- **collision.c**: Collision detection between all entities, damage application, powerup collection
+- **combat_system.c**: Generic combat logic, damage calculation, projectile firing
+
+### Effects Modules (`src/effects/`)
+- **explosion.c**: Explosion visual effects for enemy destruction, screen shake
+- **projectile_manager.c**: Projectile pooling and lifecycle management
+- **projectile_types.c**: 4 projectile types (Laser, Plasma, Missile, Energy Orb) with behavior definitions
+
+### UI Modules (`src/ui/`)
+- **menu.c**: Complete menu system (main, options, high scores, credits, pause, controls configuration)
 
 ### Utility Modules (`src/utils/`)
 - **logger.c**: Debug logging, collision tracking, event logging
+- **database.c**: SQLite database for high scores and settings persistence
 - **audio_analysis.c**: Bass detection, audio analysis, music-reactive gameplay
 
 ### Demo Programs (`src/demo/`)
-- **enemy_showcase.c**: Interactive enemy testing arena
+- **demo_common.c**: Shared utilities for demo programs (camera init, system init, starfield)
+- **enemy_showcase.c**: Interactive enemy testing arena with grid and combat modes
 - **enemy_showcase_sprites.c**: Sprite-based enemy showcase
 - **player_ship_showcase.c**: Player ship testing environment
 - **projectile_showcase.c**: Projectile type testing
@@ -124,8 +145,8 @@ main.c (60 FPS)
 
 ## Key Design Patterns
 
-### 1. Module Pattern
-Each module exposes a clean interface through header files while hiding implementation details.
+### 1. Module Pattern with Domain Organization
+Each module exposes a clean interface through header files while hiding implementation details. Modules are organized by domain (input, gameplay, rendering, physics, effects, ui) for clear separation of concerns.
 
 **Example:**
 ```c
@@ -134,12 +155,19 @@ void InitPowerupSystem(PowerupSystem* system);
 void UpdatePowerups(PowerupSystem* system, PlayerShip* player, float dt);
 void DrawPowerups(const PowerupSystem* system);
 
-// powerup.c (implementation)
+// powerup.c (implementation - in src/gameplay/)
 static void UpdatePowerupPhysics(Powerup* p, float dt);
 static void CheckPowerupMagnet(Powerup* p, const PlayerShip* ship);
 ```
 
-### 2. Entity-Component Pattern
+### 2. Unified Input System
+All input handling goes through a single `InputManager` system with configurable key bindings:
+- No duplicate input detection code
+- Consistent behavior across keyboard and gamepad
+- Configurable bindings saved to disk
+- Support for menu navigation and gameplay actions
+
+### 3. Entity-Component Pattern
 Game objects share common properties:
 - Position (Vector2)
 - Bounds (Rectangle)
@@ -147,7 +175,7 @@ Game objects share common properties:
 - Health/durability
 - Visual properties
 
-### 3. State Management
+### 4. State Management
 Central `Game` struct contains all game state, passed to functions that need it:
 ```c
 typedef struct Game {
@@ -160,14 +188,14 @@ typedef struct Game {
 } Game;
 ```
 
-### 4. Object Pooling
+### 5. Object Pooling
 Fixed-size arrays for bullets, enemies, projectiles, powerups with active/inactive states:
 - **Bullets**: 50 max
 - **Enemies**: Variable per wave
 - **Powerups**: 20 max active
 - **Explosions**: 50 max
 
-### 5. Data-Driven Design
+### 6. Data-Driven Design
 Enemy types, projectile types, and wave patterns are defined as data structures:
 ```c
 static const EnemyTypeData ENEMY_DATA[] = {
@@ -367,14 +395,35 @@ Comprehensive documentation in `docs/`:
 - Collision logging
 - FPS counter
 
+## Recent Refactoring (v0.3.0 - October 2025)
+
+The codebase underwent major reorganization to eliminate code duplication and improve maintainability:
+
+### Code Quality Improvements
+- **Eliminated ~350+ lines** of duplicate code
+- **Unified input system**: Single `InputManager` with no duplication
+- **Demo utilities**: Created `demo_common.{c,h}` with 9 reusable functions
+- **Zero breaking changes**: All refactoring was internal reorganization
+
+### Directory Structure Evolution
+**Before:** Mixed `src/systems/` with 16 files of varying abstraction levels  
+**After:** 8 domain-specific directories (input, gameplay, rendering, physics, effects, ui, etc.)
+
+This refactoring provides:
+- Clear separation of concerns by domain
+- Easier navigation and maintenance
+- Consistent patterns for future development
+- Foundation for further modularization
+
+See `CHANGELOG.md` for detailed changes.
+
 ## Future Architecture Considerations
 
 ### Potential Improvements
 1. **ECS Architecture**: Full Entity-Component-System for better modularity
 2. **Scene System**: Menu, gameplay, game over as separate scenes
 3. **Resource Manager**: Centralized asset loading and caching
-4. **Save System**: Player progress and high scores
-5. **Network Play**: Multiplayer support with client-server model
-6. **Scripting**: Lua integration for wave patterns and enemy AI
-7. **Particle System**: More sophisticated visual effects
-8. **Sound Engine**: Full sound effect and music management
+4. **Network Play**: Multiplayer support with client-server model
+5. **Scripting**: Lua integration for wave patterns and enemy AI
+6. **Particle System**: More sophisticated visual effects
+7. **Sound Engine**: Full sound effect and music management

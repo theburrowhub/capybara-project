@@ -188,28 +188,8 @@ void UpdatePlayerShip(PlayerShip* ship, float deltaTime, const InputManager* inp
 void HandlePlayerInput(PlayerShip* ship, const InputManager* inputManager) {
     Vector2 inputDir = {0, 0};
     
-    // Safety check - if no input manager, use direct keyboard input as fallback
+    // Input manager is required - no fallback
     if (!inputManager) {
-        // Fallback to direct keyboard input
-        if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) inputDir.y = -1;
-        if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) inputDir.y = 1;
-        if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
-            inputDir.x = -1;
-            ship->bankAngle = fmaxf(-30.0f, ship->bankAngle - 2.0f);
-        }
-        if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
-            inputDir.x = 1;
-            ship->bankAngle = fminf(30.0f, ship->bankAngle + 2.0f);
-        }
-        
-        if (inputDir.x != 0 && inputDir.y != 0) {
-            float length = sqrtf(inputDir.x * inputDir.x + inputDir.y * inputDir.y);
-            inputDir.x /= length;
-            inputDir.y /= length;
-        }
-        
-        ship->velocity.x = inputDir.x * ship->currentSpeed;
-        ship->velocity.y = inputDir.y * ship->currentSpeed;
         return;
     }
     
@@ -505,6 +485,10 @@ void DrawEngineTrail(const PlayerShip* ship) {
         }
     }
 }
+
+// ============================================================================
+// HUD RENDERING (considered for future refactoring to rendering/ module)
+// ============================================================================
 
 void DrawShipHUD(const PlayerShip* ship) {
     // Don't draw HUD if ship is not visible
