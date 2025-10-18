@@ -137,14 +137,7 @@ int main(void) {
             }
             
             // Check if returning from pause menu
-            bool exitingToMenu = false;
-            if (menu.currentState == MENU_MAIN && gameState == MENU_MAIN && gameInitialized) {
-                // User selected "Exit to Menu" from pause dialog
-                CleanupGame(&game);
-                gameInitialized = false;
-                exitingToMenu = true;
-                menu.justReturnedToMainMenu = true;  // Prevent immediate exit
-            } else if (menu.currentState == MENU_GAME && gameState == MENU_GAME && game.gamePaused) {
+            if (menu.currentState == MENU_GAME && gameState == MENU_GAME && game.gamePaused) {
                 // User selected "Resume" from pause dialog
                 game.gamePaused = false;
                 game.justStarted = true;  // Prevent immediate input processing after resume
@@ -154,8 +147,8 @@ int main(void) {
                 }
             }
             
-            // Only update and render if not exiting to menu
-            if (!exitingToMenu && gameInitialized) {
+            // Update and render game
+            if (gameInitialized) {
                 // Only update game if not showing pause menu
                 if (menu.currentState != MENU_PAUSE_CONFIRM) {
                     // Update game logic
@@ -220,6 +213,12 @@ int main(void) {
                 menu.justReturnedToMainMenu = true;  // Prevent immediate exit
             }
         } else {
+            // Cleanup game if we just returned to menu from gameplay
+            if (gameInitialized && menu.currentState == MENU_MAIN) {
+                CleanupGame(&game);
+                gameInitialized = false;
+            }
+            
             // Clear the "just returned" flag after one full frame in main menu
             // This prevents ESC from exiting immediately when returning from game
             static bool wasInMainMenu = false;

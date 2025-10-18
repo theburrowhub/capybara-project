@@ -39,12 +39,6 @@ void InputConfig_InitDefaults(InputConfig* config) {
     config->bindings[ACTION_FIRE][1].type = INPUT_TYPE_GAMEPAD_BUTTON;
     config->bindings[ACTION_FIRE][1].value = GAMEPAD_BUTTON_RIGHT_TRIGGER_2;
     
-    // Pause: P key (keyboard), START button (gamepad)
-    config->bindings[ACTION_PAUSE][0].type = INPUT_TYPE_KEY;
-    config->bindings[ACTION_PAUSE][0].value = KEY_P;
-    config->bindings[ACTION_PAUSE][1].type = INPUT_TYPE_GAMEPAD_BUTTON;
-    config->bindings[ACTION_PAUSE][1].value = GAMEPAD_BUTTON_MIDDLE_RIGHT;
-    
     // Special Ability: E key (keyboard), X button (gamepad - button 8)
     config->bindings[ACTION_SPECIAL_ABILITY][0].type = INPUT_TYPE_KEY;
     config->bindings[ACTION_SPECIAL_ABILITY][0].value = KEY_E;
@@ -97,16 +91,16 @@ bool InputConfig_Load(InputConfig* config, const char* configFilePath) {
             // Parse action and slot from key (supports up to 4 slots: 0-3)
             const char* actionNames[] = {
                 "move_up", "move_down", "move_left", "move_right",
-                "fire", "pause", "special", "switch_energy", "switch_weapon"
+                "fire", "special", "switch_energy", "switch_weapon"
             };
             GameAction actions[] = {
                 ACTION_MOVE_UP, ACTION_MOVE_DOWN, ACTION_MOVE_LEFT, ACTION_MOVE_RIGHT,
-                ACTION_FIRE, ACTION_PAUSE, ACTION_SPECIAL_ABILITY, 
+                ACTION_FIRE, ACTION_SPECIAL_ABILITY, 
                 ACTION_SWITCH_ENERGY_MODE, ACTION_SWITCH_WEAPON_MODE
             };
             
             // Try to match action name with slot (0 or 1)
-            for (int i = 0; i < 9; i++) {
+            for (int i = 0; i < 8; i++) {
                 for (int s = 0; s < 2; s++) {  // Only slots 0 and 1
                     char keyPattern[64];
                     snprintf(keyPattern, sizeof(keyPattern), "%s_%d", actionNames[i], s);
@@ -160,7 +154,6 @@ static const char* getActionKey(GameAction action, int slot) {
         case ACTION_MOVE_LEFT: actionName = "move_left"; break;
         case ACTION_MOVE_RIGHT: actionName = "move_right"; break;
         case ACTION_FIRE: actionName = "fire"; break;
-        case ACTION_PAUSE: actionName = "pause"; break;
         case ACTION_SPECIAL_ABILITY: actionName = "special"; break;
         case ACTION_SWITCH_ENERGY_MODE: actionName = "switch_energy"; break;
         case ACTION_SWITCH_WEAPON_MODE: actionName = "switch_weapon"; break;
@@ -230,7 +223,6 @@ const char* InputConfig_GetActionName(GameAction action) {
         case ACTION_MOVE_LEFT: return "Move Left";
         case ACTION_MOVE_RIGHT: return "Move Right";
         case ACTION_FIRE: return "Fire";
-        case ACTION_PAUSE: return "Pause";
         case ACTION_SPECIAL_ABILITY: return "Special Ability";
         case ACTION_SWITCH_ENERGY_MODE: return "Switch Energy Mode";
         case ACTION_SWITCH_WEAPON_MODE: return "Switch Weapon Mode";

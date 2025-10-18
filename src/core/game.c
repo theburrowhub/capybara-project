@@ -271,19 +271,6 @@ void UpdateGame(Game* game) {
         UpdateMusicStream(game->backgroundMusic);
     }
     
-    // Handle pause toggle using InputManager
-    if (game->inputManager && InputManager_IsActionPressed(game->inputManager, ACTION_PAUSE)) {
-        game->gamePaused = !game->gamePaused;
-        // Pause/resume music based on game state
-        if (game->musicLoaded) {
-            if (game->gamePaused) {
-                PauseMusicStream(game->backgroundMusic);
-            } else {
-                ResumeMusicStream(game->backgroundMusic);
-            }
-        }
-    }
-    
     if (!game->gameOver) {
         // Get level-specific timing (used throughout this function)
         const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);

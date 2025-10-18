@@ -499,30 +499,31 @@ make audio_cli
 
 ---
 
-## Pause Functionality
+## Pause & Exit Functionality
 
-### In-Game Pause
+### Pause/Exit Dialog
 
-**Controls**: Press `P` or `SPACE` during gameplay
+**Controls**: Press `ESC` or `START button` during gameplay
 
 **Features**:
+- Automatically pauses the game when the dialog appears
 - Freezes all game updates (enemies, projectiles, timers)
-- Shows "PAUSED" overlay on screen
-- Audio continues playing (for timing reference)
-- Press P or SPACE again to resume
-- Game state is preserved
+- Music pauses
+- Shows dialog with options to Resume or Exit to Menu
+- Press ESC or START again to resume
+- Select "Exit to Menu" to return to main menu (game will restart from beginning when you start again)
 
 **Use Cases**:
-- Analyzing enemy positions
-- Taking screenshots
+- Taking a break during gameplay
+- Taking screenshots of paused game
 - Planning strategies
-- Debugging specific moments
-- Reviewing wave patterns
-- Checking timing
+- Reviewing current situation
+- Exiting to main menu safely
 
 **Visual Indicator**:
-- Large "PAUSED" text in center of screen
-- Screen slightly dimmed
+- Dialog overlay with "GAME PAUSED" title
+- Two options: "RESUME GAME" and "EXIT TO MENU"
+- Screen dimmed with semi-transparent overlay
 - All entities frozen in place
 
 ---
