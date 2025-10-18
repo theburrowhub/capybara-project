@@ -2,6 +2,8 @@
 #include "player_ship.h"
 #include "constants.h"
 #include "projectile_types.h"
+#include "input_config.h"
+#include "input_manager.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -14,9 +16,15 @@ typedef struct {
     bool showControls;
     float demoTime;
     Vector2 starfield[100];
+    InputManager inputManager;  // Input manager for compatibility
 } ShowcaseState;
 
 void InitShowcase(ShowcaseState* state) {
+    // Initialize input system (for compatibility, though we don't use it)
+    InputConfig inputConfig;
+    InputConfig_InitDefaults(&inputConfig);
+    InputManager_Init(&state->inputManager, &inputConfig);
+    
     // Initialize player ship
     InitPlayerShip(&state->ship);
     state->ship.position = (Vector2){SCREEN_WIDTH/4, SCREEN_HEIGHT/2};
@@ -200,8 +208,8 @@ void UpdateShowcase(ShowcaseState* state) {
         }
     }
     
-    // Update player ship
-    UpdatePlayerShip(&state->ship, deltaTime);
+    // Update player ship (pass inputManager for compatibility)
+    UpdatePlayerShip(&state->ship, deltaTime, &state->inputManager);
     
     // Handle firing
     if (IsKeyDown(KEY_SPACE) && state->ship.weaponMode != WEAPON_MODE_CHARGE) {

@@ -5,6 +5,138 @@
 #include <string.h>
 #include <stdio.h>
 
+// Helper functions for menu navigation with gamepad support
+static bool MenuInput_Up(void) {
+    bool pressed = IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W);
+    
+    if (IsGamepadAvailable(0)) {
+        // D-Pad up
+        pressed = pressed || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_UP);
+        // Left stick up (with debouncing via button press simulation)
+        static float lastUpAxis = 0.0f;
+        float axisY = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
+        if (axisY < -0.5f && lastUpAxis >= -0.5f) {
+            pressed = true;
+        }
+        lastUpAxis = axisY;
+    }
+    
+    return pressed;
+}
+
+static bool MenuInput_Down(void) {
+    bool pressed = IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S);
+    
+    if (IsGamepadAvailable(0)) {
+        // D-Pad down
+        pressed = pressed || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_DOWN);
+        // Left stick down (with debouncing)
+        static float lastDownAxis = 0.0f;
+        float axisY = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_Y);
+        if (axisY > 0.5f && lastDownAxis <= 0.5f) {
+            pressed = true;
+        }
+        lastDownAxis = axisY;
+    }
+    
+    return pressed;
+}
+
+static bool MenuInput_Left(void) {
+    bool pressed = IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A);
+    
+    if (IsGamepadAvailable(0)) {
+        // D-Pad left
+        pressed = pressed || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_LEFT);
+        // Left stick left (with debouncing)
+        static float lastLeftAxis = 0.0f;
+        float axisX = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
+        if (axisX < -0.5f && lastLeftAxis >= -0.5f) {
+            pressed = true;
+        }
+        lastLeftAxis = axisX;
+    }
+    
+    return pressed;
+}
+
+static bool MenuInput_Right(void) {
+    bool pressed = IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D);
+    
+    if (IsGamepadAvailable(0)) {
+        // D-Pad right
+        pressed = pressed || IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_FACE_RIGHT);
+        // Left stick right (with debouncing)
+        static float lastRightAxis = 0.0f;
+        float axisX = GetGamepadAxisMovement(0, GAMEPAD_AXIS_LEFT_X);
+        if (axisX > 0.5f && lastRightAxis <= 0.5f) {
+            pressed = true;
+        }
+        lastRightAxis = axisX;
+    }
+    
+    return pressed;
+}
+
+static bool MenuInput_Select(void) {
+    return IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE) || 
+           (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_DOWN));  // A button
+}
+
+static bool MenuInput_Back(void) {
+    return IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
+           (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT));  // B button
+}
+
+// Detect keyboard input only (no mouse)
+static bool DetectKeyboardInput(InputBinding* outBinding) {
+    // Check keyboard keys (common keys only)
+    for (int key = 32; key <= 96; key++) {  // Space to `
+        if (IsKeyPressed(key)) {
+            outBinding->type = INPUT_TYPE_KEY;
+            outBinding->value = key;
+            outBinding->axisThreshold = 0.5f;
+            return true;
+        }
+    }
+    
+    // Check arrow keys and special keys (including ESC - it's bindable)
+    int specialKeys[] = {
+        KEY_UP, KEY_DOWN, KEY_LEFT, KEY_RIGHT,
+        KEY_ENTER, KEY_TAB, KEY_BACKSPACE, KEY_ESCAPE,
+        KEY_LEFT_SHIFT, KEY_RIGHT_SHIFT,
+        KEY_LEFT_CONTROL, KEY_RIGHT_CONTROL,
+        KEY_LEFT_ALT, KEY_RIGHT_ALT
+    };
+    for (size_t i = 0; i < sizeof(specialKeys) / sizeof(specialKeys[0]); i++) {
+        if (IsKeyPressed(specialKeys[i])) {
+            outBinding->type = INPUT_TYPE_KEY;
+            outBinding->value = specialKeys[i];
+            outBinding->axisThreshold = 0.5f;
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+// Detect gamepad input only
+static bool DetectGamepadInput(InputBinding* outBinding) {
+    if (!IsGamepadAvailable(0)) return false;
+    
+    // Check all standard gamepad buttons (including B button - it's bindable)
+    for (int button = 0; button < 32; button++) {
+        if (IsGamepadButtonPressed(0, button)) {
+            outBinding->type = INPUT_TYPE_GAMEPAD_BUTTON;
+            outBinding->value = button;
+            outBinding->axisThreshold = 0.5f;
+            return true;
+        }
+    }
+    
+    return false;
+}
+
 // Available resolutions
 static const Resolution RESOLUTIONS[] = {
     {800, 600, "800x600"},
@@ -88,6 +220,21 @@ void InitMenu(Menu* menu) {
     menu->pendingDifficulty = 0;
     menu->nameInputActive = false;
     menu->nameInputBlink = 0.0f;
+    
+    // Initialize controls configuration
+    menu->inputManager = NULL;  // Will be set by main.c
+    menu->selectedAction = 0;
+    menu->selectedBinding = 0;
+    menu->controlsTab = 0;  // Start with Keyboard tab
+    menu->waitingForInput = false;
+    menu->controlsModified = false;
+    
+    // Initialize pause menu
+    menu->pauseMenuOption = 0;  // Default to Resume
+    menu->pauseMenuCooldown = 0.0f;
+    
+    // Initialize main menu
+    menu->justReturnedToMainMenu = false;
     
     // Load settings from database
     UserSettings settings;
@@ -174,20 +321,20 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
     
     switch (menu->currentState) {
         case MENU_MAIN:
-            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+            if (MenuInput_Up()) {
                 menu->selectedOption--;
                 if (menu->selectedOption < 0) {
                     menu->selectedOption = MENU_TOTAL_OPTIONS - 1;
                 }
             }
-            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+            if (MenuInput_Down()) {
                 menu->selectedOption++;
                 if (menu->selectedOption >= MENU_TOTAL_OPTIONS) {
                     menu->selectedOption = 0;
                 }
             }
             
-            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+            if (MenuInput_Select()) {
                 switch (menu->selectedOption) {
                     case MENU_START_GAME:
                         *gameState = MENU_GAME;
@@ -202,21 +349,25 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                     case MENU_SHOW_CREDITS:
                         menu->currentState = MENU_CREDITS;
                         break;
+                    case MENU_EXIT_GAME:
+                        // Signal to exit the game
+                        *gameState = (MenuState)-1;  // Special value to indicate exit
+                        break;
                 }
             }
             break;
             
         case MENU_OPTIONS:
-            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+            if (MenuInput_Up()) {
                 menu->selectedOption--;
-                if (menu->selectedOption < 0) menu->selectedOption = 2;
+                if (menu->selectedOption < 0) menu->selectedOption = 3;
             }
-            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+            if (MenuInput_Down()) {
                 menu->selectedOption++;
-                if (menu->selectedOption > 2) menu->selectedOption = 0;
+                if (menu->selectedOption > 3) menu->selectedOption = 0;
             }
             
-            if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+            if (MenuInput_Select()) {
                 switch (menu->selectedOption) {
                     case 0:
                         menu->currentState = MENU_OPTIONS_SOUND;
@@ -230,41 +381,48 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                         menu->currentState = MENU_OPTIONS_GAME;
                         menu->selectedOption = 0;
                         break;
+                    case 3:
+                        menu->currentState = MENU_OPTIONS_CONTROLS;
+                        menu->selectedOption = 0;
+                        menu->selectedAction = 0;
+                        menu->waitingForInput = false;
+                        menu->controlsModified = false;
+                        break;
                 }
             }
             
-            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+            if (MenuInput_Back()) {
                 menu->currentState = MENU_MAIN;
                 menu->selectedOption = MENU_SHOW_OPTIONS;
             }
             break;
             
         case MENU_OPTIONS_SOUND: {
-            if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+            if (MenuInput_Up()) {
                 menu->selectedOption--;
                 if (menu->selectedOption < 0) menu->selectedOption = 1;
             }
-            if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+            if (MenuInput_Down()) {
                 menu->selectedOption++;
                 if (menu->selectedOption > 1) menu->selectedOption = 0;
             }
             
             bool settingsChanged = false;
             if (menu->selectedOption == 0) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                if (MenuInput_Left()) {
                     menu->soundVolume = fmaxf(0.0f, menu->soundVolume - 0.1f);
                     settingsChanged = true;
                 }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                if (MenuInput_Right()) {
                     menu->soundVolume = fminf(1.0f, menu->soundVolume + 0.1f);
                     settingsChanged = true;
                 }
             } else if (menu->selectedOption == 1) {
-                if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                if (MenuInput_Left()) {
                     menu->musicVolume = fmaxf(0.0f, menu->musicVolume - 0.1f);
                     settingsChanged = true;
                 }
-                if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                if (MenuInput_Right()) {
                     menu->musicVolume = fminf(1.0f, menu->musicVolume + 0.1f);
                     settingsChanged = true;
                 }
@@ -288,7 +446,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                  DB_SaveSettings(&settings);
              }
             
-            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+            if (MenuInput_Back()) {
                 menu->currentState = MENU_OPTIONS;
                 menu->selectedOption = 0;
             }
@@ -299,38 +457,38 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
              int count = 0;
              GetAvailableResolutions(&count);
              
-             if (IsKeyPressed(KEY_UP) || IsKeyPressed(KEY_W)) {
+             if (MenuInput_Up()) {
                  menu->selectedOption--;
                  if (menu->selectedOption < 0) menu->selectedOption = 2;
              }
-             if (IsKeyPressed(KEY_DOWN) || IsKeyPressed(KEY_S)) {
+             if (MenuInput_Down()) {
                  menu->selectedOption++;
                  if (menu->selectedOption > 2) menu->selectedOption = 0;
              }
              
              bool settingsChanged = false;
              if (menu->selectedOption == 0) {
-                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                 if (MenuInput_Left()) {
                      menu->selectedResolution--;
                      if (menu->selectedResolution < 0) menu->selectedResolution = count - 1;
                      ApplyResolution(menu);
                      settingsChanged = true;
                  }
-                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                 if (MenuInput_Right()) {
                      menu->selectedResolution++;
                      if (menu->selectedResolution >= count) menu->selectedResolution = 0;
                      ApplyResolution(menu);
                      settingsChanged = true;
                  }
              } else if (menu->selectedOption == 1) {
-                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+                 if (MenuInput_Left()) {
                      int mode = (int)menu->fullscreenMode - 1;
                      if (mode < 0) mode = 2;
                      menu->fullscreenMode = (FullscreenMode)mode;
                      ApplyFullscreenMode(menu);
                      settingsChanged = true;
                  }
-                 if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+                 if (MenuInput_Right()) {
                      int mode = (int)menu->fullscreenMode + 1;
                      if (mode > 2) mode = 0;
                      menu->fullscreenMode = (FullscreenMode)mode;
@@ -338,9 +496,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                      settingsChanged = true;
                  }
              } else if (menu->selectedOption == 2) {
-                 if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_RIGHT) || 
-                     IsKeyPressed(KEY_A) || IsKeyPressed(KEY_D) ||
-                     IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+                 if (MenuInput_Left() || MenuInput_Right() || MenuInput_Select()) {
                      menu->vsync = !menu->vsync;
                      if (menu->vsync) {
                          SetTargetFPS(60);
@@ -368,7 +524,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                  DB_SaveSettings(&settings);
              }
             
-            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+            if (MenuInput_Back()) {
                 menu->currentState = MENU_OPTIONS;
                 menu->selectedOption = 1;
             }
@@ -376,21 +532,124 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
         }
             
         case MENU_OPTIONS_GAME:
-            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE)) {
+            if (MenuInput_Back()) {
                 menu->currentState = MENU_OPTIONS;
                 menu->selectedOption = 2;
             }
             break;
             
+        case MENU_OPTIONS_CONTROLS: {
+            if (!menu->waitingForInput) {
+                // Switch tabs with Q/E, LB/RB, or Left/Right arrows
+                if (IsKeyPressed(KEY_Q) || MenuInput_Left() || (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_LEFT_TRIGGER_1))) {
+                    menu->controlsTab = 0;  // Keyboard tab
+                }
+                if (IsKeyPressed(KEY_E) || MenuInput_Right() || (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_TRIGGER_1))) {
+                    // Only allow gamepad tab if gamepad is connected
+                    if (IsGamepadAvailable(0)) {
+                        menu->controlsTab = 1;  // Gamepad tab
+                    }
+                }
+                
+                // Navigation through actions
+                if (MenuInput_Up()) {
+                    menu->selectedAction--;
+                    if (menu->selectedAction < 0) menu->selectedAction = ACTION_COUNT + 1;  // +2 for Save and Reset
+                }
+                if (MenuInput_Down()) {
+                    menu->selectedAction++;
+                    if (menu->selectedAction > ACTION_COUNT + 1) menu->selectedAction = 0;
+                }
+                
+                // Start rebinding with Enter - only for actions, not for buttons
+                if (MenuInput_Select()) {
+                    if (menu->selectedAction < ACTION_COUNT) {
+                        // Use slot 0 for keyboard, slot 1 for gamepad
+                        if (menu->inputManager && menu->inputManager->config) {
+                            menu->selectedBinding = (menu->controlsTab == 0) ? 0 : 1;
+                            menu->waitingForInput = true;
+                        }
+                    } else if (menu->selectedAction == ACTION_COUNT) {
+                        // Reset to defaults (now first button)
+                        if (menu->inputManager && menu->inputManager->config) {
+                            InputConfig_InitDefaults(menu->inputManager->config);
+                            menu->controlsModified = true;
+                        }
+                    } else if (menu->selectedAction == ACTION_COUNT + 1) {
+                        // Save configuration (now second button)
+                        if (menu->inputManager && menu->inputManager->config) {
+                            InputConfig_Save(menu->inputManager->config, INPUT_CONFIG_FILE_DEFAULT);
+                            menu->controlsModified = false;
+                        }
+                    }
+                }
+                
+                // Go back
+                if (MenuInput_Back()) {
+                    menu->currentState = MENU_OPTIONS;
+                    menu->selectedOption = 3;
+                }
+            } else {
+                // Waiting for input to rebind
+                // Check for cancel FIRST (before detecting input for binding)
+                // This allows ESC/B to cancel even though they're bindable for game actions
+                bool wantCancel = IsKeyPressed(KEY_ESCAPE) || 
+                                 (IsGamepadAvailable(0) && IsGamepadButtonPressed(0, GAMEPAD_BUTTON_RIGHT_FACE_RIGHT));
+                
+                if (wantCancel) {
+                    menu->waitingForInput = false;
+                    break;
+                }
+                
+                // Now detect input for binding (ESC and B button ARE bindable for game actions)
+                InputBinding newBinding;
+                bool detected = false;
+                
+                // Detect based on current tab
+                if (menu->controlsTab == 0) {
+                    detected = DetectKeyboardInput(&newBinding);
+                } else {
+                    detected = DetectGamepadInput(&newBinding);
+                }
+                
+                if (detected) {
+                    // Remove this binding from any other action that has it (in the same slot/tab)
+                    if (menu->inputManager && menu->inputManager->config) {
+                        int slot = menu->selectedBinding;  // 0 for keyboard, 1 for gamepad
+                        
+                        for (int action = 0; action < ACTION_COUNT; action++) {
+                            InputBinding* existingBinding = &menu->inputManager->config->bindings[action][slot];
+                            if (existingBinding->type == newBinding.type && 
+                                existingBinding->value == newBinding.value) {
+                                // Clear this binding
+                                existingBinding->type = INPUT_TYPE_NONE;
+                                existingBinding->value = 0;
+                            }
+                        }
+                        
+                        // Set the new binding for current action
+                        InputConfig_SetBinding(menu->inputManager->config, 
+                                             (GameAction)menu->selectedAction,
+                                             slot,
+                                             newBinding.type,
+                                             newBinding.value);
+                        menu->controlsModified = true;
+                    }
+                    menu->waitingForInput = false;
+                }
+            }
+            break;
+        }
+            
         case MENU_HIGH_SCORES:
             // Navigate between difficulties with left/right arrows
-            if (IsKeyPressed(KEY_LEFT) || IsKeyPressed(KEY_A)) {
+            if (MenuInput_Left()) {
                 menu->selectedDifficulty--;
                 if (menu->selectedDifficulty < 0) {
                     menu->selectedDifficulty = 3;  // Wrap to INSANE
                 }
             }
-            if (IsKeyPressed(KEY_RIGHT) || IsKeyPressed(KEY_D)) {
+            if (MenuInput_Right()) {
                 menu->selectedDifficulty++;
                 if (menu->selectedDifficulty > 3) {
                     menu->selectedDifficulty = 0;  // Wrap to EASY
@@ -398,8 +657,7 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             }
             
             // Go back with ESC, Backspace, Enter or Space
-            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
-                IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+            if (MenuInput_Back() || MenuInput_Select()) {
                 menu->currentState = MENU_MAIN;
                 menu->selectedOption = MENU_SHOW_HIGH_SCORES;
             }
@@ -445,10 +703,45 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
         }
             
         case MENU_CREDITS:
-            if (IsKeyPressed(KEY_ESCAPE) || IsKeyPressed(KEY_BACKSPACE) || 
-                IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE)) {
+            if (MenuInput_Back() || MenuInput_Select()) {
                 menu->currentState = MENU_MAIN;
                 menu->selectedOption = MENU_SHOW_CREDITS;
+            }
+            break;
+            
+        case MENU_PAUSE_CONFIRM:
+            // Decrease cooldown timer
+            if (menu->pauseMenuCooldown > 0.0f) {
+                menu->pauseMenuCooldown -= deltaTime;
+                if (menu->pauseMenuCooldown < 0.0f) {
+                    menu->pauseMenuCooldown = 0.0f;
+                }
+                break;  // Skip all input while cooldown is active
+            }
+            
+            // Navigate between Resume and Exit
+            if (MenuInput_Up() || MenuInput_Down() || MenuInput_Left() || MenuInput_Right()) {
+                menu->pauseMenuOption = 1 - menu->pauseMenuOption;  // Toggle between 0 and 1
+            }
+            
+            // Select option
+            if (MenuInput_Select()) {
+                if (menu->pauseMenuOption == 0) {
+                    // Resume game
+                    menu->currentState = MENU_GAME;
+                    *gameState = MENU_GAME;
+                } else {
+                    // Exit to menu - this will be handled in main.c
+                    menu->currentState = MENU_MAIN;
+                    *gameState = MENU_MAIN;
+                }
+            }
+            
+            // ESC or B button to resume (cancel)
+            if (MenuInput_Back()) {
+                menu->pauseMenuOption = 0;  // Reset to Resume
+                menu->currentState = MENU_GAME;
+                *gameState = MENU_GAME;
             }
             break;
             
@@ -474,6 +767,9 @@ void DrawMenu(const Menu* menu) {
         case MENU_OPTIONS_GAME:
             DrawOptionsGame((Menu*)menu);
             break;
+        case MENU_OPTIONS_CONTROLS:
+            DrawOptionsControls((Menu*)menu);
+            break;
         case MENU_HIGH_SCORES:
             DrawHighScores((Menu*)menu);
             break;
@@ -482,6 +778,9 @@ void DrawMenu(const Menu* menu) {
             break;
         case MENU_CREDITS:
             DrawCredits(menu);
+            break;
+        case MENU_PAUSE_CONFIRM:
+            DrawPauseConfirm(menu);
             break;
         case MENU_GAME:
             break;
@@ -523,7 +822,8 @@ void DrawMainMenu(const Menu* menu) {
         "START",
         "SETTINGS",
         "HIGH SCORES",
-        "CREDITS"
+        "CREDITS",
+        "EXIT"
     };
     
     int optionSize = 30;
@@ -558,13 +858,6 @@ void DrawMainMenu(const Menu* menu) {
         // Draw option
         DrawText(options[i], x, y, optionSize, optionColor);
     }
-    
-    // Draw instructions
-    const char* instructions = "Use ARROW KEYS to navigate, ENTER to select";
-    int instructionSize = 16;
-    int instructionWidth = MeasureText(instructions, instructionSize);
-    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
-             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
 void DrawOptions(Menu* menu) {
@@ -586,14 +879,15 @@ void DrawOptions(Menu* menu) {
     const char* options[] = {
         "SOUND OPTIONS",
         "VIDEO OPTIONS",
-        "GAME OPTIONS"
+        "GAME OPTIONS",
+        "CONTROLS"
     };
     
     int optionSize = 30;
     int optionSpacing = 60;
     int startY = 200;
     
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 4; i++) {
         int optionWidth = MeasureText(options[i], optionSize);
         int x = (screenWidth - optionWidth) / 2;
         int y = startY + i * optionSpacing;
@@ -612,12 +906,6 @@ void DrawOptions(Menu* menu) {
         DrawText(options[i], x + 2, y + 2, optionSize, (Color){0, 0, 0, 128});
         DrawText(options[i], x, y, optionSize, optionColor);
     }
-    
-    const char* instructions = "Use ARROW KEYS to navigate, ENTER to select, ESC to go back";
-    int instructionSize = 16;
-    int instructionWidth = MeasureText(instructions, instructionSize);
-    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
-             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
 void DrawOptionsSound(Menu* menu) {
@@ -665,12 +953,6 @@ void DrawOptionsSound(Menu* menu) {
     
     snprintf(volumeText, sizeof(volumeText), "%d%%", (int)(menu->musicVolume * 100));
     DrawText(volumeText, barX + barWidth + 20, musicY, optionSize, WHITE);
-    
-    const char* instructions = "Use ARROW KEYS to navigate, LEFT/RIGHT to adjust, ESC to go back";
-    int instructionSize = 16;
-    int instructionWidth = MeasureText(instructions, instructionSize);
-    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
-             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
 void DrawOptionsVideo(Menu* menu) {
@@ -727,18 +1009,6 @@ void DrawOptionsVideo(Menu* menu) {
     const char* vsyncStatus = menu->vsync ? "ON" : "OFF";
     DrawText(vsyncStatus, valueX + checkboxSize + 10, vsyncY, optionSize, WHITE);
     
-    // Info text
-    const char* infoText = "Press F11 or Alt+Enter for quick fullscreen toggle";
-    int infoSize = 14;
-    int infoWidth = MeasureText(infoText, infoSize);
-    DrawText(infoText, (screenWidth - infoWidth) / 2, 
-             screenHeight - 90, infoSize, (Color){100, 150, 255, 200});
-    
-    const char* instructions = "Use ARROW KEYS to navigate, LEFT/RIGHT to change, ESC to go back";
-    int instructionSize = 16;
-    int instructionWidth = MeasureText(instructions, instructionSize);
-    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
-             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
 void DrawOptionsGame(Menu* menu) {
@@ -759,12 +1029,6 @@ void DrawOptionsGame(Menu* menu) {
     int emptyWidth = MeasureText(emptyText, emptySize);
     DrawText(emptyText, (screenWidth - emptyWidth) / 2, 
              screenHeight / 2, emptySize, (Color){150, 150, 150, 200});
-    
-    const char* instructions = "Press ESC to go back";
-    int instructionSize = 16;
-    int instructionWidth = MeasureText(instructions, instructionSize);
-    DrawText(instructions, (screenWidth - instructionWidth) / 2, 
-             screenHeight - 50, instructionSize, (Color){150, 150, 150, 200});
 }
 
 void DrawHighScores(Menu* menu) {
@@ -877,20 +1141,6 @@ void DrawHighScores(Menu* menu) {
         DrawText(errorText, (screenWidth - errorWidth) / 2, 
                 screenHeight / 2, errorSize, RED);
     }
-    
-    // Draw navigation instructions
-    const char* navText = "Use LEFT/RIGHT arrows to change difficulty";
-    int navSize = 14;
-    int navWidth = MeasureText(navText, navSize);
-    DrawText(navText, (screenWidth - navWidth) / 2, 
-             screenHeight - 80, navSize, (Color){100, 150, 255, 200});
-    
-    // Draw back instruction
-    const char* backText = "Press ESC or ENTER to go back";
-    int backSize = 16;
-    int backWidth = MeasureText(backText, backSize);
-    DrawText(backText, (screenWidth - backWidth) / 2, 
-             screenHeight - 50, backSize, (Color){150, 150, 150, 200});
 }
 
 void DrawCredits(const Menu* menu) {
@@ -941,13 +1191,6 @@ void DrawCredits(const Menu* menu) {
             DrawText(credits[i], x, y, creditSize, textColor);
         }
     }
-    
-    // Draw back instruction
-    const char* backText = "Press ESC or ENTER to go back";
-    int backSize = 18;
-    int backWidth = MeasureText(backText, backSize);
-    DrawText(backText, (screenWidth - backWidth) / 2, 
-             screenHeight - 50, backSize, (Color){150, 150, 150, 200});
 }
 
 void DrawNameInput(Menu* menu) {
@@ -1035,20 +1278,6 @@ void DrawNameInput(Menu* menu) {
     int countWidth = MeasureText(countText, countSize);
     DrawText(countText, inputBoxX + inputBoxWidth - countWidth - 10, inputBoxY + inputBoxHeight + 5, 
              countSize, (Color){150, 150, 150, 255});
-    
-    // Instructions
-    const char* instruction1 = "Press ENTER to save";
-    const char* instruction2 = "Press ESC to use default name";
-    int instrSize = 16;
-    
-    int instr1Width = MeasureText(instruction1, instrSize);
-    int instr2Width = MeasureText(instruction2, instrSize);
-    
-    Color enterColor = menu->nameLength > 0 ? (Color){100, 255, 100, 255} : (Color){100, 100, 100, 255};
-    DrawText(instruction1, boxX + (boxWidth - instr1Width) / 2, boxY + boxHeight - 60, 
-             instrSize, enterColor);
-    DrawText(instruction2, boxX + (boxWidth - instr2Width) / 2, boxY + boxHeight - 35, 
-             instrSize, (Color){150, 150, 150, 200});
 }
 
 // Name input management functions
@@ -1078,3 +1307,259 @@ void FinishNameInput(Menu* menu) {
     menu->pendingScore = 0;
     menu->pendingDifficulty = 0;
 }
+
+void DrawOptionsControls(Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Draw background
+    DrawRectangleGradientV(0, 0, screenWidth, screenHeight,
+                           (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
+    
+    // Show gamepad status (top left)
+    bool gamepadConnected = IsGamepadAvailable(0);
+    const char* gamepadStatus = gamepadConnected ? "Gamepad: CONNECTED" : "Gamepad: NOT CONNECTED";
+    Color gamepadColor = gamepadConnected ? (Color){100, 255, 100, 255} : (Color){150, 150, 150, 255};
+    int statusSize = 14;
+    DrawText(gamepadStatus, 20, 20, statusSize, gamepadColor);
+    
+    // Draw title
+    const char* title = "CONTROLS CONFIGURATION";
+    int titleSize = 40;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, (screenWidth - titleWidth) / 2, 50, titleSize, WHITE);
+    
+    // Show modified indicator if controls were changed
+    if (menu->controlsModified) {
+        const char* modified = "* Configuration Modified - Remember to Save! *";
+        int modSize = 16;
+        int modWidth = MeasureText(modified, modSize);
+        DrawText(modified, (screenWidth - modWidth) / 2, 100, modSize, YELLOW);
+    }
+    
+    // Draw tabs below the title (upper right area)
+    int tabY = 130;
+    int tabHeight = 32;
+    int tabWidth = 160;
+    int tabSpacing = 8;
+    int tabStartX = screenWidth - (tabWidth * 2 + tabSpacing + 20);
+    
+    // Keyboard tab
+    Color keyboardTabColor = (menu->controlsTab == 0) ? (Color){50, 50, 100, 255} : (Color){20, 20, 40, 255};
+    Color keyboardTextColor = (menu->controlsTab == 0) ? YELLOW : (Color){150, 150, 150, 255};
+    DrawRectangle(tabStartX, tabY, tabWidth, tabHeight, keyboardTabColor);
+    DrawRectangleLines(tabStartX, tabY, tabWidth, tabHeight, (menu->controlsTab == 0) ? YELLOW : GRAY);
+    const char* keyboardText = "KEYBOARD";
+    int keyboardTextWidth = MeasureText(keyboardText, 18);
+    DrawText(keyboardText, tabStartX + (tabWidth - keyboardTextWidth) / 2, tabY + 7, 18, keyboardTextColor);
+    
+    // Tab indicator arrows
+    if (menu->controlsTab == 0) {
+        DrawText("<", tabStartX - 20, tabY + 6, 18, YELLOW);
+    }
+    
+    // Gamepad tab
+    Color gamepadTabColor = gamepadConnected ? 
+        ((menu->controlsTab == 1) ? (Color){50, 50, 100, 255} : (Color){20, 20, 40, 255}) :
+        (Color){10, 10, 20, 255};
+    Color gamepadTextColor = gamepadConnected ?
+        ((menu->controlsTab == 1) ? YELLOW : (Color){150, 150, 150, 255}) :
+        (Color){80, 80, 80, 255};
+    DrawRectangle(tabStartX + tabWidth + tabSpacing, tabY, tabWidth, tabHeight, gamepadTabColor);
+    DrawRectangleLines(tabStartX + tabWidth + tabSpacing, tabY, tabWidth, tabHeight, 
+                      gamepadConnected ? ((menu->controlsTab == 1) ? YELLOW : GRAY) : DARKGRAY);
+    const char* gamepadText = gamepadConnected ? "GAMEPAD" : "GAMEPAD (N/A)";
+    int gamepadTextWidth = MeasureText(gamepadText, 18);
+    DrawText(gamepadText, tabStartX + tabWidth + tabSpacing + (tabWidth - gamepadTextWidth) / 2, 
+             tabY + 7, 18, gamepadTextColor);
+    
+    // Tab indicator arrows
+    if (menu->controlsTab == 1 && gamepadConnected) {
+        DrawText(">", tabStartX + tabWidth * 2 + tabSpacing + 5, tabY + 6, 18, YELLOW);
+    }
+    
+    // Show waiting for input overlay
+    if (menu->waitingForInput) {
+        // Darken background
+        DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 180});
+        
+        // Draw prompt box
+        int boxWidth = 500;
+        int boxHeight = 150;
+        int boxX = (screenWidth - boxWidth) / 2;
+        int boxY = (screenHeight - boxHeight) / 2;
+        
+        DrawRectangle(boxX, boxY, boxWidth, boxHeight, (Color){20, 20, 40, 255});
+        DrawRectangleLines(boxX, boxY, boxWidth, boxHeight, YELLOW);
+        
+        const char* prompt = (menu->controlsTab == 0) ? 
+            "Press any key..." :
+            "Press any gamepad button...";
+        int promptSize = 28;
+        
+        int promptWidth = MeasureText(prompt, promptSize);
+        DrawText(prompt, (screenWidth - promptWidth) / 2, boxY + 60, promptSize, WHITE);
+        
+        return;  // Don't draw the rest of the menu while waiting for input
+    }
+    
+    // Draw actions list
+    int startY = 180;
+    int lineHeight = 40;
+    int leftMargin = 80;
+    
+    if (!menu->inputManager || !menu->inputManager->config) {
+        DrawText("Error: Input Manager not initialized", leftMargin, startY, 24, RED);
+        return;
+    }
+    
+    // Draw column headers
+    DrawText("ACTION", leftMargin, startY - 25, 18, (Color){150, 150, 150, 255});
+    DrawText("BINDINGS", leftMargin + 300, startY - 25, 18, (Color){150, 150, 150, 255});
+    
+    // Draw each action with binding (slot 0 for keyboard, slot 1 for gamepad)
+    for (int i = 0; i < ACTION_COUNT; i++) {
+        int y = startY + i * lineHeight;
+        bool isSelected = (menu->selectedAction == i);
+        
+        // Action name
+        const char* actionName = InputConfig_GetActionName((GameAction)i);
+        Color actionColor = isSelected ? YELLOW : WHITE;
+        DrawText(actionName, leftMargin, y, 20, actionColor);
+        
+        // Check binding for current tab (slot 0 = keyboard, slot 1 = gamepad)
+        int slot = (menu->controlsTab == 0) ? 0 : 1;
+        const InputBinding* binding = &menu->inputManager->config->bindings[i][slot];
+        InputType filterType = (menu->controlsTab == 0) ? INPUT_TYPE_KEY : INPUT_TYPE_GAMEPAD_BUTTON;
+        
+        char bindingsText[64] = "";
+        bool hasBinding = false;
+        
+        if (binding->type == filterType) {
+            InputConfig_GetBindingName(binding, bindingsText, sizeof(bindingsText));
+            hasBinding = true;
+        } else if (binding->type == INPUT_TYPE_NONE) {
+            strcpy(bindingsText, "< Not Bound >");
+        } else {
+            // Has binding but wrong type (shouldn't happen with separate slots)
+            strcpy(bindingsText, "< Not Bound >");
+        }
+        
+        // Color: Green if selected, Orange/Red if no binding, Gray if has binding but not selected
+        Color bindingsColor;
+        if (isSelected) {
+            bindingsColor = hasBinding ? GREEN : ORANGE;
+        } else {
+            bindingsColor = hasBinding ? (Color){200, 200, 200, 255} : (Color){255, 150, 100, 255};
+        }
+        
+        DrawText(bindingsText, leftMargin + 300, y, 18, bindingsColor);
+        
+        // Selection indicator
+        if (isSelected) {
+            float arrowOffset = sinf(menu->animationTimer * 4.0f) * 5.0f;
+            DrawText(">", leftMargin - 25 - arrowOffset, y, 20, YELLOW);
+        }
+    }
+    
+    // Draw Reset and Save buttons (horizontally centered, same line)
+    // Reset is ACTION_COUNT (selected first), Save is ACTION_COUNT + 1
+    int buttonsY = startY + ACTION_COUNT * lineHeight + 20;
+    int buttonSpacing = 30;
+    
+    // Reset button (left)
+    bool resetSelected = (menu->selectedAction == ACTION_COUNT);
+    const char* resetText = "[ RESET DEFAULTS ]";
+    Color resetColor = resetSelected ? YELLOW : (Color){200, 100, 100, 255};
+    int resetWidth = MeasureText(resetText, 20);
+    
+    // Save button (right)
+    bool saveSelected = (menu->selectedAction == ACTION_COUNT + 1);
+    const char* saveText = "[ SAVE CONFIGURATION ]";
+    Color saveColor = saveSelected ? YELLOW : (Color){100, 200, 100, 255};
+    int saveWidth = MeasureText(saveText, 20);
+    
+    // Calculate total width and center position
+    int totalButtonWidth = resetWidth + buttonSpacing + saveWidth;
+    int startButtonX = (screenWidth - totalButtonWidth) / 2;
+    
+    // Draw Reset button (left)
+    int resetX = startButtonX;
+    if (resetSelected) {
+        DrawRectangle(resetX - 10, buttonsY - 5, resetWidth + 20, 30,
+                     (Color){255, 255, 0, 30});
+        float arrowOffset = sinf(menu->animationTimer * 4.0f) * 5.0f;
+        DrawText(">", resetX - 30 - arrowOffset, buttonsY, 20, YELLOW);
+    }
+    DrawText(resetText, resetX, buttonsY, 20, resetColor);
+    
+    // Draw Save button (right)
+    int saveX = resetX + resetWidth + buttonSpacing;
+    if (saveSelected) {
+        DrawRectangle(saveX - 10, buttonsY - 5, saveWidth + 20, 30,
+                     (Color){255, 255, 0, 30});
+        float arrowOffset = sinf(menu->animationTimer * 4.0f) * 5.0f;
+        DrawText(">", saveX - 30 - arrowOffset, buttonsY, 20, YELLOW);
+    }
+    DrawText(saveText, saveX, buttonsY, 20, saveColor);
+}
+
+void DrawPauseConfirm(const Menu* menu) {
+    int screenWidth = GetScreenWidth();
+    int screenHeight = GetScreenHeight();
+    
+    // Semi-transparent dark overlay
+    DrawRectangle(0, 0, screenWidth, screenHeight, (Color){0, 0, 0, 200});
+    
+    // Draw dialog box
+    int boxWidth = 600;
+    int boxHeight = 350;
+    int boxX = (screenWidth - boxWidth) / 2;
+    int boxY = (screenHeight - boxHeight) / 2;
+    
+    // Box background and border
+    DrawRectangle(boxX, boxY, boxWidth, boxHeight, (Color){20, 20, 40, 255});
+    DrawRectangleLines(boxX, boxY, boxWidth, boxHeight, (Color){100, 100, 200, 255});
+    DrawRectangleLines(boxX + 2, boxY + 2, boxWidth - 4, boxHeight - 4, (Color){70, 70, 150, 255});
+    
+    // Title
+    const char* title = "GAME PAUSED";
+    int titleSize = 48;
+    int titleWidth = MeasureText(title, titleSize);
+    DrawText(title, boxX + (boxWidth - titleWidth) / 2, boxY + 40, titleSize, YELLOW);
+    
+    // Warning message
+    const char* message = "Do you want to exit to the main menu?";
+    int msgSize = 24;
+    int msgWidth = MeasureText(message, msgSize);
+    DrawText(message, boxX + (boxWidth - msgWidth) / 2, boxY + 120, msgSize, WHITE);
+    
+    // Options
+    const char* options[] = {"RESUME GAME", "EXIT TO MENU"};
+    int optionSize = 32;
+    int optionSpacing = 80;
+    int optionsStartY = boxY + 200;
+    
+    for (int i = 0; i < 2; i++) {
+        int optionWidth = MeasureText(options[i], optionSize);
+        int x = boxX + (boxWidth - optionWidth) / 2;
+        int y = optionsStartY + i * optionSpacing;
+        
+        bool isSelected = (menu->pauseMenuOption == i);
+        Color optionColor = isSelected ? YELLOW : (Color){200, 200, 200, 255};
+        
+        if (isSelected) {
+            // Highlight background
+            DrawRectangle(x - 15, y - 5, optionWidth + 30, optionSize + 10, 
+                         (Color){255, 255, 0, 30});
+            
+            // Animated arrows
+            float arrowOffset = sinf(menu->animationTimer * 4.0f) * 8.0f;
+            DrawText(">", x - 50 - arrowOffset, y, optionSize, YELLOW);
+            DrawText("<", x + optionWidth + 20 + arrowOffset, y, optionSize, YELLOW);
+        }
+        
+        DrawText(options[i], x, y, optionSize, optionColor);
+    }
+}
+

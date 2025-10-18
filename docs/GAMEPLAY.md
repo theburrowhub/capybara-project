@@ -2,21 +2,39 @@
 
 ## Controls
 
-### In-Game Controls
-- **Movement**: WASD or Arrow Keys
-- **Shoot**: Left Mouse Button (hold for continuous fire)
-- **Pause**: P
-- **Debug Mode**: H (show hitboxes)
-- **Restart**: R (when game over)
-- **Quick Fullscreen**: F11 or ALT+ENTER
+### In-Game Controls (All Inputs Work Simultaneously!)
+
+| Action | Keyboard | Gamepad |
+|--------|----------|---------|
+| **Movement** | WASD or Arrow Keys | Left Stick or D-Pad (always active) |
+| **Fire** | Space, **J key** | **R2 / Right Trigger** (always active) |
+| **Special Ability** | E, **K key** | **R1 / Right Bumper** (always active) |
+| **Switch Weapon Mode** | R, **U key** | L1 / Left Bumper (always active) |
+| **Switch Energy Mode** | Q, **I key** | L2 / Left Trigger (always active) |
+| **Pause** | P | Gamepad START Button (always active) |
+| **Pause & Exit Menu** | ESC | Gamepad START Button |
+| **Debug Mode** | H | - | - |
+| **Restart** | R (when game over) | - | - |
+| **Quick Fullscreen** | F11 or ALT+ENTER | - | - |
+
+**Note**: 
+- ✅ **Keyboard and Gamepad work simultaneously** - switch between them anytime
+- ✅ **Gamepad buttons marked "always active"** work even without configuration
+- ✅ **Configurable controls** via Options > Controls menu (up to 4 bindings per action)
+- ✅ **JKUI keys** form a diamond pattern (like gamepad face buttons) for easy right-hand control!
+  - **J** = Fire (bottom, like A button)
+  - **K** = Special (right, like B button)
+  - **U** = Weapon Mode (left, like X button)
+  - **I** = Energy Mode (top, like Y button)
+- ✅ Gamepad left stick and D-Pad always work for movement
 
 ### Menu Navigation
-- **Navigate Options**: UP/DOWN or W/S
-- **Select**: ENTER or SPACE
-- **Back**: ESC or BACKSPACE
-- **Adjust Settings**: LEFT/RIGHT or A/D
-- **Change Difficulty (High Scores)**: LEFT/RIGHT arrows to view different difficulty levels
-- **Exit Game**: ESC from main menu
+- **Navigate Options**: UP/DOWN, W/S, or Gamepad D-Pad/Left Stick Up/Down
+- **Select**: ENTER, SPACE, or Gamepad A Button
+- **Back**: ESC, BACKSPACE, or Gamepad B Button
+- **Adjust Settings**: LEFT/RIGHT, D, or Gamepad D-Pad/Left Stick Left/Right
+- **Change Difficulty (High Scores)**: LEFT/RIGHT or Gamepad D-Pad/Left Stick to view different difficulty levels
+- **Exit Game**: Select **EXIT** from main menu (keyboard or gamepad)
 
 ### Name Input (High Score Dialog)
 When you achieve a high score, a dialog appears to enter your name:
@@ -25,8 +43,28 @@ When you achieve a high score, a dialog appears to enter your name:
 - **Submit**: ENTER (requires at least 1 character)
 - **Use Default**: ESC (saves as "Player")
 
-### Planned Controller Support
-- Xbox/PlayStation controller support (see TODO.md)
+### Controller Support
+- **Full simultaneous support**: Keyboard, Mouse, and Gamepad all work at the same time
+- **Gamepad**: Xbox/PlayStation controllers with automatic detection
+- **Configurable controls** via in-game menu
+- Each action can be mapped to 2 different inputs (e.g., Space + Left Mouse for firing)
+- **Hardcoded gamepad support**: Critical gamepad buttons (A, B, X, Y, START) always work for their default actions, even without configuration
+- **Movement**: Gamepad left analog stick and D-Pad always work alongside keyboard controls
+
+### Configuring Controls
+1. From the main menu, select **Options** (keyboard or gamepad)
+2. Select **Controls** from the options menu
+3. Navigate with **UP/DOWN** or **D-Pad** to select an action
+4. Use **LEFT/RIGHT** or **D-Pad** to choose between Primary or Secondary binding
+5. Press **ENTER** or **A Button** to rebind the selected input
+6. Press the desired key, mouse button, or gamepad button
+7. Press **ESC** or **B Button** to cancel rebinding
+8. Select **SAVE CONFIGURATION** to persist your changes
+9. Select **RESET TO DEFAULTS** to restore default controls
+
+**Gamepad Status**: The controls menu shows if a gamepad is connected (green text in top-right corner)
+
+**Configuration File**: Controls are saved to `.input_config.conf` in the game directory.
 
 ## Game Mechanics
 
@@ -35,13 +73,24 @@ When you achieve a high score, a dialog appears to enter your name:
 - **Movement**: Limited to left half of screen
 - **Weapon**: Rapid-fire projectiles with heat management
 
-### Pause Feature
-- Press **P** to pause the game at any time
+### Pause & Exit Menu
+**Pause Game:**
+- Press **P** key or **START button** to pause the game at any time
 - While paused:
   - All game updates are frozen (enemies, projectiles, timers)
+  - Music pauses
   - "PAUSED" overlay appears on screen
-  - Press P again to resume
-- Useful for taking breaks or analyzing the game state
+  - Press P or START again to resume
+
+**Exit to Menu:**
+- Press **ESC** key or **START button** during gameplay to open the pause/exit confirmation dialog
+- A dialog appears with two options:
+  - **RESUME GAME** - Continue playing (default)
+  - **EXIT TO MENU** - Return to main menu
+- Navigate with UP/DOWN, D-Pad, or Left Stick
+- Select with ENTER or A Button
+- Cancel with ESC, START, or B Button (returns to game)
+- Prevents accidental exits!
 
 ### Weapon Heat System
 The weapon system prevents continuous spam shooting:

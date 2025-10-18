@@ -1,96 +1,89 @@
 cmake_minimum_required(VERSION 3.15)
-project(capybara_shootemup C)
 
+# Project definition
+project(capybara-shootemup 
+    VERSION 1.0.0
+    DESCRIPTION "Capybara Shoot'em Up - A retro-style space shooter"
+    LANGUAGES C
+)
+
+# C standard
 set(CMAKE_C_STANDARD 99)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
-# Options for static linking
-option(BUILD_STATIC "Build with static linking" OFF)
-option(BUILD_GAME "Build the main game" ON)
-option(BUILD_TOOLS "Build tool executables" ON)
-option(BUILD_DEMOS "Build demo/showcase executables" ON)
+# Options
+option(BUILD_STATIC "Build static binaries" OFF)
+option(BUILD_GAME "Build main game" ON)
+option(BUILD_TOOLS "Build tools (sprite generators, etc.)" ON)
+option(BUILD_DEMOS "Build demo executables" ON)
 
 # Compiler flags
-if(MSVC)
-    add_compile_options(/W4)
-else()
-    add_compile_options(-Wall -Wextra)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wextra")
+
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    add_compile_definitions(DEBUG)
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
+elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 endif()
 
-# Static linking flags
-if(BUILD_STATIC)
-    if(WIN32)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
-    elseif(UNIX AND NOT APPLE)
-        # On Linux, we can't fully static link OpenGL/X11 libraries
-        # Use static-libgcc and static-libstdc++ for better portability
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static-libgcc -static-libstdc++")
-    endif()
-endif()
-
-# Include directories
-include_directories(${PROJECT_SOURCE_DIR}/include)
-
-# Find required packages
-find_package(raylib 4.0 QUIET)
+# Find required libraries
+find_package(raylib 5.0 QUIET)
 if(NOT raylib_FOUND)
-    # If raylib is not found, try pkg-config
+    # Try pkg-config
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(RAYLIB REQUIRED raylib)
-    include_directories(${RAYLIB_INCLUDE_DIRS})
-    link_directories(${RAYLIB_LIBRARY_DIRS})
+    
+    if(NOT RAYLIB_FOUND)
+        message(FATAL_ERROR "raylib not found. Please install raylib 5.0 or later.")
+    endif()
 endif()
 
 # SQLite3
-find_package(PkgConfig QUIET)
-if(PkgConfig_FOUND)
-    pkg_check_modules(SQLITE3 sqlite3)
-    if(SQLITE3_FOUND)
-        set(SQLITE3_LIBRARIES ${SQLITE3_LIBRARIES})
-        include_directories(${SQLITE3_INCLUDE_DIRS})
-        link_directories(${SQLITE3_LIBRARY_DIRS})
-    endif()
-endif()
-
-if(NOT SQLITE3_FOUND)
-    if(BUILD_STATIC AND UNIX AND NOT APPLE)
-        # For static builds on Linux
-        find_library(SQLITE3_LIBRARY NAMES libsqlite3.a sqlite3)
-    else()
-        # For dynamic builds or macOS
-        find_library(SQLITE3_LIBRARY NAMES sqlite3)
-    endif()
-    
-    if(SQLITE3_LIBRARY)
-        set(SQLITE3_LIBRARIES ${SQLITE3_LIBRARY})
-    else()
-        message(FATAL_ERROR "SQLite3 not found. Install with: brew install sqlite3 (macOS) or apt install libsqlite3-dev (Linux)")
-    endif()
-endif()
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(SQLITE3 REQUIRED sqlite3)
 
 # Platform-specific libraries
-set(PLATFORM_LIBS "")
+set(PLATFORM_LIBS m)
+
 if(UNIX AND NOT APPLE)
-    # Find OpenGL on Linux
-    find_package(OpenGL REQUIRED)
-    set(PLATFORM_LIBS ${OPENGL_LIBRARIES} pthread dl rt X11 m)
+    # Linux
+    set(PLATFORM_LIBS ${PLATFORM_LIBS} GL pthread dl rt X11)
 elseif(APPLE)
-    find_library(OPENGL_FRAMEWORK OpenGL)
-    find_library(COCOA_FRAMEWORK Cocoa)
-    find_library(IOKIT_FRAMEWORK IOKit)
-    find_library(COREVIDEO_FRAMEWORK CoreVideo)
-    set(PLATFORM_LIBS 
-        ${OPENGL_FRAMEWORK}
-        ${COCOA_FRAMEWORK}
-        ${IOKIT_FRAMEWORK}
-        ${COREVIDEO_FRAMEWORK}
-        m
+    # macOS
+    find_library(OPENGL_LIBRARY OpenGL)
+    find_library(COCOA_LIBRARY Cocoa)
+    find_library(IOKIT_LIBRARY IOKit)
+    find_library(COREVIDEO_LIBRARY CoreVideo)
+    set(PLATFORM_LIBS ${PLATFORM_LIBS} 
+        ${OPENGL_LIBRARY} 
+        ${COCOA_LIBRARY} 
+        ${IOKIT_LIBRARY} 
+        ${COREVIDEO_LIBRARY}
     )
 elseif(WIN32)
-    set(PLATFORM_LIBS winmm gdi32 opengl32)
+    # Windows
+    set(PLATFORM_LIBS ${PLATFORM_LIBS} winmm gdi32 opengl32)
 endif()
 
-# Source file groups
+# Include directories
+include_directories(${CMAKE_SOURCE_DIR}/include)
+if(RAYLIB_INCLUDE_DIRS)
+    include_directories(${RAYLIB_INCLUDE_DIRS})
+endif()
+if(SQLITE3_INCLUDE_DIRS)
+    include_directories(${SQLITE3_INCLUDE_DIRS})
+endif()
+
+# Link directories
+if(RAYLIB_LIBRARY_DIRS)
+    link_directories(${RAYLIB_LIBRARY_DIRS})
+endif()
+if(SQLITE3_LIBRARY_DIRS)
+    link_directories(${SQLITE3_LIBRARY_DIRS})
+endif()
+
+# Source files organization
 set(CORE_SRCS
     src/core/main.c
     src/core/game.c
@@ -115,6 +108,8 @@ set(SYSTEM_SRCS
     src/systems/projectile_manager.c
     src/systems/powerup.c
     src/systems/menu.c
+    src/systems/input_config.c
+    src/systems/input_manager.c
 )
 
 set(UTIL_SRCS
@@ -126,6 +121,25 @@ set(AUDIO_ANALYSIS_SRCS
     src/utils/audio_analysis.c
 )
 
+# Function to link common libraries
+function(link_game_libraries target)
+    if(raylib_FOUND)
+        target_link_libraries(${target} raylib)
+    else()
+        target_link_libraries(${target} ${RAYLIB_LIBRARIES})
+    endif()
+    target_link_libraries(${target} ${PLATFORM_LIBS})
+    
+    # Static linking options
+    if(BUILD_STATIC)
+        if(WIN32)
+            target_link_options(${target} PRIVATE -static)
+        elseif(UNIX AND NOT APPLE)
+            target_link_options(${target} PRIVATE -static-libgcc)
+        endif()
+    endif()
+endfunction()
+
 # Main game executable
 if(BUILD_GAME)
     add_executable(shootemup
@@ -134,19 +148,62 @@ if(BUILD_GAME)
         ${SYSTEM_SRCS}
         ${UTIL_SRCS}
     )
-
-    if(raylib_FOUND)
-        target_link_libraries(shootemup raylib ${SQLITE3_LIBRARIES} ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(shootemup ${RAYLIB_LIBRARIES} ${SQLITE3_LIBRARIES} ${PLATFORM_LIBS})
+    
+    link_game_libraries(shootemup)
+    target_link_libraries(shootemup ${SQLITE3_LIBRARIES})
+    
+    # Strip in release mode
+    if(CMAKE_BUILD_TYPE STREQUAL "Release" AND NOT APPLE)
+        add_custom_command(TARGET shootemup POST_BUILD
+            COMMAND ${CMAKE_STRIP} $<TARGET_FILE:shootemup>
+            COMMENT "Stripping shootemup binary"
+        )
     endif()
-
-    # Install target
-    install(TARGETS shootemup DESTINATION bin)
 endif()
 
-# Enemy showcase
+# Tools
+if(BUILD_TOOLS)
+    # Enemy sprite generator
+    add_executable(generate_enemy_sprites
+        src/tools/generate_enemy_sprites.c
+        src/entities/enemy_types.c
+        src/systems/projectile_types.c
+    )
+    link_game_libraries(generate_enemy_sprites)
+    
+    # Spaceship sprite generator
+    add_executable(generate_spaceship_sprites
+        src/tools/generate_spaceship_sprites.c
+        src/entities/enemy_types.c
+        src/systems/projectile_types.c
+    )
+    link_game_libraries(generate_spaceship_sprites)
+    
+    # Projectile sprite generator
+    add_executable(generate_projectile_sprites
+        src/tools/generate_projectile_sprites.c
+        src/systems/projectile_types.c
+        src/entities/enemy_types.c
+    )
+    link_game_libraries(generate_projectile_sprites)
+    
+    # Player sprite generator
+    add_executable(generate_player_sprite
+        src/tools/generate_player_sprite.c
+    )
+    link_game_libraries(generate_player_sprite)
+    
+    # High score populator
+    add_executable(populate_highscores
+        src/tools/populate_highscores.c
+        src/utils/database.c
+    )
+    target_link_libraries(populate_highscores ${SQLITE3_LIBRARIES})
+endif()
+
+# Demo executables
 if(BUILD_DEMOS)
+    # Enemy showcase
     add_executable(enemy_showcase
         src/demo/enemy_showcase.c
         src/entities/enemy_types.c
@@ -162,242 +219,149 @@ if(BUILD_DEMOS)
         src/systems/collision.c
         src/systems/explosion.c
         src/systems/powerup.c
+        src/systems/input_config.c
+        src/systems/input_manager.c
         src/utils/logger.c
     )
+    link_game_libraries(enemy_showcase)
     
-    if(raylib_FOUND)
-        target_link_libraries(enemy_showcase raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(enemy_showcase ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-endif()
-
-# Sprite showcase
-if(BUILD_DEMOS)
+    # Enemy showcase sprites
     add_executable(enemy_showcase_sprites
         src/demo/enemy_showcase_sprites.c
         src/entities/enemy_types.c
         src/systems/projectile_types.c
     )
+    link_game_libraries(enemy_showcase_sprites)
     
-    if(raylib_FOUND)
-        target_link_libraries(enemy_showcase_sprites raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(enemy_showcase_sprites ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-endif()
-
-# Projectile showcase
-if(BUILD_DEMOS)
+    # Projectile showcase
     add_executable(projectile_showcase
         src/demo/projectile_showcase.c
         src/systems/projectile_types.c
         src/entities/enemy_types.c
     )
+    link_game_libraries(projectile_showcase)
     
-    if(raylib_FOUND)
-        target_link_libraries(projectile_showcase raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(projectile_showcase ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-endif()
-
-# Player showcase
-if(BUILD_DEMOS)
+    # Player ship showcase
     add_executable(player_showcase
         src/demo/player_ship_showcase.c
         src/entities/player_ship.c
         src/systems/projectile_types.c
         src/entities/enemy_types.c
+        src/systems/input_config.c
+        src/systems/input_manager.c
     )
+    link_game_libraries(player_showcase)
     
-    if(raylib_FOUND)
-        target_link_libraries(player_showcase raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(player_showcase ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-endif()
-
-# Powerup showcase
-if(BUILD_DEMOS)
+    # Powerup showcase
     add_executable(powerup_showcase
         src/demo/powerup_showcase.c
         src/systems/powerup.c
         src/entities/player_ship.c
         src/entities/enemy_types.c
         src/systems/projectile_types.c
+        src/systems/input_config.c
+        src/systems/input_manager.c
     )
+    link_game_libraries(powerup_showcase)
     
-    if(raylib_FOUND)
-        target_link_libraries(powerup_showcase raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(powerup_showcase ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-endif()
-
-# Audio analysis GUI
-if(BUILD_DEMOS)
+    # Audio analysis GUI
     add_executable(audio_analysis_gui
         src/demo/audio_analysis_gui.c
         ${AUDIO_ANALYSIS_SRCS}
     )
+    link_game_libraries(audio_analysis_gui)
     
-    if(raylib_FOUND)
-        target_link_libraries(audio_analysis_gui raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(audio_analysis_gui ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-endif()
-
-# Audio analysis CLI
-if(BUILD_DEMOS)
+    # Audio analysis CLI
     add_executable(audio_analysis_cli
         src/demo/audio_analysis_cli.c
         ${AUDIO_ANALYSIS_SRCS}
     )
-    
-    if(raylib_FOUND)
-        target_link_libraries(audio_analysis_cli raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(audio_analysis_cli ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
+    link_game_libraries(audio_analysis_cli)
 endif()
 
-# Tools - Sprite generators
-if(BUILD_TOOLS)
-    add_executable(generate_enemy_sprites
-        src/tools/generate_enemy_sprites.c
-        src/entities/enemy_types.c
-        src/systems/projectile_types.c
+# Installation rules
+if(BUILD_GAME)
+    install(TARGETS shootemup
+        RUNTIME DESTINATION .
     )
     
-    if(raylib_FOUND)
-        target_link_libraries(generate_enemy_sprites raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(generate_enemy_sprites ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-
-    add_executable(generate_spaceship_sprites
-        src/tools/generate_spaceship_sprites.c
-        src/entities/enemy_types.c
-        src/systems/projectile_types.c
+    # Install assets
+    install(DIRECTORY assets/
+        DESTINATION assets
     )
     
-    if(raylib_FOUND)
-        target_link_libraries(generate_spaceship_sprites raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(generate_spaceship_sprites ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
-    endif()
-
-    add_executable(generate_projectile_sprites
-        src/tools/generate_projectile_sprites.c
-        src/systems/projectile_types.c
-        src/entities/enemy_types.c
+    # Install documentation
+    install(FILES README.md
+        DESTINATION .
     )
     
-    if(raylib_FOUND)
-        target_link_libraries(generate_projectile_sprites raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(generate_projectile_sprites ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
+    if(EXISTS ${CMAKE_SOURCE_DIR}/docs/USER_MANUAL.pdf)
+        install(FILES docs/USER_MANUAL.pdf
+            DESTINATION docs
+        )
     endif()
-
-    add_executable(generate_player_sprite
-        src/tools/generate_player_sprite.c
-    )
     
-    if(raylib_FOUND)
-        target_link_libraries(generate_player_sprite raylib ${PLATFORM_LIBS})
-    else()
-        target_link_libraries(generate_player_sprite ${RAYLIB_LIBRARIES} ${PLATFORM_LIBS})
+    if(EXISTS ${CMAKE_SOURCE_DIR}/docs/GAMEPLAY.md)
+        install(FILES docs/GAMEPLAY.md
+            DESTINATION docs
+        )
     endif()
-endif()
-
-# High score populator
-if(BUILD_TOOLS)
-    add_executable(populate_highscores
-        src/tools/populate_highscores.c
-        src/utils/database.c
-    )
     
-    target_link_libraries(populate_highscores ${SQLITE3_LIBRARIES})
-endif()
-
-# Install assets
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/assets DESTINATION .)
-install(DIRECTORY ${PROJECT_SOURCE_DIR}/docs DESTINATION .)
-
-# Get version from environment, git tag, or fallback
-set(PROJECT_VERSION "0.0.0-dev")
-if(DEFINED ENV{PROJECT_VERSION})
-    set(PROJECT_VERSION $ENV{PROJECT_VERSION})
-    message(STATUS "Using version from environment: ${PROJECT_VERSION}")
-elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.cz.json")
-    # Try to read version from commitizen config
-    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/.cz.json" CZ_CONFIG)
-    string(JSON CZ_VERSION ERROR_VARIABLE JSON_ERROR GET "${CZ_CONFIG}" "commitizen" "version")
-    if(NOT JSON_ERROR)
-        set(PROJECT_VERSION "${CZ_VERSION}")
-        message(STATUS "Using version from .cz.json: ${PROJECT_VERSION}")
-    endif()
-else()
-    # Try git describe as fallback
-    execute_process(
-        COMMAND git describe --tags --abbrev=0
-        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_VERSION
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    if(GIT_VERSION)
-        string(REGEX REPLACE "^v" "" PROJECT_VERSION "${GIT_VERSION}")
-        message(STATUS "Using version from git: ${PROJECT_VERSION}")
+    # Platform-specific run scripts
+    if(WIN32)
+        # Create run.bat
+        file(WRITE ${CMAKE_BINARY_DIR}/run.bat "@echo off\nshootemup.exe\n")
+        install(FILES ${CMAKE_BINARY_DIR}/run.bat
+            DESTINATION .
+        )
     else()
-        message(WARNING "No version found, using fallback: ${PROJECT_VERSION}")
+        # Create run.sh
+        file(WRITE ${CMAKE_BINARY_DIR}/run.sh "#!/bin/bash\n./shootemup\n")
+        install(FILES ${CMAKE_BINARY_DIR}/run.sh
+            DESTINATION .
+            PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE
+        )
     endif()
 endif()
 
 # CPack configuration for packaging
 set(CPACK_PACKAGE_NAME "capybara-shootemup")
-set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
-set(CPACK_PACKAGE_VENDOR "Capybara Project")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "A side-scrolling shoot'em up game")
-set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
-set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+set(CPACK_PACKAGE_VENDOR "Capybara Games")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Capybara Shoot'em Up - A retro-style space shooter")
+set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
-# Package file naming
-if(WIN32)
-    set(CPACK_GENERATOR "ZIP")
-    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-windows-x86_64-${PROJECT_VERSION}")
-elseif(APPLE)
-    set(CPACK_GENERATOR "TGZ")
-    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-macos-universal-${PROJECT_VERSION}")
-else()
-    set(CPACK_GENERATOR "TGZ")
-    set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME}-linux-x86_64-${PROJECT_VERSION}")
+# Use version from environment variable if available (for CI/CD)
+if(DEFINED ENV{PROJECT_VERSION})
+    set(CPACK_PACKAGE_VERSION $ENV{PROJECT_VERSION})
 endif()
 
-# What to include in packages
-set(CPACK_STRIP_FILES TRUE)
-set(CPACK_PACKAGE_EXECUTABLES "shootemup" "Capybara Shoot'em Up")
-
-# Install additional files
-install(FILES README.md DESTINATION . OPTIONAL)
-install(FILES docs/GAMEPLAY.md DESTINATION . OPTIONAL)
-install(FILES docs/USER_MANUAL.pdf DESTINATION . OPTIONAL)
-
-# Create run scripts during install
-if(BUILD_GAME)
-    if(UNIX)
-        install(CODE "
-            file(WRITE \"\${CMAKE_INSTALL_PREFIX}/run.sh\" \"#!/bin/bash\\ncd \\\"\\\$(dirname \\\"\\\$0\\\")\\\"\\n./shootemup\\n\")
-            execute_process(COMMAND chmod +x \"\${CMAKE_INSTALL_PREFIX}/run.sh\")
-        ")
-    elseif(WIN32)
-        install(CODE "
-            file(WRITE \"\${CMAKE_INSTALL_PREFIX}/run.bat\" \"@echo off\\ncd /d %~dp0\\nshootemup.exe\\n\")
-        ")
-    endif()
+# Platform-specific package names
+if(WIN32)
+    set(CPACK_GENERATOR "ZIP")
+    set(CPACK_PACKAGE_FILE_NAME "capybara-shootemup-windows-x86_64-${CPACK_PACKAGE_VERSION}")
+elseif(APPLE)
+    set(CPACK_GENERATOR "TGZ")
+    set(CPACK_PACKAGE_FILE_NAME "capybara-shootemup-macos-universal-${CPACK_PACKAGE_VERSION}")
+elseif(UNIX)
+    set(CPACK_GENERATOR "TGZ")
+    set(CPACK_PACKAGE_FILE_NAME "capybara-shootemup-linux-x86_64-${CPACK_PACKAGE_VERSION}")
 endif()
 
 include(CPack)
 
+# Print configuration summary
+message(STATUS "==============================================")
+message(STATUS "Capybara Shoot'em Up - Build Configuration")
+message(STATUS "==============================================")
+message(STATUS "Version:           ${PROJECT_VERSION}")
+message(STATUS "Build type:        ${CMAKE_BUILD_TYPE}")
+message(STATUS "Static linking:    ${BUILD_STATIC}")
+message(STATUS "Build game:        ${BUILD_GAME}")
+message(STATUS "Build tools:       ${BUILD_TOOLS}")
+message(STATUS "Build demos:       ${BUILD_DEMOS}")
+message(STATUS "C Compiler:        ${CMAKE_C_COMPILER}")
+message(STATUS "Platform:          ${CMAKE_SYSTEM_NAME}")
+message(STATUS "==============================================")

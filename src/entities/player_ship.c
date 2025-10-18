@@ -107,7 +107,7 @@ void InitPlayerShip(PlayerShip* ship) {
     ship->reviveEffectTimer = 0.0f;
 }
 
-void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
+void UpdatePlayerShip(PlayerShip* ship, float deltaTime, const InputManager* inputManager) {
     // Update survival time
     ship->survivalTime += deltaTime;
     
@@ -121,7 +121,7 @@ void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
     }
     
     // Handle input
-    HandlePlayerInput(ship);
+    HandlePlayerInput(ship, inputManager);
     
     // Update physics
     UpdateShipPhysics(ship, deltaTime);
@@ -185,8 +185,33 @@ void UpdatePlayerShip(PlayerShip* ship, float deltaTime) {
     ship->enginePulse = (sinf(ship->animTime * 5.0f) + 1.0f) * 0.5f;
 }
 
-void HandlePlayerInput(PlayerShip* ship) {
+void HandlePlayerInput(PlayerShip* ship, const InputManager* inputManager) {
     Vector2 inputDir = {0, 0};
+    
+    // Safety check - if no input manager, use direct keyboard input as fallback
+    if (!inputManager) {
+        // Fallback to direct keyboard input
+        if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) inputDir.y = -1;
+        if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) inputDir.y = 1;
+        if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+            inputDir.x = -1;
+            ship->bankAngle = fmaxf(-30.0f, ship->bankAngle - 2.0f);
+        }
+        if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
+            inputDir.x = 1;
+            ship->bankAngle = fminf(30.0f, ship->bankAngle + 2.0f);
+        }
+        
+        if (inputDir.x != 0 && inputDir.y != 0) {
+            float length = sqrtf(inputDir.x * inputDir.x + inputDir.y * inputDir.y);
+            inputDir.x /= length;
+            inputDir.y /= length;
+        }
+        
+        ship->velocity.x = inputDir.x * ship->currentSpeed;
+        ship->velocity.y = inputDir.y * ship->currentSpeed;
+        return;
+    }
     
     // Weapon mode switching with number keys 1-6
     if (IsKeyPressed(KEY_ONE)) {
@@ -201,13 +226,13 @@ void HandlePlayerInput(PlayerShip* ship) {
         ship->weaponMode = WEAPON_MODE_CHARGE;
     } else if (IsKeyPressed(KEY_SIX)) {
         ship->weaponMode = WEAPON_MODE_DUAL;
-    } else if (IsKeyPressed(KEY_R)) {
-        // Cycle through weapon modes in order with R key
+    } else if (InputManager_IsActionPressed(inputManager, ACTION_SWITCH_WEAPON_MODE)) {
+        // Cycle through weapon modes in order with R key or gamepad button
         ship->weaponMode = (WeaponMode)((ship->weaponMode + 1) % WEAPON_MODE_COUNT);
     }
     
-    // Energy mode switching with Q key
-    if (IsKeyPressed(KEY_Q)) {
+    // Energy mode switching using InputManager
+    if (InputManager_IsActionPressed(inputManager, ACTION_SWITCH_ENERGY_MODE)) {
         if (ship->energyMode == ENERGY_MODE_OFFENSIVE) {
             ship->energyMode = ENERGY_MODE_DEFENSIVE;
             // Switch to defensive mode: increase max shield from 25 to 50
@@ -223,29 +248,29 @@ void HandlePlayerInput(PlayerShip* ship) {
         }
     }
     
-    // Special ability activation by holding E key - works with any amount of energy
-    if (IsKeyDown(KEY_E) && ship->energy > 0) {
-        // Activate special ability while E is held and energy is available
+    // Special ability activation - use InputManager
+    if (InputManager_IsActionDown(inputManager, ACTION_SPECIAL_ABILITY) && ship->energy > 0) {
+        // Activate special ability while action is held and energy is available
         ship->specialAbilityActive = true;
     } else {
-        // Deactivate when E is released or energy runs out
+        // Deactivate when released or energy runs out
         if (ship->specialAbilityActive) {
             ship->specialAbilityActive = false;
         }
     }
     
-    // Movement input
-    if (IsKeyDown(KEY_W) || IsKeyDown(KEY_UP)) {
+    // Keyboard/Gamepad movement input using InputManager
+    if (InputManager_IsActionDown(inputManager, ACTION_MOVE_UP)) {
         inputDir.y = -1;
     }
-    if (IsKeyDown(KEY_S) || IsKeyDown(KEY_DOWN)) {
+    if (InputManager_IsActionDown(inputManager, ACTION_MOVE_DOWN)) {
         inputDir.y = 1;
     }
-    if (IsKeyDown(KEY_A) || IsKeyDown(KEY_LEFT)) {
+    if (InputManager_IsActionDown(inputManager, ACTION_MOVE_LEFT)) {
         inputDir.x = -1;
         ship->bankAngle = fmaxf(-30.0f, ship->bankAngle - 2.0f);
     }
-    if (IsKeyDown(KEY_D) || IsKeyDown(KEY_RIGHT)) {
+    if (InputManager_IsActionDown(inputManager, ACTION_MOVE_RIGHT)) {
         inputDir.x = 1;
         ship->bankAngle = fminf(30.0f, ship->bankAngle + 2.0f);
     }
@@ -257,11 +282,7 @@ void HandlePlayerInput(PlayerShip* ship) {
         inputDir.y /= length;
     }
     
-    // Apply movement
-    ship->velocity.x = inputDir.x * ship->currentSpeed;
-    ship->velocity.y = inputDir.y * ship->currentSpeed;
-    
-    // Return banking to neutral
+    // Return banking to neutral when not moving
     if (inputDir.x == 0) {
         if (ship->bankAngle > 0) {
             ship->bankAngle = fmaxf(0, ship->bankAngle - 3.0f);
@@ -270,9 +291,9 @@ void HandlePlayerInput(PlayerShip* ship) {
         }
     }
     
-    // No boost, no weapon mode switching - simple movement
-    
-    // Charge beam disabled - no special weapon modes
+    // Apply movement
+    ship->velocity.x = inputDir.x * ship->currentSpeed;
+    ship->velocity.y = inputDir.y * ship->currentSpeed;
 }
 
 void UpdateShipPhysics(PlayerShip* ship, float deltaTime) {
@@ -758,3 +779,4 @@ void GetShipStats(const PlayerShip* ship, char* buffer, int bufferSize) {
         ship->upgrades.energyLevel
     );
 }
+

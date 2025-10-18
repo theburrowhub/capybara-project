@@ -33,15 +33,20 @@ Complete documentation is available in the [`docs/`](docs/INDEX.md) folder:
 git clone <repository-url>
 cd capybara-project
 
-# Build the game
-make
+# Build the game (using CMake - recommended)
+./build.sh
 
 # Run the game
-make run
+./build/shootemup
+
+# Or use the traditional Makefile
+make && make run
 
 # For advanced debugging (invulnerability, phase selection, etc.)
 ./run_debug_game.sh --help
 ```
+
+**Note**: This project uses **CMake** as the primary build system for cross-platform compatibility (Linux, macOS, Windows). See [docs/BUILD.md](docs/BUILD.md) for detailed build instructions.
 
 ## 🚀 Creating Releases
 
