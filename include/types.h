@@ -79,6 +79,8 @@ struct Game {
     float levelCompleteTimer;  // Time since level complete overlay appeared
     bool transitioningToNextLevel; // Whether we're in the middle of transitioning
     float levelStartTime;      // Game time when current level started (for display)
+    // Scroll speed cap (set at end of level 1)
+    float maxScrollSpeed;      // Maximum scroll speed cap (0 = no cap)
     // Input debouncing
     bool justStarted;          // Prevent input on first frame after starting game
 };
