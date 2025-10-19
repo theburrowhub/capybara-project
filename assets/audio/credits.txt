@@ -1,0 +1,79 @@
+================================================================================
+                          MUSIC CREDITS & ATTRIBUTION
+================================================================================
+
+All music tracks are licensed from Pixabay under the Pixabay Content License.
+https://pixabay.com/service/license-summary/
+
+--------------------------------------------------------------------------------
+MENU MUSIC
+--------------------------------------------------------------------------------
+Title:    Heavy German Techno Beat – Dark Industrial Instrumental
+File:     heavy-german-techno-beat-dark-industrial-instrumental-403003.mp3
+Artist:   Nicholas Panek
+Source:   Pixabay
+URL:      https://pixabay.com/music/id-403003/
+License:  Pixabay Content License
+
+--------------------------------------------------------------------------------
+LEVEL 1 MUSIC
+--------------------------------------------------------------------------------
+Title:    Importance Techno
+File:     importance-techno-9104.mp3
+Artist:   DanceMusike
+Source:   Pixabay
+URL:      https://pixabay.com/music/id-9104/
+License:  Pixabay Content License
+
+--------------------------------------------------------------------------------
+LEVEL 2 MUSIC
+--------------------------------------------------------------------------------
+Title:    Confiance Techno
+File:     confiance-techno-9106.mp3
+Artist:   DanceMusike
+Source:   Pixabay
+URL:      https://pixabay.com/music/id-9106/
+License:  Pixabay Content License
+
+--------------------------------------------------------------------------------
+LEVEL 3 MUSIC
+--------------------------------------------------------------------------------
+Title:    Revels Dance
+File:     revels-dance-9101.mp3
+Artist:   DanceMusike
+Source:   Pixabay
+URL:      https://pixabay.com/music/id-9101/
+License:  Pixabay Content License
+
+--------------------------------------------------------------------------------
+LEVEL 4 MUSIC
+--------------------------------------------------------------------------------
+Title:    Stations Techno
+File:     stations-techno-9097.mp3
+Artist:   DanceMusike
+Source:   Pixabay
+URL:      https://pixabay.com/music/id-9097/
+License:  Pixabay Content License
+
+--------------------------------------------------------------------------------
+END CREDITS MUSIC
+--------------------------------------------------------------------------------
+Title:    Reflections Trance
+File:     reflections-trance-9098.mp3
+Artist:   DanceMusike
+Source:   Pixabay
+URL:      https://pixabay.com/music/id-9098/
+License:  Pixabay Content License
+
+================================================================================
+                               SPECIAL THANKS
+================================================================================
+
+Thanks to the Pixabay community for providing high-quality, royalty-free music
+that makes this game possible.
+
+For more information about Pixabay music:
+- Artist Nicholas Panek: https://pixabay.com/users/nickpanek-38266323/
+- Artist DanceMusike: https://pixabay.com/users/dancemusike-23733070/
+
+Last Updated: October 2025
