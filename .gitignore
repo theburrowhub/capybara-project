@@ -56,8 +56,12 @@ core.*
 *.tmp
 *.temp
 
-# Media files (audio)
-assets/audio/
+# test media files
+assets/*.private/
+
+# Audio assets files
+!assets/audio/credits.txt
+!assets/audio/*.mp3
 
 # LaTeX build artifacts
 *.aux
