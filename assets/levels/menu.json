@@ -1,0 +1,10 @@
+{
+  "levelNumber": 0,
+  "name": "Main Menu",
+  "description": "Prepare yourself for the battle ahead.",
+  "audioPath": "assets/audio/heavy-german-techno-beat-dark-industrial-instrumental-403003.mp3",
+  "duration": 148.15,
+  "targetScore": 0,
+  "waves": []
+}
+

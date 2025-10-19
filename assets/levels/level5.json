@@ -1,0 +1,443 @@
+{
+  "levelNumber": 5,
+  "name": "Final Assault",
+  "description": "The ultimate challenge. Prove your mastery or fall to oblivion.",
+  "audioPath": "assets/audio/heavy-german-techno-beat-dark-industrial-instrumental-403003.mp3",
+  "duration": 148.15,
+  "targetScore": 30000,
+  "waves": [
+    {
+      "time": 3.0,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 160.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 8.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 270,
+      "count": 6,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 12.0,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 330,
+      "count": 2,
+      "interval": 140.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 16.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 290,
+      "count": 5,
+      "interval": 90.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 20.0,
+      "type": "ENEMY_SHIELD",
+      "x": 1250,
+      "y": 320,
+      "count": 3,
+      "interval": 145.0,
+      "pattern": "formation"
+    },
+    {
+      "time": 24.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 280,
+      "count": 5,
+      "interval": 100.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 28.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 310,
+      "count": 2,
+      "interval": 155.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 32.0,
+      "type": "ENEMY_GHOST",
+      "x": 1250,
+      "y": 340,
+      "count": 3,
+      "interval": 130.0,
+      "pattern": "phasing"
+    },
+    {
+      "time": 35.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 260,
+      "count": 6,
+      "interval": 90.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 38.55,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 160.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 38.55,
+      "type": "ENEMY_SWARM",
+      "x": 1350,
+      "y": 330,
+      "count": 7,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 42.0,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 280,
+      "count": 2,
+      "interval": 140.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 46.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 320,
+      "count": 6,
+      "interval": 85.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 46.77,
+      "type": "ENEMY_SHIELD",
+      "x": 1350,
+      "y": 290,
+      "count": 3,
+      "interval": 145.0,
+      "pattern": "formation"
+    },
+    {
+      "time": 50.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 340,
+      "count": 6,
+      "interval": 95.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 54.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 270,
+      "count": 2,
+      "interval": 155.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 58.0,
+      "type": "ENEMY_GHOST",
+      "x": 1250,
+      "y": 310,
+      "count": 3,
+      "interval": 130.0,
+      "pattern": "phasing"
+    },
+    {
+      "time": 62.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 350,
+      "count": 7,
+      "interval": 85.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 66.0,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 280,
+      "count": 2,
+      "interval": 160.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 69.28,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 320,
+      "count": 7,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 69.28,
+      "type": "ENEMY_TANK",
+      "x": 1350,
+      "y": 260,
+      "count": 2,
+      "interval": 140.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 73.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 300,
+      "count": 6,
+      "interval": 85.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 77.0,
+      "type": "ENEMY_SHIELD",
+      "x": 1250,
+      "y": 340,
+      "count": 3,
+      "interval": 145.0,
+      "pattern": "formation"
+    },
+    {
+      "time": 81.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 270,
+      "count": 6,
+      "interval": 95.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 85.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 310,
+      "count": 2,
+      "interval": 155.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 88.01,
+      "type": "ENEMY_GHOST",
+      "x": 1250,
+      "y": 330,
+      "count": 4,
+      "interval": 125.0,
+      "pattern": "phasing"
+    },
+    {
+      "time": 88.01,
+      "type": "ENEMY_ELITE",
+      "x": 1350,
+      "y": 280,
+      "count": 2,
+      "interval": 160.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 92.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 300,
+      "count": 7,
+      "interval": 85.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 96.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 350,
+      "count": 7,
+      "interval": 75.0,
+      "pattern": "straight"
+    },
+    {
+      "time": 100.0,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 270,
+      "count": 3,
+      "interval": 135.0,
+      "pattern": "tank_assault"
+    },
+    {
+      "time": 104.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 320,
+      "count": 6,
+      "interval": 85.0,
+      "pattern": "zigzag"
+    },
+    {
+      "time": 108.0,
+      "type": "ENEMY_SHIELD",
+      "x": 1250,
+      "y": 290,
+      "count": 3,
+      "interval": 145.0,
+      "pattern": "formation"
+    },
+    {
+      "time": 112.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 340,
+      "count": 6,
+      "interval": 95.0,
+      "pattern": "erratic"
+    },
+    {
+      "time": 116.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 280,
+      "count": 3,
+      "interval": 150.0,
+      "pattern": "horizontal"
+    },
+    {
+      "time": 117.99,
+      "type": "ENEMY_GHOST",
+      "x": 1350,
+      "y": 310,
+      "count": 4,
+      "interval": 125.0,
+      "pattern": "phasing"
+    },
+    {
+      "time": 120.0,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 330,
+      "count": 3,
+      "interval": 155.0,
+      "pattern": "elite_retreat"
+    },
+    {
+      "time": 124.0,
+      "type": "ENEMY_BOSS",
+      "x": 1300,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "boss"
+    },
+    {
+      "time": 125.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 260,
+      "count": 5,
+      "interval": 80.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 127.0,
+      "type": "ENEMY_TANK",
+      "x": 1250,
+      "y": 350,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 129.0,
+      "type": "ENEMY_SPEEDER",
+      "x": 1250,
+      "y": 280,
+      "count": 4,
+      "interval": 90.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 131.0,
+      "type": "ENEMY_GHOST",
+      "x": 1250,
+      "y": 320,
+      "count": 2,
+      "interval": 130.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 133.0,
+      "type": "ENEMY_ELITE",
+      "x": 1250,
+      "y": 300,
+      "count": 2,
+      "interval": 160.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 135.0,
+      "type": "ENEMY_SHIELD",
+      "x": 1250,
+      "y": 270,
+      "count": 2,
+      "interval": 145.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 137.0,
+      "type": "ENEMY_BOMBER",
+      "x": 1250,
+      "y": 340,
+      "count": 2,
+      "interval": 155.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 139.0,
+      "type": "ENEMY_ZIGZAG",
+      "x": 1250,
+      "y": 310,
+      "count": 5,
+      "interval": 100.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 141.0,
+      "type": "ENEMY_GRUNT",
+      "x": 1250,
+      "y": 290,
+      "count": 6,
+      "interval": 90.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 143.0,
+      "type": "ENEMY_SWARM",
+      "x": 1250,
+      "y": 330,
+      "count": 7,
+      "interval": 75.0,
+      "pattern": "minion"
+    },
+    {
+      "time": 145.0,
+      "type": "ENEMY_BOSS",
+      "x": 1300,
+      "y": 300,
+      "count": 1,
+      "interval": 0.0,
+      "pattern": "boss"
+    }
+  ]
+}
+

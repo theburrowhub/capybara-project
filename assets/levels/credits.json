@@ -1,0 +1,63 @@
+{
+  "levelNumber": 99,
+  "name": "Credits",
+  "description": "Victory is yours. Thank you for playing.",
+  "audioPath": "assets/audio/reflections-trance-9098.mp3",
+  "duration": 0,
+  "targetScore": 0,
+  "waves": [],
+  "creditInfo": {
+    "title": "CREDITS",
+    "development": {
+      "projectName": "CAPIBARA PROJECT",
+      "engine": "Developed with raylib",
+      "team": "Programming & Design: Sergio Tejon & Jose A. Muriano"
+    },
+    "musicHeader": "MUSIC CREDITS",
+    "musicLicense": "All music licensed from Pixabay Content License",
+    "musicTracks": [
+      {
+        "level": "MENU & LEVEL 5",
+        "title": "Heavy German Techno Beat",
+        "artist": "by Nicholas Panek",
+        "column": "left"
+      },
+      {
+        "level": "LEVEL 1",
+        "title": "Importance Techno",
+        "artist": "by DanceMusike",
+        "column": "left"
+      },
+      {
+        "level": "LEVEL 2",
+        "title": "Confiance Techno",
+        "artist": "by DanceMusike",
+        "column": "left"
+      },
+      {
+        "level": "LEVEL 3",
+        "title": "Revels Dance",
+        "artist": "by DanceMusike",
+        "column": "right"
+      },
+      {
+        "level": "LEVEL 4",
+        "title": "Stations Techno",
+        "artist": "by DanceMusike",
+        "column": "right"
+      },
+      {
+        "level": "END CREDITS",
+        "title": "Reflections Trance",
+        "artist": "by DanceMusike",
+        "column": "right"
+      }
+    ],
+    "footer": {
+      "source": "Source: Pixabay Music Library - pixabay.com/music",
+      "thanks": "Special Thanks: raylib community",
+      "copyright": "(c) 2025"
+    },
+    "backText": "Press ESC or ENTER to return"
+  }
+}
