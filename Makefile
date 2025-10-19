@@ -16,7 +16,8 @@ LIBS = $(shell pkg-config --libs raylib) -lm -lsqlite3
 # Directories
 SRC_DIR = src
 BUILD_DIR = build
-BIN_DIR = bin
+# BIN_DIR now points to build/ to match CMake behavior (binaries go in build/)
+BIN_DIR = build
 INCLUDE_DIR = include
 
 # Source files
@@ -194,7 +195,7 @@ deprecation-warning:
 # Build only the main game
 game: deprecation-warning directories $(TARGET)
 
-# Create build and bin directories
+# Create build directories (binaries now go to build/ to match CMake)
 directories:
 	@mkdir -p $(BUILD_DIR)/core
 	@mkdir -p $(BUILD_DIR)/entities
@@ -207,7 +208,6 @@ directories:
 	@mkdir -p $(BUILD_DIR)/utils
 	@mkdir -p $(BUILD_DIR)/demo
 	@mkdir -p $(BUILD_DIR)/tools
-	@mkdir -p $(BIN_DIR)
 	@mkdir -p assets/sprites/enemies
 
 # Link the main executable
@@ -269,10 +269,9 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 # Clean build artifacts (preserves config files)
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -rf $(BIN_DIR)
-	rm -f $(TARGET)
 	rm -f *.log
 	# Note: Don't delete *.txt as it would remove CMakeLists.txt
+	# Note: bin/ folder can be manually deleted if needed
 
 # Rebuild everything
 rebuild: deprecation-warning clean all
@@ -614,4 +613,11 @@ cz-help:
 	@echo "See docs/COMMITIZEN_GUIDE.md for detailed guide"
 	@echo "=========================================="
 
+# Mark build directory and all non-file targets as phony to avoid conflicts
 .PHONY: all game clean rebuild run showcase showcase_sprites enemy_showcase generate_sprites sprites debug release help directories audio_gui audio_cli run_audio_gui run_audio_cli player_showcase projectiles spaceships player powerup_showcase build_powerup_showcase manual manual-full clean-manual clean-manual-all populate_highscores run_populate_highscores force_populate_highscores cz-install cz-commit cz-bump cz-bump-major cz-bump-minor cz-bump-patch cz-alpha cz-beta cz-rc cz-release cz-changelog cz-version cz-check cz-help deprecation-warning
+
+# Prevent Make from deleting intermediate files
+.SECONDARY:
+
+# Disable built-in suffix rules to avoid conflicts
+.SUFFIXES:

@@ -128,7 +128,7 @@ sudo ldconfig
 ```bash
 make clean
 make -j$(nproc)
-./bin/shootemup
+./build/shootemup
 ```
 
 **Using CMake (static):**
@@ -157,7 +157,7 @@ brew install cmake pkg-config sqlite3 raylib
 ```bash
 make clean
 make -j$(sysctl -n hw.ncpu)
-./bin/shootemup
+./build/shootemup
 ```
 
 **Using CMake:**
@@ -245,7 +245,7 @@ cmake --build . --config Release
 After building, you'll find these executables:
 
 **Main Game:**
-- `bin/shootemup` (Make) or `build/shootemup` (CMake)
+- `build/shootemup` (both Make and CMake now use build/ directory)
 
 **Tools:**
 - `generate_enemy_sprites` - Generate enemy sprite assets
@@ -269,9 +269,7 @@ build/                # CMake build output
 ├── enemy_showcase    # Showcases
 └── ...               # Other executables
 
-bin/                  # Make build output
-├── shootemup         # Main game
-└── ...               # Other executables
+Note: Make and CMake both now use the build/ directory for consistency.
 ```
 
 ## Static Linking
@@ -368,8 +366,6 @@ rm -rf build && ./build_static.sh
 
 **Solution:**
 ```bash
-chmod +x bin/shootemup
-# or
 chmod +x build/shootemup
 ```
 

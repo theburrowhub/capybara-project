@@ -23,9 +23,9 @@ _deps/
 *.cmake
 !CMakeLists.txt
 
-# Executable
-bin
-shootemup
+# Executables
+bin/          # Legacy bin folder (deprecated, now using build/)
+shootemup     # Standalone executable (if built in root)
 
 # Configuration files
 .audio_analysis.conf
