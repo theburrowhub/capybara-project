@@ -97,11 +97,24 @@ MetaOrchestration* LoadMetaOrchestration(const char* filepath) {
         meta->version = strdup("1.0");
     }
     
+    // Parse menu
+    cJSON* menu = cJSON_GetObjectItem(root, "menu");
+    if (menu) {
+        cJSON* menuId = cJSON_GetObjectItem(menu, "id");
+        cJSON* menuFile = cJSON_GetObjectItem(menu, "file");
+        meta->menu.id = menuId && cJSON_IsNumber(menuId) ? menuId->valueint : 0;
+        meta->menu.filename = menuFile && cJSON_IsString(menuFile) ? strdup(menuFile->valuestring) : strdup("menu.json");
+    } else {
+        meta->menu.id = 0;
+        meta->menu.filename = strdup("menu.json");
+    }
+    
     // Parse levels array
     cJSON* levels = cJSON_GetObjectItem(root, "levels");
     if (!levels || !cJSON_IsArray(levels)) {
         printf("[JSON LOADER] ERROR: 'levels' array not found in meta file\n");
         free(meta->version);
+        if (meta->menu.filename) free(meta->menu.filename);
         free(meta);
         cJSON_Delete(root);
         return NULL;
@@ -110,6 +123,15 @@ MetaOrchestration* LoadMetaOrchestration(const char* filepath) {
     meta->levelCount = cJSON_GetArraySize(levels);
     meta->levels = (MetaLevel*)malloc(sizeof(MetaLevel) * meta->levelCount);
     
+    if (!meta->levels) {
+        printf("[JSON LOADER] ERROR: Failed to allocate levels array\n");
+        free(meta->version);
+        if (meta->menu.filename) free(meta->menu.filename);
+        free(meta);
+        cJSON_Delete(root);
+        return NULL;
+    }
+    
     for (int i = 0; i < meta->levelCount; i++) {
         cJSON* level = cJSON_GetArrayItem(levels, i);
         
@@ -117,11 +139,28 @@ MetaOrchestration* LoadMetaOrchestration(const char* filepath) {
         cJSON* file = cJSON_GetObjectItem(level, "file");
         
         meta->levels[i].id = id && cJSON_IsNumber(id) ? id->valueint : (i + 1);
-        meta->levels[i].filename = file && cJSON_IsString(file) ? strdup(file->valuestring) : NULL;
+        meta->levels[i].filename = file && cJSON_IsString(file) ? strdup(file->valuestring) : strdup("level1.json");
+        
+        if (!meta->levels[i].filename) {
+            printf("[JSON LOADER] ERROR: Failed to allocate filename for level %d\n", i);
+        }
+    }
+    
+    // Parse credits
+    cJSON* credits = cJSON_GetObjectItem(root, "credits");
+    if (credits) {
+        cJSON* creditsId = cJSON_GetObjectItem(credits, "id");
+        cJSON* creditsFile = cJSON_GetObjectItem(credits, "file");
+        meta->credits.id = creditsId && cJSON_IsNumber(creditsId) ? creditsId->valueint : 99;
+        meta->credits.filename = creditsFile && cJSON_IsString(creditsFile) ? strdup(creditsFile->valuestring) : strdup("credits.json");
+    } else {
+        meta->credits.id = 99;
+        meta->credits.filename = strdup("credits.json");
     }
     
     cJSON_Delete(root);
-    printf("[JSON LOADER] Loaded meta orchestration: %d levels\n", meta->levelCount);
+    printf("[JSON LOADER] Loaded meta orchestration: menu=%s, %d levels, credits=%s\n", 
+           meta->menu.filename, meta->levelCount, meta->credits.filename);
     return meta;
 }
 
@@ -130,12 +169,14 @@ void FreeMetaOrchestration(MetaOrchestration* meta) {
     if (!meta) return;
     
     if (meta->version) free(meta->version);
+    if (meta->menu.filename) free(meta->menu.filename);
     
     for (int i = 0; i < meta->levelCount; i++) {
         if (meta->levels[i].filename) free(meta->levels[i].filename);
     }
     
     if (meta->levels) free(meta->levels);
+    if (meta->credits.filename) free(meta->credits.filename);
     free(meta);
 }
 
@@ -269,5 +310,140 @@ void FreeSpawnEvents(SpawnEvent* events) {
     if (!events) return;
     // Note: Individual pattern strings are handled separately if allocated
     free(events);
+}
+
+// Load credit information from JSON
+CreditInfo* LoadCreditInfo(const char* filepath) {
+    char* content = ReadFileContents(filepath);
+    if (!content) return NULL;
+    
+    cJSON* root = cJSON_Parse(content);
+    free(content);
+    
+    if (!root) {
+        printf("[JSON LOADER] ERROR: Failed to parse credits JSON: %s\n", filepath);
+        return NULL;
+    }
+    
+    CreditInfo* credits = (CreditInfo*)malloc(sizeof(CreditInfo));
+    if (!credits) {
+        cJSON_Delete(root);
+        return NULL;
+    }
+    
+    // Initialize all pointers to NULL
+    memset(credits, 0, sizeof(CreditInfo));
+    
+    // Get creditInfo object
+    cJSON* creditInfo = cJSON_GetObjectItem(root, "creditInfo");
+    if (!creditInfo) {
+        printf("[JSON LOADER] WARNING: No creditInfo found in %s\n", filepath);
+        cJSON_Delete(root);
+        free(credits);
+        return NULL;
+    }
+    
+    // Parse title
+    cJSON* title = cJSON_GetObjectItem(creditInfo, "title");
+    credits->title = title && cJSON_IsString(title) ? strdup(title->valuestring) : strdup("CREDITS");
+    
+    // Parse development info
+    cJSON* development = cJSON_GetObjectItem(creditInfo, "development");
+    if (development) {
+        cJSON* projectName = cJSON_GetObjectItem(development, "projectName");
+        cJSON* engine = cJSON_GetObjectItem(development, "engine");
+        cJSON* team = cJSON_GetObjectItem(development, "team");
+        
+        credits->projectName = projectName && cJSON_IsString(projectName) ? strdup(projectName->valuestring) : strdup("");
+        credits->engine = engine && cJSON_IsString(engine) ? strdup(engine->valuestring) : strdup("");
+        credits->team = team && cJSON_IsString(team) ? strdup(team->valuestring) : strdup("");
+    } else {
+        credits->projectName = strdup("");
+        credits->engine = strdup("");
+        credits->team = strdup("");
+    }
+    
+    // Parse music header and license
+    cJSON* musicHeader = cJSON_GetObjectItem(creditInfo, "musicHeader");
+    cJSON* musicLicense = cJSON_GetObjectItem(creditInfo, "musicLicense");
+    credits->musicHeader = musicHeader && cJSON_IsString(musicHeader) ? strdup(musicHeader->valuestring) : strdup("MUSIC CREDITS");
+    credits->musicLicense = musicLicense && cJSON_IsString(musicLicense) ? strdup(musicLicense->valuestring) : strdup("");
+    
+    // Parse music tracks array
+    cJSON* musicTracks = cJSON_GetObjectItem(creditInfo, "musicTracks");
+    if (musicTracks && cJSON_IsArray(musicTracks)) {
+        credits->musicTrackCount = cJSON_GetArraySize(musicTracks);
+        credits->musicTracks = (MusicTrackCredit*)malloc(sizeof(MusicTrackCredit) * credits->musicTrackCount);
+        
+        for (int i = 0; i < credits->musicTrackCount; i++) {
+            cJSON* track = cJSON_GetArrayItem(musicTracks, i);
+            
+            cJSON* level = cJSON_GetObjectItem(track, "level");
+            cJSON* trackTitle = cJSON_GetObjectItem(track, "title");
+            cJSON* artist = cJSON_GetObjectItem(track, "artist");
+            cJSON* column = cJSON_GetObjectItem(track, "column");
+            
+            credits->musicTracks[i].level = level && cJSON_IsString(level) ? strdup(level->valuestring) : strdup("");
+            credits->musicTracks[i].title = trackTitle && cJSON_IsString(trackTitle) ? strdup(trackTitle->valuestring) : strdup("");
+            credits->musicTracks[i].artist = artist && cJSON_IsString(artist) ? strdup(artist->valuestring) : strdup("");
+            credits->musicTracks[i].column = column && cJSON_IsString(column) ? strdup(column->valuestring) : strdup("left");
+        }
+    } else {
+        credits->musicTrackCount = 0;
+        credits->musicTracks = NULL;
+    }
+    
+    // Parse footer info
+    cJSON* footer = cJSON_GetObjectItem(creditInfo, "footer");
+    if (footer) {
+        cJSON* source = cJSON_GetObjectItem(footer, "source");
+        cJSON* thanks = cJSON_GetObjectItem(footer, "thanks");
+        cJSON* copyright = cJSON_GetObjectItem(footer, "copyright");
+        
+        credits->source = source && cJSON_IsString(source) ? strdup(source->valuestring) : strdup("");
+        credits->thanks = thanks && cJSON_IsString(thanks) ? strdup(thanks->valuestring) : strdup("");
+        credits->copyright = copyright && cJSON_IsString(copyright) ? strdup(copyright->valuestring) : strdup("");
+    } else {
+        credits->source = strdup("");
+        credits->thanks = strdup("");
+        credits->copyright = strdup("");
+    }
+    
+    // Parse back text
+    cJSON* backText = cJSON_GetObjectItem(creditInfo, "backText");
+    credits->backText = backText && cJSON_IsString(backText) ? strdup(backText->valuestring) : strdup("Press ESC or ENTER to return");
+    
+    cJSON_Delete(root);
+    printf("[JSON LOADER] Loaded credit information from %s\n", filepath);
+    return credits;
+}
+
+// Free credit information
+void FreeCreditInfo(CreditInfo* credits) {
+    if (!credits) return;
+    
+    if (credits->title) free(credits->title);
+    if (credits->projectName) free(credits->projectName);
+    if (credits->engine) free(credits->engine);
+    if (credits->team) free(credits->team);
+    if (credits->musicHeader) free(credits->musicHeader);
+    if (credits->musicLicense) free(credits->musicLicense);
+    
+    if (credits->musicTracks) {
+        for (int i = 0; i < credits->musicTrackCount; i++) {
+            if (credits->musicTracks[i].level) free(credits->musicTracks[i].level);
+            if (credits->musicTracks[i].title) free(credits->musicTracks[i].title);
+            if (credits->musicTracks[i].artist) free(credits->musicTracks[i].artist);
+            if (credits->musicTracks[i].column) free(credits->musicTracks[i].column);
+        }
+        free(credits->musicTracks);
+    }
+    
+    if (credits->source) free(credits->source);
+    if (credits->thanks) free(credits->thanks);
+    if (credits->copyright) free(credits->copyright);
+    if (credits->backText) free(credits->backText);
+    
+    free(credits);
 }
 

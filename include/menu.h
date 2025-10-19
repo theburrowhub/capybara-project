@@ -6,6 +6,9 @@
 #include "input_manager.h"
 #include <stdbool.h>
 
+// Forward declaration
+typedef struct CreditInfo CreditInfo;
+
 // Menu states
 typedef enum {
     MENU_MAIN,
@@ -89,6 +92,15 @@ typedef struct {
     // Main menu
     bool justReturnedToMainMenu; // Prevent immediate exit on same ESC press
     
+    // Menu and Credits music
+    Music menuMusic;
+    bool menuMusicLoaded;
+    Music creditsMusic;
+    bool creditsMusicLoaded;
+    
+    // Credits information (loaded from credits.json)
+    CreditInfo* creditInfo;
+    
     // Animation timers
     float animationTimer;
 } Menu;
@@ -97,6 +109,7 @@ typedef struct {
 void InitMenu(Menu* menu);
 void UpdateMenu(Menu* menu, MenuState* gameState);
 void DrawMenu(const Menu* menu);
+void CleanupMenu(Menu* menu);
 void DrawMainMenu(const Menu* menu);
 void DrawOptions(Menu* menu);
 void DrawOptionsSound(Menu* menu);

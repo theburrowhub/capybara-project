@@ -1,9 +1,13 @@
 #include "menu.h"
 #include "constants.h"
 #include "database.h"
+#include "json_loader.h"
 #include <math.h>
 #include <string.h>
 #include <stdio.h>
+
+#define META_JSON_PATH "assets/levels/meta.json"
+#define LEVELS_DIR "assets/levels/"
 
 // Helper functions for menu navigation with gamepad support
 static bool MenuInput_Up(void) {
@@ -152,6 +156,28 @@ void ApplyFullscreenMode(Menu* menu) {
     }
 }
 
+void CleanupMenu(Menu* menu) {
+    // Unload menu music
+    if (menu->menuMusicLoaded) {
+        StopMusicStream(menu->menuMusic);
+        UnloadMusicStream(menu->menuMusic);
+        menu->menuMusicLoaded = false;
+    }
+    
+    // Unload credits music
+    if (menu->creditsMusicLoaded) {
+        StopMusicStream(menu->creditsMusic);
+        UnloadMusicStream(menu->creditsMusic);
+        menu->creditsMusicLoaded = false;
+    }
+    
+    // Free credit info
+    if (menu->creditInfo) {
+        FreeCreditInfo(menu->creditInfo);
+        menu->creditInfo = NULL;
+    }
+}
+
 void InitMenu(Menu* menu) {
     menu->currentState = MENU_MAIN;
     menu->selectedOption = 0;
@@ -227,12 +253,53 @@ void InitMenu(Menu* menu) {
         menu->selectedResolution = 2; // 1200x600 by default
         menu->vsync = true;
     }
+    
+    // Load and play menu music from menu.json
+    menu->menuMusicLoaded = false;
+    menu->creditsMusicLoaded = false;
+    menu->creditInfo = NULL;
+    
+    // Load meta orchestration to get menu file
+    MetaOrchestration* meta = LoadMetaOrchestration(META_JSON_PATH);
+    if (meta && meta->menu.filename) {
+        char menuPath[256];
+        snprintf(menuPath, sizeof(menuPath), "%s%s", LEVELS_DIR, meta->menu.filename);
+        
+        int success = 0;
+        LevelConfig* menuConfig = LoadLevelConfig(menuPath, &success);
+        
+        if (menuConfig && success && menuConfig->audioPath) {
+            if (FileExists(menuConfig->audioPath)) {
+                menu->menuMusic = LoadMusicStream(menuConfig->audioPath);
+                if (menu->menuMusic.ctxType > 0) {
+                    menu->menuMusicLoaded = true;
+                    PlayMusicStream(menu->menuMusic);
+                    SetMusicVolume(menu->menuMusic, menu->musicVolume);
+                    printf("[MENU] Loaded menu music: %s\n", menuConfig->audioPath);
+                }
+            } else {
+                printf("[MENU] WARNING: Menu music file not found: %s\n", menuConfig->audioPath);
+            }
+            FreeLevelConfig(menuConfig);
+        }
+        FreeMetaOrchestration(meta);
+    }
 }
 
 void UpdateMenu(Menu* menu, MenuState* gameState) {
     float deltaTime = GetFrameTime();
     menu->animationTimer += deltaTime;
     menu->nameInputBlink += deltaTime * 2.0f;  // Blink cursor
+    
+    // Update menu music stream
+    if (menu->menuMusicLoaded && menu->currentState != MENU_CREDITS && menu->currentState != MENU_GAME) {
+        UpdateMusicStream(menu->menuMusic);
+    }
+    
+    // Update credits music stream
+    if (menu->creditsMusicLoaded && menu->currentState == MENU_CREDITS) {
+        UpdateMusicStream(menu->creditsMusic);
+    }
     
     // Global hotkeys for fullscreen (F11 or Alt+Enter)
     if (IsKeyPressed(KEY_F11) || (IsKeyDown(KEY_LEFT_ALT) && IsKeyPressed(KEY_ENTER))) {
@@ -301,6 +368,47 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                         break;
                     case MENU_SHOW_CREDITS:
                         menu->currentState = MENU_CREDITS;
+                        
+                        // Stop menu music and load credits music
+                        if (menu->menuMusicLoaded) {
+                            StopMusicStream(menu->menuMusic);
+                        }
+                        
+                        if (!menu->creditsMusicLoaded) {
+                            // Load meta orchestration to get credits file
+                            MetaOrchestration* meta = LoadMetaOrchestration(META_JSON_PATH);
+                            if (meta && meta->credits.filename) {
+                                char creditsPath[256];
+                                snprintf(creditsPath, sizeof(creditsPath), "%s%s", LEVELS_DIR, meta->credits.filename);
+                                
+                                // Load credit info
+                                if (!menu->creditInfo) {
+                                    menu->creditInfo = LoadCreditInfo(creditsPath);
+                                }
+                                
+                                int success = 0;
+                                LevelConfig* creditsConfig = LoadLevelConfig(creditsPath, &success);
+                                
+                                if (creditsConfig && success && creditsConfig->audioPath) {
+                                    if (FileExists(creditsConfig->audioPath)) {
+                                        menu->creditsMusic = LoadMusicStream(creditsConfig->audioPath);
+                                        if (menu->creditsMusic.ctxType > 0) {
+                                            menu->creditsMusicLoaded = true;
+                                            printf("[MENU] Loaded credits music: %s\n", creditsConfig->audioPath);
+                                        }
+                                    } else {
+                                        printf("[MENU] WARNING: Credits music file not found: %s\n", creditsConfig->audioPath);
+                                    }
+                                    FreeLevelConfig(creditsConfig);
+                                }
+                                FreeMetaOrchestration(meta);
+                            }
+                        }
+                        
+                        if (menu->creditsMusicLoaded) {
+                            PlayMusicStream(menu->creditsMusic);
+                            SetMusicVolume(menu->creditsMusic, menu->musicVolume);
+                        }
                         break;
                     case MENU_EXIT_GAME:
                         // Signal to exit the game
@@ -374,10 +482,18 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                 if (MenuInput_Left()) {
                     menu->musicVolume = fmaxf(0.0f, menu->musicVolume - 0.1f);
                     settingsChanged = true;
+                    // Update menu music volume in real-time
+                    if (menu->menuMusicLoaded) {
+                        SetMusicVolume(menu->menuMusic, menu->musicVolume);
+                    }
                 }
                 if (MenuInput_Right()) {
                     menu->musicVolume = fminf(1.0f, menu->musicVolume + 0.1f);
                     settingsChanged = true;
+                    // Update menu music volume in real-time
+                    if (menu->menuMusicLoaded) {
+                        SetMusicVolume(menu->menuMusic, menu->musicVolume);
+                    }
                 }
             }
             
@@ -666,6 +782,16 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
             if (MenuInput_Back() || MenuInput_Select()) {
                 menu->currentState = MENU_MAIN;
                 menu->selectedOption = MENU_SHOW_CREDITS;
+                
+                // Stop credits music and resume menu music
+                if (menu->creditsMusicLoaded) {
+                    StopMusicStream(menu->creditsMusic);
+                }
+                
+                if (menu->menuMusicLoaded) {
+                    PlayMusicStream(menu->menuMusic);
+                    SetMusicVolume(menu->menuMusic, menu->musicVolume);
+                }
             }
             break;
             
@@ -694,6 +820,12 @@ void UpdateMenu(Menu* menu, MenuState* gameState) {
                     // Exit to menu - this will be handled in main.c
                     menu->currentState = MENU_MAIN;
                     *gameState = MENU_MAIN;
+                    
+                    // Resume menu music when exiting game
+                    if (menu->menuMusicLoaded) {
+                        PlayMusicStream(menu->menuMusic);
+                        SetMusicVolume(menu->menuMusic, menu->musicVolume);
+                    }
                 }
             }
             
@@ -1112,45 +1244,136 @@ void DrawCredits(const Menu* menu) {
     DrawRectangleGradientV(0, 0, screenWidth, screenHeight, 
                            (Color){10, 10, 30, 255}, (Color){30, 10, 60, 255});
     
+    // Check if credit info is loaded
+    if (!menu->creditInfo) {
+        const char* loading = "Loading credits...";
+        DrawText(loading, (screenWidth - MeasureText(loading, 20)) / 2, screenHeight / 2, 20, WHITE);
+        return;
+    }
+    
+    CreditInfo* credits = menu->creditInfo;
+    
     // Draw title
-    const char* title = "CREDITS";
     int titleSize = 45;
-    int titleWidth = MeasureText(title, titleSize);
-    DrawText(title, (SCREEN_WIDTH - titleWidth) / 2, 80, titleSize, WHITE);
+    const char* titleText = (credits->title && strlen(credits->title) > 0) ? credits->title : "CREDITS";
+    int titleWidth = MeasureText(titleText, titleSize);
+    DrawText(titleText, (screenWidth - titleWidth) / 2, 30, titleSize, WHITE);
     
-    // Credits content
-    int creditSize = 20;
-    int spacing = 30;
-    int startY = 180;
+    int creditSize = 16;
+    int headerSize = 20;
+    int spacing = 22;
+    int currentY = 90;
+    int lineIndex = 0;
     
-    const char* credits[] = {
-        "CAPIBARA PROJECT",
-        "Developed with raylib",
-        "",
-        "Programming & Design:",
-        "Sergio Tejón",
-        "José A. Muriano",
-        "",
-        "Special Thanks:",
-        "raylib community",
-        "© 2025"
-    };
+    // Development credits (centered)
+    if (credits->projectName) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){255, 200, 100, (int)(alpha * 255)};
+        DrawText(credits->projectName, (screenWidth - MeasureText(credits->projectName, headerSize)) / 2, currentY, headerSize, textColor);
+        lineIndex++;
+        currentY += spacing + 5;
+    }
     
-    int numCredits = sizeof(credits) / sizeof(credits[0]);
+    if (credits->engine) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){255, 255, 255, (int)(alpha * 255)};
+        DrawText(credits->engine, (screenWidth - MeasureText(credits->engine, creditSize)) / 2, currentY, creditSize, textColor);
+        lineIndex++;
+        currentY += spacing + 3;
+    }
     
-    for (int i = 0; i < numCredits; i++) {
-        if (strlen(credits[i]) > 0) {
-            int textWidth = MeasureText(credits[i], creditSize);
-            int x = (screenWidth - textWidth) / 2;
-            int y = startY + i * spacing;
+    if (credits->team) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){200, 200, 200, (int)(alpha * 255)};
+        DrawText(credits->team, (screenWidth - MeasureText(credits->team, creditSize)) / 2, currentY, creditSize, textColor);
+        lineIndex++;
+        currentY += spacing + 15;
+    }
+    
+    // Music credits header (centered)
+    if (credits->musicHeader) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){255, 200, 100, (int)(alpha * 255)};
+        DrawText(credits->musicHeader, (screenWidth - MeasureText(credits->musicHeader, headerSize)) / 2, currentY, headerSize, textColor);
+        lineIndex++;
+        currentY += spacing + 5;
+    }
+    
+    if (credits->musicLicense) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){135, 206, 235, (int)(alpha * 255)};
+        DrawText(credits->musicLicense, (screenWidth - MeasureText(credits->musicLicense, creditSize)) / 2, currentY, creditSize, textColor);
+        lineIndex++;
+        currentY += spacing + 10;
+    }
+    
+    // Two-column layout for music tracks - positioned under license text
+    int leftColumnX = (screenWidth / 2) - 220;  // Left column starts left of center
+    int rightColumnX = (screenWidth / 2) + 90;  // Right column starts right of center
+    int columnY = currentY;
+    int leftY = columnY;
+    int rightY = columnY;
+    
+    // Draw music tracks from loaded data
+    if (credits->musicTracks && credits->musicTrackCount > 0) {
+        for (int i = 0; i < credits->musicTrackCount; i++) {
+            MusicTrackCredit* track = &credits->musicTracks[i];
+            if (!track->level || !track->title || !track->artist || !track->column) continue;
             
-            // Animated fade effect based on position
-            float alpha = sinf(menu->animationTimer + i * 0.3f) * 0.3f + 0.7f;
+            int columnX = strcmp(track->column, "right") == 0 ? rightColumnX : leftColumnX;
+            int* yPos = strcmp(track->column, "right") == 0 ? &rightY : &leftY;
+            
+            // Level name
+            float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
             Color textColor = (Color){255, 255, 255, (int)(alpha * 255)};
+            DrawText(track->level, columnX, *yPos, creditSize, textColor);
+            lineIndex++;
+            *yPos += spacing;
             
-            DrawText(credits[i], x, y, creditSize, textColor);
+            // Track title
+            alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+            textColor = (Color){200, 200, 200, (int)(alpha * 255)};
+            DrawText(track->title, columnX + 10, *yPos, creditSize - 2, textColor);
+            lineIndex++;
+            *yPos += spacing - 3;
+            
+            // Artist
+            alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+            textColor = (Color){180, 180, 180, (int)(alpha * 255)};
+            DrawText(track->artist, columnX + 10, *yPos, creditSize - 2, textColor);
+            lineIndex++;
+            *yPos += spacing + 8;
         }
     }
+    
+    // Footer - centered attribution
+    currentY = screenHeight - 90;
+    if (credits->source) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){135, 206, 235, (int)(alpha * 255)};
+        DrawText(credits->source, (screenWidth - MeasureText(credits->source, creditSize - 2)) / 2, currentY, creditSize - 2, textColor);
+        lineIndex++;
+        currentY += spacing;
+    }
+    
+    if (credits->thanks) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){150, 150, 150, (int)(alpha * 255)};
+        DrawText(credits->thanks, (screenWidth - MeasureText(credits->thanks, creditSize - 2)) / 2, currentY, creditSize - 2, textColor);
+        lineIndex++;
+        currentY += spacing;
+    }
+    
+    if (credits->copyright) {
+        float alpha = sinf(menu->animationTimer + lineIndex * 0.3f) * 0.3f + 0.7f;
+        Color textColor = (Color){100, 100, 100, (int)(alpha * 255)};
+        DrawText(credits->copyright, (screenWidth - MeasureText(credits->copyright, creditSize)) / 2, currentY, creditSize, textColor);
+    }
+    
+    // Back instruction
+    int backSize = 16;
+    const char* backText = (credits->backText && strlen(credits->backText) > 0) ? credits->backText : "Press ESC or ENTER to return";
+    DrawText(backText, (screenWidth - MeasureText(backText, backSize)) / 2, screenHeight - 30, backSize, GRAY);
 }
 
 void DrawNameInput(Menu* menu) {

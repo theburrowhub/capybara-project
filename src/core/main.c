@@ -9,8 +9,11 @@
 #include "database.h"
 #include "input_config.h"
 #include "input_manager.h"
+#include "json_loader.h"
+#include "level_system.h"
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 // Base resolution for game rendering
 #define BASE_WIDTH 1200
@@ -94,6 +97,11 @@ int main(void) {
         if ((gameState == MENU_GAME || gameState == MENU_PAUSE_CONFIRM) && !awaitingNameInput) {
             // Initialize game if not already done
             if (!gameInitialized) {
+                // Stop menu music when starting game
+                if (menu.menuMusicLoaded) {
+                    StopMusicStream(menu.menuMusic);
+                }
+                
                 InitGame(&game);
                 game.inputManager = &inputManager;  // Link input manager to game
                 SetGameMusicVolume(&game, menu.musicVolume);
@@ -107,20 +115,72 @@ int main(void) {
             
             if (pauseExitPressed) {
                 if (game.gameOver) {
-                    // Game over - check if score qualifies as high score
-                    if (DB_IsHighScore(game.score, DIFFICULTY_NORMAL)) {
-                        // Show name input dialog
-                        StartNameInput(&menu, game.score, DIFFICULTY_NORMAL);
-                        awaitingNameInput = true;
-                        gameState = MENU_NAME_INPUT;
-                    } else {
-                        // No high score, go directly to menu
+                    // Check if this is a victory or defeat
+                    bool isVictory = strstr(game.deathCause, "VICTORY") != NULL;
+                    
+                    if (isVictory) {
+                        // Victory - show credits automatically
                         CleanupGame(&game);
                         gameInitialized = false;
-                        gameState = MENU_MAIN;
-                        menu.currentState = MENU_MAIN;
-                        menu.selectedOption = 0;
-                        menu.justReturnedToMainMenu = true;  // Prevent immediate exit from same ESC
+                        gameState = MENU_CREDITS;
+                        menu.currentState = MENU_CREDITS;
+                        menu.justReturnedToMainMenu = true;
+                        
+                        // Load and play credits music
+                        if (!menu.creditsMusicLoaded) {
+                            MetaOrchestration* meta = LoadMetaOrchestration("assets/levels/meta.json");
+                            if (meta && meta->credits.filename) {
+                                char creditsPath[256];
+                                snprintf(creditsPath, sizeof(creditsPath), "assets/levels/%s", meta->credits.filename);
+                                
+                                // Load credit info
+                                if (!menu.creditInfo) {
+                                    menu.creditInfo = LoadCreditInfo(creditsPath);
+                                }
+                                
+                                int success = 0;
+                                LevelConfig* creditsConfig = LoadLevelConfig(creditsPath, &success);
+                                
+                                if (creditsConfig && success && creditsConfig->audioPath) {
+                                    if (FileExists(creditsConfig->audioPath)) {
+                                        menu.creditsMusic = LoadMusicStream(creditsConfig->audioPath);
+                                        if (menu.creditsMusic.ctxType > 0) {
+                                            menu.creditsMusicLoaded = true;
+                                            printf("[MAIN] Loaded credits music: %s\n", creditsConfig->audioPath);
+                                        }
+                                    }
+                                    FreeLevelConfig(creditsConfig);
+                                }
+                                FreeMetaOrchestration(meta);
+                            }
+                        }
+                        
+                        if (menu.creditsMusicLoaded) {
+                            PlayMusicStream(menu.creditsMusic);
+                            SetMusicVolume(menu.creditsMusic, menu.musicVolume);
+                        }
+                    } else {
+                        // Defeat - check if score qualifies as high score
+                        if (DB_IsHighScore(game.score, DIFFICULTY_NORMAL)) {
+                            // Show name input dialog
+                            StartNameInput(&menu, game.score, DIFFICULTY_NORMAL);
+                            awaitingNameInput = true;
+                            gameState = MENU_NAME_INPUT;
+                        } else {
+                            // No high score, go directly to menu
+                            CleanupGame(&game);
+                            gameInitialized = false;
+                            gameState = MENU_MAIN;
+                            menu.currentState = MENU_MAIN;
+                            menu.selectedOption = 0;
+                            menu.justReturnedToMainMenu = true;  // Prevent immediate exit from same ESC
+                            
+                            // Resume menu music when returning from game
+                            if (menu.menuMusicLoaded) {
+                                PlayMusicStream(menu.menuMusic);
+                                SetMusicVolume(menu.menuMusic, menu.musicVolume);
+                            }
+                        }
                     }
                 } else {
                     // During gameplay - show pause confirmation menu
@@ -211,6 +271,12 @@ int main(void) {
                 gameState = MENU_MAIN;
                 menu.currentState = MENU_MAIN;
                 menu.justReturnedToMainMenu = true;  // Prevent immediate exit
+                
+                // Resume menu music when returning from game
+                if (menu.menuMusicLoaded) {
+                    PlayMusicStream(menu.menuMusic);
+                    SetMusicVolume(menu.menuMusic, menu.musicVolume);
+                }
             }
         } else {
             // Cleanup game if we just returned to menu from gameplay
@@ -254,6 +320,7 @@ int main(void) {
     if (gameInitialized) {
         CleanupGame(&game);
     }
+    CleanupMenu(&menu);
     UnloadRenderTexture(gameRenderTarget);
     DB_Cleanup();
     CloseWindow();
