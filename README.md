@@ -201,8 +201,7 @@ capybara-project/
 ├── include/    # Headers (.h files)
 ├── docs/       # Documentation
 ├── assets/     # Sprites and graphics
-├── bin/        # Executable output
-└── build/      # Compilation artifacts
+└── build/      # Compilation artifacts and executable output
 ```
 
 ## Contributing

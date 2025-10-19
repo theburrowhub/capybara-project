@@ -312,7 +312,7 @@ echo -e "${GREEN}Press any key to start the game...${NC}"
 read -n 1 -s
 
 # Run the game
-./bin/shootemup
+./build/shootemup
 
 echo ""
 if [[ $LOGGING == "true" && -f "game.log" ]]; then

@@ -220,39 +220,43 @@ void DrawLevelCompleteOverlay(const Game* game) {
 void DrawGame(Game* game) {
     // Hitbox debug removed for cleaner gameplay
     
-    // === TOP HUD (Phase, Progress, Time, Enemy Count) ===
+    // === TOP HUD (Level, Phase, Progress, Time, Enemy Count) ===
     // Draw top HUD background bar
     DrawRectangle(0, 0, SCREEN_WIDTH, 30, Fade(BLACK, 0.7f));
     
-    // Left: Phase name
-    if (game->waveSystem) {
-        const char* phaseName = GetCurrentPhaseName(game->waveSystem);
-        DrawText(TextFormat("PHASE: %s", phaseName), 10, 8, 18, YELLOW);
+    // Left: Level number and name
+    const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+    if (currentLevel) {
+        DrawText(TextFormat("LEVEL %d: %s", currentLevel->levelNumber, currentLevel->name), 
+                 10, 8, 18, SKYBLUE);
     }
     
-    // Center-Left: Wave progress bar
+    // Center: Wave progress bar (centered on screen)
     if (game->waveSystem) {
         float progress = GetWaveProgress(game->waveSystem);
-        int barX = 250;
-        int barWidth = 300;
+        int barWidth = 250;
+        // Center the entire progress display (text + bar + percentage)
+        int totalWidth = 85 + barWidth + 45; // "PROGRESS:" + bar + " XX%"
+        int barX = (SCREEN_WIDTH - totalWidth) / 2;
+        
         DrawText("PROGRESS:", barX, 10, 14, GRAY);
         DrawRectangle(barX + 85, 10, barWidth, 12, Fade(DARKGRAY, 0.5f));
         DrawRectangle(barX + 85, 10, (int)(barWidth * progress / 100), 12, Fade(GREEN, 0.8f));
         DrawRectangleLines(barX + 85, 10, barWidth, 12, WHITE);
-        DrawText(TextFormat("%.0f%%", progress), barX + 390, 10, 14, WHITE);
+        DrawText(TextFormat("%.0f%%", progress), barX + 85 + barWidth + 5, 10, 14, WHITE);
     }
     
     // Center-Right: Time (shows level time, not total game time)
     float levelTime = game->gameTime - game->levelStartTime;
     int minutes = (int)(levelTime / 60);
     int seconds = (int)levelTime % 60;
-    DrawText(TextFormat("TIME: %02d:%02d", minutes, seconds), 680, 8, 18, WHITE);
+    DrawText(TextFormat("TIME: %02d:%02d", minutes, seconds), 820, 8, 18, WHITE);
     
     // Right: Enemy count
     if (game->waveSystem) {
         int enemyCount = CountActiveEnemies(game);
         Color enemyColor = enemyCount > 0 ? RED : GREEN;
-        DrawText(TextFormat("ENEMIES: %d", enemyCount), 850, 8, 18, enemyColor);
+        DrawText(TextFormat("ENEMIES: %d", enemyCount), 960, 8, 18, enemyColor);
     }
     
     // Debug indicators (top right corner)
