@@ -50,19 +50,39 @@ jobs:
       id: check_prerelease
       run: |
         VERSION="${{ steps.get_version.outputs.version }}"
-        if [[ "$VERSION" =~ (alpha|beta|rc) ]]; then
+        # Convert to lowercase for case-insensitive matching
+        VERSION_LOWER=$(echo "$VERSION" | tr '[:upper:]' '[:lower:]')
+        
+        echo "🔍 Analyzing version: $VERSION"
+        
+        # Check for pre-release markers (commitizen uses: a0, a1, b0, b1, rc0, etc.)
+        # Also support full names: alpha, beta, rc
+        if [[ "$VERSION_LOWER" =~ (a[0-9]+|alpha|b[0-9]+|beta|rc[0-9]*) ]]; then
           echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          if [[ "$VERSION" =~ alpha ]]; then
+          IS_PRERELEASE="true"
+          # Check for alpha (a0, a1, etc. or alpha)
+          if [[ "$VERSION_LOWER" =~ (a[0-9]+|alpha) ]]; then
             echo "release_type=Alpha" >> $GITHUB_OUTPUT
-          elif [[ "$VERSION" =~ beta ]]; then
+            RELEASE_TYPE="Alpha"
+          # Check for beta (b0, b1, etc. or beta)
+          elif [[ "$VERSION_LOWER" =~ (b[0-9]+|beta) ]]; then
             echo "release_type=Beta" >> $GITHUB_OUTPUT
-          elif [[ "$VERSION" =~ rc ]]; then
+            RELEASE_TYPE="Beta"
+          # Check for release candidate (rc0, rc1, etc.)
+          elif [[ "$VERSION_LOWER" =~ rc[0-9]* ]]; then
             echo "release_type=Release Candidate" >> $GITHUB_OUTPUT
+            RELEASE_TYPE="Release Candidate"
           fi
         else
           echo "is_prerelease=false" >> $GITHUB_OUTPUT
           echo "release_type=Stable Release" >> $GITHUB_OUTPUT
+          IS_PRERELEASE="false"
+          RELEASE_TYPE="Stable Release"
         fi
+        
+        echo "✅ Version: $VERSION"
+        echo "✅ Is Pre-release: $IS_PRERELEASE"
+        echo "✅ Release Type: $RELEASE_TYPE"
         
     - name: Create Release
       env:
