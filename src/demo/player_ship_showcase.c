@@ -66,10 +66,8 @@ void FireProjectile(ShowcaseState* state) {
         return;
     }
     
-    // Check fire rate
+    // Check fire rate (constant for all modes)
     float fireRate = 0.15f;
-    if (ship->weaponMode == WEAPON_MODE_RAPID) fireRate = 0.05f;
-    if (ship->weaponMode == WEAPON_MODE_CHARGE) fireRate = 0.5f;
     
     if (ship->fireTimer > 0) {
         return;
@@ -92,17 +90,8 @@ void FireProjectile(ShowcaseState* state) {
         case WEAPON_MODE_SINGLE:
             maxProjectiles = 1;
             break;
-        case WEAPON_MODE_DOUBLE:
-            maxProjectiles = 2;
-            break;
         case WEAPON_MODE_SPREAD:
             maxProjectiles = 3;
-            break;
-        case WEAPON_MODE_RAPID:
-            maxProjectiles = 1;
-            break;
-        case WEAPON_MODE_CHARGE:
-            maxProjectiles = 1;
             break;
         case WEAPON_MODE_DUAL:
             maxProjectiles = 2;  // One forward, one backward
@@ -123,15 +112,6 @@ void FireProjectile(ShowcaseState* state) {
                     firePos.x += 20;
                     break;
                     
-                case WEAPON_MODE_DOUBLE:
-                    firePos.x += 15;
-                    if (projectilesFired == 0) {
-                        firePos.y -= 15;
-                    } else {
-                        firePos.y += 15;
-                    }
-                    break;
-                    
                 case WEAPON_MODE_SPREAD:
                     firePos.x += 15;
                     if (projectilesFired == 0) {
@@ -139,11 +119,6 @@ void FireProjectile(ShowcaseState* state) {
                     } else if (projectilesFired == 2) {
                         target.y += 30;
                     }
-                    break;
-                    
-                case WEAPON_MODE_CHARGE:
-                    firePos.x += 25;
-                    // Larger projectile for charged shot
                     break;
                     
                 case WEAPON_MODE_DUAL:
@@ -156,23 +131,13 @@ void FireProjectile(ShowcaseState* state) {
                     break;
             }
             
-            // Set projectile type based on mode
+            // Set projectile type and properties
             ProjectileType projType = PROJECTILE_PLAYER_BULLET;
-            if (ship->weaponMode == WEAPON_MODE_CHARGE && ship->chargeLevel > 50) {
-                projType = PROJECTILE_PLASMA;
-            }
             
             InitializeProjectile(p, projType, firePos, target, true);
             
             // Customize projectile properties
-            if (ship->weaponMode == WEAPON_MODE_CHARGE) {
-                p->damage = 5 + (ship->chargeLevel / 10);
-                p->scale = 1.0f + (ship->chargeLevel / 100.0f);
-                ship->chargeLevel = 0;
-                ship->isCharging = false;
-            } else {
-                p->damage = 1 * ship->upgrades.weaponLevel;
-            }
+            p->damage = 1 * ship->upgrades.weaponLevel;
             
             if (ship->weaponMode == WEAPON_MODE_DUAL) {
                 // First projectile goes forward, second goes backward
@@ -212,9 +177,7 @@ void UpdateShowcase(ShowcaseState* state) {
     UpdatePlayerShip(&state->ship, deltaTime, &state->inputManager);
     
     // Handle firing
-    if (IsKeyDown(KEY_SPACE) && state->ship.weaponMode != WEAPON_MODE_CHARGE) {
-        FireProjectile(state);
-    } else if (IsKeyReleased(KEY_SPACE) && state->ship.weaponMode == WEAPON_MODE_CHARGE && state->ship.chargeLevel > 20) {
+    if (IsKeyDown(KEY_SPACE)) {
         FireProjectile(state);
     }
     
@@ -349,18 +312,9 @@ void DrawShowcase(ShowcaseState* state) {
     
     // Draw weapon mode indicator
     const char* weaponNames[] = {
-        "SINGLE SHOT", "DOUBLE SHOT", "SPREAD SHOT", 
-        "RAPID FIRE", "CHARGE BEAM", "DUAL SHOT"
+        "SINGLE SHOT", "SPREAD SHOT", "DUAL SHOT"
     };
     DrawText(weaponNames[state->ship.weaponMode], SCREEN_WIDTH/2 - 60, 35, 14, state->ship.secondaryColor);
-    
-    // Draw charge indicator for charge mode
-    if (state->ship.weaponMode == WEAPON_MODE_CHARGE && state->ship.isCharging) {
-        DrawRectangle(SCREEN_WIDTH/2 - 100, 55, 200, 10, Fade(GRAY, 0.3f));
-        DrawRectangle(SCREEN_WIDTH/2 - 100, 55, state->ship.chargeLevel * 2, 10, YELLOW);
-        DrawRectangleLines(SCREEN_WIDTH/2 - 100, 55, 200, 10, WHITE);
-        DrawText("CHARGING", SCREEN_WIDTH/2 - 30, 70, 12, YELLOW);
-    }
     
     EndDrawing();
 }

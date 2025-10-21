@@ -26,7 +26,8 @@
 #define SPEED_UPDATE_INTERVAL 20  // Seconds
 
 // Weapon system
-#define WEAPON_FIRE_RATE 0.12f
+#define WEAPON_FIRE_RATE_MULTIPLIER 1.0f  // Global fire rate scaling
+#define WEAPON_DAMAGE_MULTIPLIER 1.0f  // Global weapon damage scaling
 
 // Weapon overheating (disabled - legacy code remains for compatibility)
 #define WEAPON_OVERHEATING false

@@ -375,14 +375,12 @@ void DrawGame(Game* game) {
     // Middle section: Weapon info & damage (recovered from removal)
     int weaponX = 480;
     
-    // Weapon Mode Display (recovered)
+    // Weapon Mode Display
     DrawText("WEAPON:", weaponX, hudY + 8, 14, GRAY);
-    const char* weaponModeNames[] = {
-        "SINGLE", "DOUBLE", "SPREAD", "RAPID", "CHARGE", "DUAL"
-    };
+    const char* weaponName = GetWeaponModeName(game->playerShip->weaponMode);
     Color weaponColor = (Color){100, 255, 100, 255};
-    DrawText(weaponModeNames[game->playerShip->weaponMode], weaponX + 75, hudY + 8, 14, weaponColor);
-    DrawText("(1-6/R)", weaponX + 145, hudY + 8, 11, Fade(WHITE, 0.5f));
+    DrawText(weaponName, weaponX + 75, hudY + 8, 14, weaponColor);
+    DrawText("(1-3)", weaponX + 145, hudY + 8, 11, Fade(WHITE, 0.5f));
     
     // Weapon Power Counter (recovered)
     DrawText("POWER:", weaponX, hudY + 28, 14, GRAY);
@@ -445,14 +443,6 @@ void DrawGame(Game* game) {
     // If no multipliers, show base damage note
     if (!hasMultiplier) {
         DrawText("(base)", multX, hudY + 52, 10, Fade(WHITE, 0.4f));
-    }
-    
-    // Charge indicator for charge mode
-    if (game->playerShip->weaponMode == WEAPON_MODE_CHARGE && game->playerShip->isCharging) {
-        DrawText("CHARGING...", weaponX, hudY + 70, 12, YELLOW);
-        DrawRectangle(weaponX + 80, hudY + 72, 100, 8, Fade(GRAY, 0.3f));
-        DrawRectangle(weaponX + 80, hudY + 72, (game->playerShip->chargeLevel), 8, YELLOW);
-        DrawRectangleLines(weaponX + 80, hudY + 72, 100, 8, WHITE);
     }
     
     // Right section: Dynamic Controls (based on active input method)

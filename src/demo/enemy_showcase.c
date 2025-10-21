@@ -331,7 +331,7 @@ void UpdateArenaState(ArenaState* state) {
     
     if ((IsKeyPressed(KEY_SPACE) || IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) && shootTimer <= 0) {
         ShootBullet(state->bullets, state->playerShip->position);
-        shootTimer = WEAPON_FIRE_RATE;  // Same as main game (0.12f)
+        shootTimer = 0.12f;  // Fixed rate for demo
     }
     
     // Update bullets (same as main game - per frame, not deltaTime)

@@ -206,18 +206,12 @@ void HandlePlayerInput(PlayerShip* ship, const InputManager* inputManager) {
         return;
     }
     
-    // Weapon mode switching with number keys 1-6
+    // Weapon mode switching with number keys 1-3
     if (IsKeyPressed(KEY_ONE)) {
         ship->weaponMode = WEAPON_MODE_SINGLE;
     } else if (IsKeyPressed(KEY_TWO)) {
-        ship->weaponMode = WEAPON_MODE_DOUBLE;
-    } else if (IsKeyPressed(KEY_THREE)) {
         ship->weaponMode = WEAPON_MODE_SPREAD;
-    } else if (IsKeyPressed(KEY_FOUR)) {
-        ship->weaponMode = WEAPON_MODE_RAPID;
-    } else if (IsKeyPressed(KEY_FIVE)) {
-        ship->weaponMode = WEAPON_MODE_CHARGE;
-    } else if (IsKeyPressed(KEY_SIX)) {
+    } else if (IsKeyPressed(KEY_THREE)) {
         ship->weaponMode = WEAPON_MODE_DUAL;
     } else if (InputManager_IsActionPressed(inputManager, ACTION_SWITCH_WEAPON_MODE)) {
         // Cycle through weapon modes in order with R key or gamepad button
@@ -667,33 +661,8 @@ void RepairPlayerShip(PlayerShip* ship, int amount) {
 }
 
 float CalculateDamagePerShot(const PlayerShip* ship) {
-    // Calculate base damage per bullet based on weapon mode
-    float damagePerBullet = 1.0f;
-    
-    switch (ship->weaponMode) {
-        case WEAPON_MODE_SINGLE:
-            damagePerBullet = 3.0f;
-            break;
-        case WEAPON_MODE_DOUBLE:
-            damagePerBullet = 1.5f;
-            break;
-        case WEAPON_MODE_SPREAD:
-            damagePerBullet = 1.0f;
-            break;
-        case WEAPON_MODE_RAPID:
-            damagePerBullet = 1.5f;
-            break;
-        case WEAPON_MODE_DUAL:
-            damagePerBullet = 1.5f;
-            break;
-        case WEAPON_MODE_CHARGE:
-            // Variable based on charge level
-            damagePerBullet = 1.0f;
-            break;
-        default:
-            damagePerBullet = 1.0f;
-            break;
-    }
+    // Get base damage per bullet from centralized function
+    float damagePerBullet = GetBaseDamagePerBullet(ship->weaponMode);
     
     // Apply weapon powerup multiplier
     float powerMultiplier = 1.0f;
@@ -763,10 +732,7 @@ void GetShipStats(const PlayerShip* ship, char* buffer, int bufferSize) {
         ship->shield, ship->maxShield,
         ship->energy, ship->maxEnergy,
         (ship->weaponMode == WEAPON_MODE_SINGLE) ? "Single" :
-        (ship->weaponMode == WEAPON_MODE_DOUBLE) ? "Double" :
-        (ship->weaponMode == WEAPON_MODE_SPREAD) ? "Spread" :
-        (ship->weaponMode == WEAPON_MODE_RAPID) ? "Rapid" :
-        (ship->weaponMode == WEAPON_MODE_CHARGE) ? "Charge" : "Dual",
+        (ship->weaponMode == WEAPON_MODE_SPREAD) ? "Spread" : "Dual",
         ship->score,
         ship->enemiesDestroyed,
         ship->survivalTime,

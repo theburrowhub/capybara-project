@@ -110,10 +110,12 @@ PROJECTILE_SHOWCASE_SRCS = $(SRC_DIR)/demo/projectile_showcase.c \
 # Player ship showcase source files
 PLAYER_SHOWCASE_SRCS = $(SRC_DIR)/demo/player_ship_showcase.c \
                        $(SRC_DIR)/entities/player_ship.c \
+                       $(SRC_DIR)/gameplay/weapon.c \
                        $(SRC_DIR)/effects/projectile_types.c \
                        $(SRC_DIR)/entities/enemy_types.c \
                        $(SRC_DIR)/input/input_config.c \
-                       $(SRC_DIR)/input/input_manager.c
+                       $(SRC_DIR)/input/input_manager.c \
+                       $(SRC_DIR)/utils/logger.c
 
 # Player sprite generator source files
 PLAYER_GEN_SRCS = $(SRC_DIR)/tools/generate_player_sprite.c
@@ -126,10 +128,12 @@ HIGHSCORE_POPULATOR_SRCS = $(SRC_DIR)/tools/populate_highscores.c \
 POWERUP_SHOWCASE_SRCS = $(SRC_DIR)/demo/powerup_showcase.c \
                         $(SRC_DIR)/gameplay/powerup.c \
                         $(SRC_DIR)/entities/player_ship.c \
+                        $(SRC_DIR)/gameplay/weapon.c \
                         $(SRC_DIR)/entities/enemy_types.c \
                         $(SRC_DIR)/effects/projectile_types.c \
                         $(SRC_DIR)/input/input_config.c \
-                        $(SRC_DIR)/input/input_manager.c
+                        $(SRC_DIR)/input/input_manager.c \
+                        $(SRC_DIR)/utils/logger.c
 
 # Audio analysis GUI source files
 AUDIO_GUI_SRCS = $(SRC_DIR)/demo/audio_analysis_gui.c

@@ -9,10 +9,7 @@
 // Player ship weapon modes
 typedef enum {
     WEAPON_MODE_SINGLE,     // Single straight shot
-    WEAPON_MODE_DOUBLE,     // Double parallel shots
     WEAPON_MODE_SPREAD,     // 3-way spread shot
-    WEAPON_MODE_RAPID,      // Rapid fire mode
-    WEAPON_MODE_CHARGE,     // Charge beam
     WEAPON_MODE_DUAL,       // Front and back shots
     WEAPON_MODE_COUNT
 } WeaponMode;
