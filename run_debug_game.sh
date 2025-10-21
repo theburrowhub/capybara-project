@@ -62,6 +62,9 @@ PHASE_DESCRIPTIONS=(
 LEVEL_NAMES=(
     "Level 1: Initiation"
     "Level 2: Escalation"
+    "Level 3: Intensity"
+    "Level 4: Chaos"
+    "Level 5: Final Assault"
 )
 
 # Function to display help
@@ -95,19 +98,23 @@ show_help() {
     echo "  $0 -p 1-3                  # Level 1, Tank Squadron"
     echo "  $0 -p 2-0                  # Level 2 from beginning"
     echo "  $0 -p 2-5                  # Level 2, Phase 5"
-    echo "  $0 -i -p 1-3               # Tank Squadron with invulnerability"
-    echo "  $0 -i -d -p 1-11           # Combined Arms (intense tanks) with all debug features"
+    echo "  $0 -p 3-0                  # Level 3 from beginning"
+    echo "  $0 -p 5-10                 # Level 5, Phase 10"
+    echo "  $0 -i -p 1-3               # Level 1, Phase 3 with invulnerability"
+    echo "  $0 -i -d -p 4-5            # Level 4, Phase 5 with all debug features"
     echo "  $0 -p 12                   # Legacy: Level 1, Phase 12"
     echo ""
     echo -e "${YELLOW}Available Levels:${NC}"
-    echo "  Level 1 - Initiation (553.82s, ~9 minutes)"
-    echo "  Level 2 - Escalation (612.13s, ~10 minutes)"
+    echo "  Level 1 - Initiation (273.32s, ~4.5 minutes)"
+    echo "  Level 2 - Escalation (431.10s, ~7 minutes)"
+    echo "  Level 3 - Intensity (259.45s, ~4.5 minutes)"
+    echo "  Level 4 - Chaos (332.72s, ~5.5 minutes)"
+    echo "  Level 5 - Final Assault (148.15s, ~2.5 minutes)"
     echo ""
-    echo -e "${YELLOW}Tank Testing Phases (Level 1):${NC}"
-    echo "  1-3   - Tank Squadron (clean tank testing)"
-    echo "  1-5   - Mixed Assault (tanks + other enemies)"
-    echo "  1-11  - Combined Arms (high intensity tanks)"
-    echo "  1-16  - Heavy Assault (extreme tank challenge)"
+    echo -e "${YELLOW}Note:${NC}"
+    echo "  Phase numbers may have different meanings across levels"
+    echo "  Use phase 0 to start from the beginning of any level"
+    echo "  Higher phase numbers skip further into the level"
     echo ""
 }
 
@@ -117,8 +124,9 @@ list_phases() {
     echo -e "${GREEN}Available Phases${NC}"
     echo -e "${GREEN}================================${NC}"
     echo ""
-    echo -e "${BLUE}Note: Phases work for both Level 1 and Level 2${NC}"
-    echo -e "${BLUE}Use format: LEVEL-PHASE (e.g., 1-12 or 2-5)${NC}"
+    echo -e "${BLUE}Note: Phase descriptions below are generic. They work across all 5 levels.${NC}"
+    echo -e "${BLUE}Use format: LEVEL-PHASE (e.g., 1-12, 2-5, 3-0, 4-8, 5-3)${NC}"
+    echo -e "${BLUE}Phase timing and events may vary between levels.${NC}"
     echo ""
     for i in "${!PHASE_NAMES[@]}"; do
         echo -e "${YELLOW}Phase $i:${NC} ${PHASE_NAMES[$i]}"
@@ -188,16 +196,22 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Validate level number
-if [[ $LEVEL -lt 1 || $LEVEL -gt 2 ]]; then
-    echo -e "${RED}Error: Level must be 1 or 2${NC}"
-    echo "Available levels: 1 (Initiation), 2 (Escalation)"
+if [[ $LEVEL -lt 1 || $LEVEL -gt 5 ]]; then
+    echo -e "${RED}Error: Level must be between 1 and 5${NC}"
+    echo "Available levels:"
+    echo "  1 - Initiation"
+    echo "  2 - Escalation"
+    echo "  3 - Intensity"
+    echo "  4 - Chaos"
+    echo "  5 - Final Assault"
     exit 1
 fi
 
-# Validate phase number
-if [[ $PHASE -lt 0 || $PHASE -gt 17 ]]; then
-    echo -e "${RED}Error: Phase must be between 0 and 17${NC}"
+# Validate phase number (allow up to phase 30 for flexibility across all levels)
+if [[ $PHASE -lt 0 || $PHASE -gt 30 ]]; then
+    echo -e "${RED}Error: Phase must be between 0 and 30${NC}"
     echo "Use -l or --list to see available phases"
+    echo "Note: Valid phase ranges may vary by level"
     exit 1
 fi
 
