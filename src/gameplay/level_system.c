@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "level_system.h"
 #include "json_loader.h"
 #include "constants.h"

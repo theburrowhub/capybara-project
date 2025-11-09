@@ -1,3 +1,5 @@
+#define _POSIX_C_SOURCE 200809L
+
 #include "json_loader.h"
 #include "cJSON.h"
 #include "enemy_types.h"
