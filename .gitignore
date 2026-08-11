@@ -2,6 +2,8 @@
 build/
 build-debug/
 build-release/
+.godot/
+*.import
 *.o
 *.a
 *.so

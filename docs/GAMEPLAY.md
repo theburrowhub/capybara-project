@@ -1,145 +1,43 @@
-# Gameplay Guide
+# Gameplay
 
-## Controls
+## Jugador
 
-### In-Game Controls
-- **Movement**: WASD or Arrow Keys
-- **Shoot**: Left Mouse Button (hold for continuous fire)
-- **Pause**: P
-- **Debug Mode**: H (show hitboxes)
-- **Restart**: R (when game over)
-- **Quick Fullscreen**: F11 or ALT+ENTER
+La nave parte con 100 de casco, 25 de escudo en modo ofensivo y 100 de energía. En modo defensivo el máximo de escudo pasa a 50 manteniendo el porcentaje actual.
 
-### Menu Navigation
-- **Navigate Options**: UP/DOWN or W/S
-- **Select**: ENTER or SPACE
-- **Back**: ESC or BACKSPACE
-- **Adjust Settings**: LEFT/RIGHT or A/D
-- **Change Difficulty (High Scores)**: LEFT/RIGHT arrows to view different difficulty levels
-- **Exit Game**: ESC from main menu
+- El escudo regenera tras cinco segundos sin daño.
+- La energía regenera lentamente tras cinco segundos de espera al agotarse.
+- La habilidad ofensiva duplica daño y consume 40 de energía por segundo.
+- La habilidad defensiva reduce el daño recibido y consume 20 de energía por segundo.
+- Si el casco llega a cero con al menos un upgrade de arma, se consume un nivel para revivir con 20% de casco y 50% de escudo.
 
-### Name Input (High Score Dialog)
-When you achieve a high score, a dialog appears to enter your name:
-- **Type Name**: Any alphanumeric characters (max 31)
-- **Delete**: BACKSPACE
-- **Submit**: ENTER (requires at least 1 character)
-- **Use Default**: ESC (saves as "Player")
+## Armas
 
-### Planned Controller Support
-- Xbox/PlayStation controller support (see TODO.md)
+| Tecla | Modo | Comportamiento |
+|---|---|---|
+| 1 | Single | disparo frontal |
+| 2 | Double | dos cañones paralelos |
+| 3 | Spread | abanico de tres proyectiles |
+| 4 | Rapid | cadencia elevada |
+| 5 | Charge | mantener y soltar para ampliar daño/abanico |
+| 6 | Dual | disparo frontal y trasero |
 
-## Game Mechanics
+Los power-ups de arma acumulan multiplicadores 1,5×, 2× y 2,5×.
 
-### Player Ship
-- **Health**: 10 hit points
-- **Movement**: Limited to left half of screen
-- **Weapon**: Rapid-fire projectiles with heat management
+## Power-ups
 
-### Pause Feature
-- Press **P** to pause the game at any time
-- While paused:
-  - All game updates are frozen (enemies, projectiles, timers)
-  - "PAUSED" overlay appears on screen
-  - Press P again to resume
-- Useful for taking breaks or analyzing the game state
+- **Energy**: recupera 20% de energía.
+- **Shield**: restaura el escudo completo.
+- **Hull**: repara 20% de casco.
+- **Weapon**: añade un nivel de potencia, hasta tres.
 
-### Weapon Heat System
-The weapon system prevents continuous spam shooting:
-- Heat builds up with each shot (8% per shot)
-- Weapon cools down when not firing (30% per second)
-- **Overheat** at 100% heat triggers 3-second cooldown
-- Visual indicator shows heat level with color coding:
-  - 🟢 Green: 0-25% (Cool)
-  - 🟡 Yellow: 25-50% (Warm)
-  - 🟠 Orange: 50-75% (Warning)
-  - 🔴 Red: 75-100% (Critical)
-  - 🟣 Purple: Overheated
+Cada recogida concede 50 puntos. Los drops dependen del tipo de enemigo.
 
-### Enemies
-- 10 unique enemy types with different behaviors
-- Each type has unique stats (health, speed, damage, resistance)
-- Spawn from the right side of screen
-- **Points**: Varies by enemy type (8-50 damage on collision)
-- **Full Details**: See [Enemies and Sprites Documentation](ENEMIES_AND_SPRITES.md)
+## Campaña
 
-### Obstacles
-Two types of obstacles spawn randomly:
+**Initiation** presenta amenazas gradualmente, habilita disparos enemigos a los 55 s y convoca al jefe a los 427 s. **Escalation** empieza casi de inmediato, incluye un periodo de recuperación y convoca al jefe a los 510 s.
 
-#### Destructible (Orange)
-- Can be destroyed with 2 hits
-- Changes color when damaged
-- Worth 50 points when destroyed
+Si un jefe permanece vivo hasta el final de su ventana de combate, activa la secuencia de escape y destruye la flota. Completar el segundo nivel produce victoria.
 
-#### Indestructible (Gray)
-- Cannot be destroyed
-- Must be avoided
-- Instant death on collision
+## Controles
 
-### Difficulty Progression
-The game increases in difficulty over time:
-- Speed increases every 20 seconds
-- Affects:
-  - Enemy movement speed
-  - Obstacle movement speed
-  - Background scroll speed
-  - Spawn rates
-- Visual warning 5 seconds before speed increase
-
-## Scoring System
-
-- **Enemy Kills**: Points vary by enemy type
-  - Swarm: 80 points
-  - Grunt/Speeder: 100-150 points
-  - Tank/Elite/Boss: 300-500 points
-- **Obstacle Destroyed**: 50 points
-- **Survival Bonus**: Points accumulate over time
-- **Combo Multiplier**: Chain kills for bonus points
-
-## Game Over Conditions
-
-The game ends when:
-- Player health reaches 0 (from enemy collisions)
-- Player collides with any obstacle (instant death)
-
-## Tips & Strategies
-
-1. **Positioning**: Stay mobile but avoid the right side
-2. **Priority Targets**: Clear destructible obstacles for points
-3. **Pattern Recognition**: Learn enemy movement patterns
-4. **Risk vs Reward**: Destroying obstacles gives points but risks collision
-5. **Collect Powerups**: They drift away quickly, prioritize shield and weapon upgrades
-
-## Debug Features
-
-Press **H** to enable hitbox visualization:
-- Green outline: Player hitbox
-- Pink outline: Enemy hitboxes
-- Magenta outline: Obstacle hitboxes
-
-Collision events are logged to `collision_log.txt` for analysis.
-
-## Advanced Features
-
-### Available Enemy Types
-The game includes 10 different enemy types:
-- **Grunt, Tank, Speeder, Zigzag, Bomber**
-- **Shield, Swarm, Elite, Ghost, Boss**
-- Each with unique behaviors and weapon configurations
-- See [Enemies and Sprites](ENEMIES_AND_SPRITES.md) for details
-
-### Projectile System
-4 projectile types with different properties:
-- **Laser**: Fast, straight shots
-- **Plasma**: Medium speed with homing
-- **Missile**: Slow but high damage with strong homing
-- **Energy Orb**: Area damage with piercing
-- See [Weapons and Damage](WEAPONS_AND_DAMAGE.md) for details
-
-## Planned Features
-
-See [TODO List](TODO.md) for upcoming features including:
-- Power-ups and upgrades
-- Boss battle phases
-- Controller support
-- Capybara-themed sprites
-- Local co-op mode
+WASD/flechas mueven; clic izquierdo o Space dispara; `Q` cambia energía; `E` mantiene la habilidad; `P` pausa; `H` muestra hitboxes; `F11` alterna fullscreen; `Escape` vuelve al menú. Tras game over, `R` reinicia.

@@ -1,46 +1,11 @@
-# Usage Guide
-
-## Essential Commands
-
-### Build and Run
+# Uso rápido
 
 ```bash
-make              # Build all binaries (default)
-make game         # Build only the main game
-make run          # Build and run the game
-make showcase     # Build and run enemy showcase
+godot --path .
 ```
 
-### Audio Tools
+Selecciona **Start Mission**. La dificultad se configura en **Options** y se aplica a vida/daño de enemigos, ritmo de spawn y multiplicador de puntuación.
 
-```bash
-make run_audio_gui    # Build and run audio analysis GUI
-make run_audio_cli    # Build and run audio analysis CLI
-```
+Los ajustes y récords se guardan de forma portable mediante Godot en `user://profile.json`. La ubicación física depende de la plataforma y puede consultarse desde el editor con `ProjectSettings.globalize_path("user://")`.
 
-### Advanced Debugging
-
-For advanced debugging options (invulnerability, phase selection, debug logging):
-
-```bash
-./run_debug_game.sh --help        # Show all options
-./run_debug_game.sh -l            # List all phases
-./run_debug_game.sh -i            # Invulnerable mode
-./run_debug_game.sh -p 3          # Start at specific phase
-./run_debug_game.sh -i -d -p 11   # Combined options
-```
-
-### Build Management
-
-```bash
-make clean        # Remove build artifacts
-make rebuild      # Clean and rebuild
-make debug        # Build with debug symbols
-make release      # Build with optimizations
-```
-
-### Help
-
-```bash
-make help         # Show all available Makefile targets
-```
+Durante el juego, mantén clic izquierdo o Space para disparar. Usa `1–6` o `R` para cambiar arma, `Q` para alternar energía ofensiva/defensiva y mantén `E` para consumir energía en la habilidad del modo activo.
