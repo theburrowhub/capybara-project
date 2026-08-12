@@ -5,8 +5,14 @@ This document provides a comprehensive reference for all modules and their publi
 ## Table of Contents
 - [Core Modules](#core-modules)
 - [Entity Modules](#entity-modules)
-- [System Modules](#system-modules)
+- [Input Modules](#input-modules)
+- [Gameplay Modules](#gameplay-modules)
+- [Rendering Modules](#rendering-modules)
+- [Physics Modules](#physics-modules)
+- [Effects Modules](#effects-modules)
+- [UI Modules](#ui-modules)
 - [Utility Modules](#utility-modules)
+- [Demo Utilities](#demo-utilities)
 - [Data Structures](#data-structures)
 - [Constants](#constants)
 
@@ -48,6 +54,8 @@ void HandleGameInput(Game* game);
 ---
 
 ## Entity Modules
+
+Location: `src/entities/`
 
 ### player_ship.h
 Player ship management, controls, and HUD.
@@ -148,7 +156,74 @@ int GetEnemyPower(EnemyType type);
 
 ---
 
-## System Modules
+## Input Modules
+
+Location: `src/input/`
+
+### input_manager.h
+Unified input handling for keyboard and gamepad.
+
+```c
+void InputManager_Init(InputManager* manager, InputConfig* config);
+// Initialize input manager with configuration
+// - Sets up gamepad detection
+// - Links to input configuration
+
+void InputManager_Update(InputManager* manager);
+// Update input manager state each frame
+// - Checks gamepad availability
+
+bool InputManager_IsActionPressed(const InputManager* manager, GameAction action);
+// Check if action was just pressed this frame
+// - Checks all bindings for the action
+// - Returns true if any binding triggered
+
+bool InputManager_IsActionDown(const InputManager* manager, GameAction action);
+// Check if action is currently held down
+// - Supports keyboard keys and gamepad buttons/axes
+// - Includes hardcoded gamepad support for critical actions
+
+bool InputManager_IsActionReleased(const InputManager* manager, GameAction action);
+// Check if action was just released this frame
+
+bool InputManager_DetectInput(InputBinding* outBinding);
+// Detect any keyboard or gamepad input for rebinding
+// - Used by controls configuration screen
+// - Returns first detected input
+```
+
+### input_config.h
+Input configuration and key binding management.
+
+```c
+void InputConfig_InitDefaults(InputConfig* config);
+// Initialize with default key/button bindings
+
+bool InputConfig_Load(InputConfig* config, const char* configFilePath);
+// Load configuration from file
+// - Returns false if file not found (uses defaults)
+
+bool InputConfig_Save(const InputConfig* config, const char* configFilePath);
+// Save configuration to disk
+
+void InputConfig_SetBinding(InputConfig* config, GameAction action, 
+                           int slot, InputType type, int value);
+// Set a key/button binding for an action
+// - slot 0 = keyboard, slot 1 = gamepad
+
+const char* InputConfig_GetActionName(GameAction action);
+// Get human-readable action name
+
+void InputConfig_GetBindingName(const InputBinding* binding, 
+                               char* buffer, int bufferSize);
+// Get human-readable binding name (e.g., "Space", "A Button")
+```
+
+---
+
+## Gameplay Modules
+
+Location: `src/gameplay/`
 
 ### weapon.h
 Weapon system, firing modes, and heat management.
@@ -239,6 +314,39 @@ void CleanupPowerupSystem(PowerupSystem* system);
 // Cleanup powerup system resources
 ```
 
+---
+
+## Rendering Modules
+
+Location: `src/rendering/`
+
+### renderer.h
+Main rendering pipeline and HUD.
+
+```c
+void DrawGame(Game* game);
+// Render entire game frame
+// - Draw background and starfield
+// - Draw all game objects
+// - Draw HUD (top and bottom)
+// - Draw overlays (pause, game over, level complete)
+
+void DrawBackground(float backgroundX);
+// Draw scrolling background
+
+void DrawGameOver(const Game* game);
+// Draw game over screen with final score
+
+void DrawLevelCompleteOverlay(const Game* game);
+// Draw level completion message (semi-transparent)
+```
+
+---
+
+## Physics Modules
+
+Location: `src/physics/`
+
 ### collision.h
 Collision detection system.
 
@@ -265,43 +373,26 @@ void CheckPlayerEnemyCollisions(CollisionContext* ctx);
 // Check player ship vs enemies (collision damage)
 // - Apply damage to player
 // - Apply damage to enemy
-
-void CheckDevastatingAttack(CollisionContext* ctx);
-// Check devastating attack projectiles vs enemies
-// - High damage special attack
-// - Spread pattern
 ```
 
-### wave_system.h
-Dynamic wave spawning and phase progression.
+### combat_system.h
+Generic combat logic.
 
 ```c
-void InitWaveSystem(WaveSystem* system);
-// Initialize wave spawning system
-// - Set up phase definitions
-// - Load wave patterns
+void Combat_FireEnemyProjectile(CombatContext* ctx, EnemyEx* enemy);
+// Fire projectile from enemy toward player
 
-void UpdateWaveSystem(WaveSystem* system, Game* game, float deltaTime);
-// Update wave system
-// - Progress through phases
-// - Spawn enemies based on bass intensity
-// - Manage wave timers
-// - Handle phase transitions
-
-void DrawWaveInfo(const WaveSystem* system, float gameTime);
-// Draw wave progress in top HUD
-// - Phase name
-// - Progress bar
-// - Time remaining
-
-const char* GetCurrentPhaseName(const WaveSystem* system);
-// Get name of current phase
-// Returns: Phase name string
-
-float GetWaveProgress(const WaveSystem* system);
-// Get progress through current wave (0.0 to 1.0)
-// Returns: Progress percentage
+bool Combat_UpdateEnemyFiring(EnemyEx* enemy, CombatContext* ctx, 
+                             float deltaTime, float minX, float maxX, 
+                             float minY, float maxY);
+// Update enemy firing timer and trigger shots
 ```
+
+---
+
+## Effects Modules
+
+Location: `src/effects/`
 
 ### projectile_types.h
 Projectile type definitions (Laser, Plasma, Missile, Energy Orb).
@@ -332,99 +423,114 @@ const char* GetProjectileTypeName(ProjectileType type);
 ```
 
 ### explosion.h
-Visual explosion effects.
+Visual explosion effects with particles and screen shake.
 
 ```c
 void InitExplosionSystem(ExplosionSystem* system);
 // Initialize explosion system
 // - Clear explosion pool
 
-void UpdateExplosions(ExplosionSystem* system, float deltaTime);
+void UpdateExplosionSystem(ExplosionSystem* system, float deltaTime);
 // Update all active explosions
 // - Expand radius
 // - Fade out
-// - Particle animation
+// - Update particles and debris
+// - Update screen shake
 
 void DrawExplosions(const ExplosionSystem* system);
-// Render all active explosions
-// - Circle with expanding radius
-// - Color based on source
-// - Fade effect
+// Render all active explosions with particles
+
+void CreateExplosion(ExplosionSystem* system, Vector2 position, ExplosionType type);
+// Create typed explosion (small, medium, large, player)
 
 void CreateEnemyExplosion(ExplosionSystem* system, Vector2 position, 
                          Color color, float size);
-// Create explosion at enemy death position
-// - Scales with enemy size
-// - Uses enemy color
+// Create explosion at enemy death (scales with size)
 
-void CleanupExplosionSystem(ExplosionSystem* system);
-// Cleanup explosion system resources
+void CreateBossExplosion(ExplosionSystem* system, Vector2 position, Color bossColor);
+// Create multi-stage boss explosion
+
+void TriggerScreenShake(ExplosionSystem* system, float intensity, float duration);
+// Trigger screen shake effect
 ```
 
-### renderer.h
-Main rendering pipeline and HUD.
+### projectile_manager.h
+Projectile pooling and lifecycle management.
 
 ```c
-void RenderGame(const Game* game);
-// Main render function
-// - Coordinates all drawing operations
-// - Manages render layers
-// - Handles HUD elements
+void ProjectileManager_UpdateAll(ProjectileManager* mgr, float deltaTime);
+// Update all projectiles and cull off-screen ones
 
-void DrawTopHUD(const Game* game);
-// Draw top HUD bar (0-30px)
-// - Phase name
-// - Wave progress bar
-// - Game time
-// - Enemy count
-// - Debug indicators
+void ProjectileManager_DrawAll(const ProjectileManager* mgr);
+// Draw all active projectiles
 
-void DrawBottomHUD(const Game* game);
-// Draw bottom HUD bar (500-600px)
-// - Ship status (via player_ship.c)
-// - Score (large, centered)
-// - Weapon info (via player_ship.c)
-// - Controls reference
+int ProjectileManager_CountActive(const ProjectileManager* mgr);
+// Count active projectiles
 
-void DrawBackground(float scrollOffset);
-// Draw scrolling star field background
-// - Multiple layers for parallax
-// - Animated stars
-
-void DrawGameOver(const Game* game);
-// Draw game over screen
-// - Final score
-// - Death cause
-// - Restart instructions
-
-void DrawPauseScreen(void);
-// Draw pause overlay
-// - Semi-transparent overlay
-// - "PAUSED" text
+void ProjectileManager_InitAll(ProjectileManager* mgr);
+// Initialize all projectiles to inactive
 ```
 
-### combat_system.h
-Combat logic and damage calculation.
+---
+
+## UI Modules
+
+Location: `src/ui/`
+
+### menu.h
+Complete menu system with navigation, settings, and controls configuration.
 
 ```c
-void InitCombatSystem(CombatSystem* system);
-// Initialize combat system
+void InitMenu(Menu* menu);
+// Initialize menu system
+// - Load settings from database
+// - Initialize all menu states
 
-void ApplyDamageToEnemy(EnemyEx* enemy, float damage);
-// Apply damage to enemy
-// - Reduce health
-// - Trigger death if health <= 0
+void UpdateMenu(Menu* menu, MenuState* gameState);
+// Update menu state and handle input
+// - Menu navigation using InputManager
+// - Settings adjustments
+// - Controls configuration
+// - High score management
 
-bool IsEnemyDead(const EnemyEx* enemy);
-// Check if enemy should be destroyed
-// Returns: true if health <= 0
+void DrawMenu(const Menu* menu);
+// Render current menu screen
+
+void DrawMainMenu(const Menu* menu);
+// Draw main menu (Start, Settings, High Scores, Credits, Exit)
+
+void DrawOptionsSound(Menu* menu);
+// Draw sound settings menu
+
+void DrawOptionsVideo(Menu* menu);
+// Draw video settings menu
+
+void DrawOptionsControls(Menu* menu);
+// Draw controls configuration screen
+
+void DrawHighScores(Menu* menu);
+// Draw high scores table with difficulty selection
+
+void DrawNameInput(Menu* menu);
+// Draw name input dialog for new high score
+
+void StartNameInput(Menu* menu, int score, int difficulty);
+// Start high score name input
+
+void ApplyResolution(Menu* menu);
+// Apply selected resolution
+
+void ApplyFullscreenMode(Menu* menu);
+// Apply fullscreen mode setting
 ```
 
 ---
 
 ## Utility Modules
 
-### utils.h / logger.c
+Location: `src/utils/`
+
+### logger.h
 Logging and debugging utilities.
 
 ```c
@@ -486,6 +592,69 @@ void CleanupAudioAnalysis(AudioAnalysisData* data);
 // Cleanup audio resources
 // - Stop playback
 // - Free BASS resources
+```
+
+### database.h
+SQLite database for high scores and settings persistence.
+
+```c
+bool DB_Init(void);
+// Initialize database connection
+
+void DB_Close(void);
+// Close database connection
+
+bool DB_SaveHighScore(int score, const char* playerName, int difficulty);
+// Save high score to database
+
+bool DB_GetHighScores(DifficultyLevel difficulty, HighScoreEntry* entries, 
+                     int maxEntries, int* outCount);
+// Get high scores for difficulty level
+
+bool DB_SaveSettings(const UserSettings* settings);
+// Save user settings (audio, video, controls)
+
+bool DB_LoadSettings(UserSettings* settings);
+// Load user settings from database
+```
+
+---
+
+## Demo Utilities
+
+Location: `src/demo/`
+
+### demo_common.h
+Shared utilities for demo programs to eliminate code duplication.
+
+```c
+Camera2D DemoCommon_InitCamera(float width, float height);
+// Initialize camera for demo displays
+
+void DemoCommon_InitGameTypes(void);
+// Initialize enemy types and projectile types
+
+void DemoCommon_InitBulletsArray(Bullet* bullets, int count);
+// Initialize bullets array for player weapons
+
+void DemoCommon_InitEnemiesArray(EnemyEx* enemies, int count);
+// Initialize enemies array
+
+void DemoCommon_InitProjectilesArray(Projectile* projectiles, int count);
+// Initialize projectiles array using ProjectileManager
+
+ExplosionSystem* DemoCommon_CreateExplosionSystem(void);
+// Allocate and initialize explosion system
+
+InputManager* DemoCommon_CreateInputManager(InputConfig** outConfig);
+// Allocate and initialize input manager with default config
+
+void DemoCommon_InitStarfield(Vector2* starfield, int count, int width, int height);
+// Initialize starfield array for background
+
+void DemoCommon_DrawStarfield(Vector2* starfield, int count, 
+                             float scrollSpeed, int width, int height);
+// Update and draw starfield
 ```
 
 ---

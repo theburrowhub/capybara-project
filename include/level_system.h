@@ -9,10 +9,11 @@ typedef struct LevelConfig {
     int levelNumber;
     const char* name;
     const char* audioPath;
-    const char* bassLogPath;
+    const char* bassLogPath;     // Legacy field, may be NULL
     float duration;              // Duration in seconds
     int targetScore;             // Score needed to unlock next level
     const char* description;
+    const char* jsonFilePath;    // Path to the level's JSON file
 } LevelConfig;
 
 // Level manager structure
@@ -33,8 +34,7 @@ bool AdvanceToNextLevel(LevelManager* manager);
 void ResetToLevel(LevelManager* manager, int levelNumber);
 int GetTotalLevels(const LevelManager* manager);
 
-// Level-specific wave plan generators
-SpawnEvent* CreateLevel1Waveplan(int* eventCount);
-SpawnEvent* CreateLevel2Waveplan(int* eventCount);
+// Level-specific wave plan loader from JSON
+SpawnEvent* LoadWaveplanFromJSON(const char* jsonFilePath, int* eventCount);
 
 #endif // LEVEL_SYSTEM_H

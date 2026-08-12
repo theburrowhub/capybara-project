@@ -1,3 +1,60 @@
+## v0.2.0 (2025-10-19)
+
+### Feat
+
+- update HUD display to include level information and center progress bar
+- add max scroll speed cap and update speed management
+- refactor level system to use JSON-based configuration
+- add start freeze timer and visual countdown for player ship
+- enhance input management with active input method tracking
+- introduce CMake as the primary build system with new build scripts
+
+### Refactor
+
+- update build structure to unify output directories
+- reorganize source files and update pause functionality
+- major codebase reorganization and input system unification
+- implement input management system for enhanced control handling
+
+## v0.2.0a7 (2025-10-14)
+
+### Refactor
+
+- **MAJOR**: Reorganize src/ directory structure with domain-based organization
+  - Created 8 specialized directories: input/, gameplay/, rendering/, physics/, effects/, ui/
+  - Moved 16 files from mixed src/systems/ to appropriate domain directories
+  - Eliminated src/systems/ directory
+- **Input System**: Consolidate input handling and eliminate duplication
+  - Removed duplicate input detection from menu.c (~100 lines)
+  - Removed keyboard fallbacks from player_ship.c and game.c
+  - Unified all input through InputManager (single source of truth)
+- **Demo Utilities**: Create shared demo_common module
+  - Added 9 reusable functions for demo initialization
+  - Eliminated ~200 lines of duplicate initialization code across 5 demos
+- **Documentation**: Complete update of architecture and API docs
+  - Updated ARCHITECTURE.md with new directory structure
+  - Reorganized API.md by domain with new sections
+  - Added demo utilities documentation
+
+### Impact
+
+- Eliminated ~350+ lines of duplicate code
+- Improved code organization and maintainability
+- Zero breaking changes to public APIs
+- All 13 build targets compile successfully
+
+### Fix
+
+- improve dependency installation logic in GitHub Actions
+
+## v0.2.0a6 (2025-10-14)
+
+### Fix
+
+- correct package naming logic and enhance error reporting in release workflow
+
+## v0.2.0a5 (2025-10-14)
+
 ## v0.2.0a4 (2025-10-13)
 
 ## v0.2.0a3 (2025-10-13)

@@ -8,6 +8,8 @@
 #include "weapon.h"
 #include "explosion.h"
 #include "powerup.h"
+#include "input_manager.h"
+#include "input_config.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -218,39 +220,43 @@ void DrawLevelCompleteOverlay(const Game* game) {
 void DrawGame(Game* game) {
     // Hitbox debug removed for cleaner gameplay
     
-    // === TOP HUD (Phase, Progress, Time, Enemy Count) ===
+    // === TOP HUD (Level, Phase, Progress, Time, Enemy Count) ===
     // Draw top HUD background bar
     DrawRectangle(0, 0, SCREEN_WIDTH, 30, Fade(BLACK, 0.7f));
     
-    // Left: Phase name
-    if (game->waveSystem) {
-        const char* phaseName = GetCurrentPhaseName(game->waveSystem);
-        DrawText(TextFormat("PHASE: %s", phaseName), 10, 8, 18, YELLOW);
+    // Left: Level number and name
+    const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+    if (currentLevel) {
+        DrawText(TextFormat("LEVEL %d: %s", currentLevel->levelNumber, currentLevel->name), 
+                 10, 8, 18, SKYBLUE);
     }
     
-    // Center-Left: Wave progress bar
+    // Center: Wave progress bar (centered on screen)
     if (game->waveSystem) {
         float progress = GetWaveProgress(game->waveSystem);
-        int barX = 250;
-        int barWidth = 300;
+        int barWidth = 250;
+        // Center the entire progress display (text + bar + percentage)
+        int totalWidth = 85 + barWidth + 45; // "PROGRESS:" + bar + " XX%"
+        int barX = (SCREEN_WIDTH - totalWidth) / 2;
+        
         DrawText("PROGRESS:", barX, 10, 14, GRAY);
         DrawRectangle(barX + 85, 10, barWidth, 12, Fade(DARKGRAY, 0.5f));
         DrawRectangle(barX + 85, 10, (int)(barWidth * progress / 100), 12, Fade(GREEN, 0.8f));
         DrawRectangleLines(barX + 85, 10, barWidth, 12, WHITE);
-        DrawText(TextFormat("%.0f%%", progress), barX + 390, 10, 14, WHITE);
+        DrawText(TextFormat("%.0f%%", progress), barX + 85 + barWidth + 5, 10, 14, WHITE);
     }
     
     // Center-Right: Time (shows level time, not total game time)
     float levelTime = game->gameTime - game->levelStartTime;
     int minutes = (int)(levelTime / 60);
     int seconds = (int)levelTime % 60;
-    DrawText(TextFormat("TIME: %02d:%02d", minutes, seconds), 680, 8, 18, WHITE);
+    DrawText(TextFormat("TIME: %02d:%02d", minutes, seconds), 820, 8, 18, WHITE);
     
     // Right: Enemy count
     if (game->waveSystem) {
         int enemyCount = CountActiveEnemies(game);
         Color enemyColor = enemyCount > 0 ? RED : GREEN;
-        DrawText(TextFormat("ENEMIES: %d", enemyCount), 850, 8, 18, enemyColor);
+        DrawText(TextFormat("ENEMIES: %d", enemyCount), 960, 8, 18, enemyColor);
     }
     
     // Debug indicators (top right corner)
@@ -327,6 +333,31 @@ void DrawGame(Game* game) {
     
     // Draw play zone separator line
     DrawLine(0, PLAY_ZONE_BOTTOM, SCREEN_WIDTH, PLAY_ZONE_BOTTOM, Fade(WHITE, 0.3f));
+    
+    // Show "GET READY!" message during start freeze period
+    if (game->playerShip && game->playerShip->startFreezeTimer > 0.0f) {
+        const char* readyText = "GET READY!";
+        int fontSize = 48;
+        int textWidth = MeasureText(readyText, fontSize);
+        
+        // Pulsing effect
+        float pulse = (sinf(game->gameTime * 4.0f) + 1.0f) / 2.0f;  // 0 to 1
+        int alpha = (int)(150 + pulse * 105);  // 150 to 255
+        
+        // Draw with glow effect
+        DrawText(readyText, (SCREEN_WIDTH - textWidth) / 2 + 3, (SCREEN_HEIGHT / 2) + 3, 
+                fontSize, Fade(BLACK, 0.5f));
+        DrawText(readyText, (SCREEN_WIDTH - textWidth) / 2, SCREEN_HEIGHT / 2, 
+                fontSize, (Color){255, 255, 0, alpha});
+                
+        // Show countdown
+        int countdown = (int)ceil(game->playerShip->startFreezeTimer);
+        const char* countText = TextFormat("%d", countdown);
+        int countSize = 36;
+        int countWidth = MeasureText(countText, countSize);
+        DrawText(countText, (SCREEN_WIDTH - countWidth) / 2, (SCREEN_HEIGHT / 2) + 60, 
+                countSize, (Color){255, 200, 100, alpha});
+    }
     
     // === BOTTOM HUD (from left to right) ===
     int hudY = PLAY_ZONE_BOTTOM + 5;  // Start HUD 5 pixels below play zone
@@ -424,26 +455,69 @@ void DrawGame(Game* game) {
         DrawRectangleLines(weaponX + 80, hudY + 72, 100, 8, WHITE);
     }
     
-    // Right section: Controls
+    // Right section: Dynamic Controls (based on active input method)
     int controlsX = 750;
+    int controlsCol2X = controlsX + 140;  // Second column with better spacing
     DrawText("CONTROLS:", controlsX, hudY + 5, 12, GRAY);
-    DrawText("WASD/Arrows - Move", controlsX, hudY + 20, 11, WHITE);
-    DrawText("SPACE - Fire", controlsX, hudY + 35, 11, WHITE);
-    DrawText("Q - Mode", controlsX, hudY + 50, 11, WHITE);
-    DrawText("E - Special", controlsX, hudY + 65, 11, WHITE);
     
-    DrawText("P - Pause", controlsX + 120, hudY + 20, 11, WHITE);
-    DrawText("ESC - Menu", controlsX + 120, hudY + 35, 11, WHITE);
+    // Get active input method and show appropriate controls
+    if (game->inputManager) {
+        ActiveInputMethod inputMethod = InputManager_GetActiveInputMethod(game->inputManager);
+        
+        char moveStr[64], fireStr[64], modeStr[64], specialStr[64];
+        
+        // Get control strings based on active input method
+        if (inputMethod == INPUT_METHOD_GAMEPAD) {
+            // Gamepad controls - Two columns layout
+            InputManager_GetActionString(game->inputManager, ACTION_MOVE_UP, moveStr, sizeof(moveStr));
+            InputManager_GetActionString(game->inputManager, ACTION_FIRE, fireStr, sizeof(fireStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SWITCH_ENERGY_MODE, modeStr, sizeof(modeStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SPECIAL_ABILITY, specialStr, sizeof(specialStr));
+            
+            // Left column
+            DrawText(TextFormat("%s - Move", moveStr), controlsX, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Fire", fireStr), controlsX, hudY + 35, 11, WHITE);
+            
+            // Right column
+            DrawText(TextFormat("%s - Mode", modeStr), controlsCol2X, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Special", specialStr), controlsCol2X, hudY + 35, 11, WHITE);
+            
+            // Bottom row
+            DrawText("Start - Menu", controlsX, hudY + 50, 11, WHITE);
+        } else {
+            // Keyboard controls - Two columns layout
+            InputManager_GetActionString(game->inputManager, ACTION_MOVE_UP, moveStr, sizeof(moveStr));
+            InputManager_GetActionString(game->inputManager, ACTION_FIRE, fireStr, sizeof(fireStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SWITCH_ENERGY_MODE, modeStr, sizeof(modeStr));
+            InputManager_GetActionString(game->inputManager, ACTION_SPECIAL_ABILITY, specialStr, sizeof(specialStr));
+            
+            // Left column
+            DrawText("WASD/Arrows - Move", controlsX, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Fire", fireStr), controlsX, hudY + 35, 11, WHITE);
+            
+            // Right column
+            DrawText(TextFormat("%s - Mode", modeStr), controlsCol2X, hudY + 20, 11, WHITE);
+            DrawText(TextFormat("%s - Special", specialStr), controlsCol2X, hudY + 35, 11, WHITE);
+            
+            // Bottom row
+            DrawText("ESC - Menu", controlsX, hudY + 50, 11, WHITE);
+        }
+    } else {
+        // Fallback if input manager is not available (shouldn't happen)
+        // Left column
+        DrawText("WASD/Arrows - Move", controlsX, hudY + 20, 11, WHITE);
+        DrawText("SPACE - Fire", controlsX, hudY + 35, 11, WHITE);
+        
+        // Right column
+        DrawText("Q - Mode", controlsCol2X, hudY + 20, 11, WHITE);
+        DrawText("E - Special", controlsCol2X, hudY + 35, 11, WHITE);
+        
+        // Bottom row
+        DrawText("ESC - Menu", controlsX, hudY + 50, 11, WHITE);
+    }
     
     // Draw level complete overlay (semi-transparent, non-invasive)
     DrawLevelCompleteOverlay(game);
-    
-    // Draw pause overlay
-    if (game->gamePaused) {
-        DrawRectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, Fade(BLACK, 0.5f));
-        DrawText("PAUSED", SCREEN_WIDTH/2 - 100, PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2 - 50, 60, WHITE);
-        DrawText("Press P to Resume", SCREEN_WIDTH/2 - 100, PLAY_ZONE_TOP + PLAY_ZONE_HEIGHT/2 + 20, 25, WHITE);
-    }
     
     // Draw game over screen if needed
     if (game->gameOver) {

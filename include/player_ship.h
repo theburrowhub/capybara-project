@@ -3,6 +3,7 @@
 
 #include "raylib.h"
 #include "types.h"
+#include "input_manager.h"
 #include <stdbool.h>
 
 // Player ship weapon modes
@@ -112,6 +113,9 @@ typedef struct PlayerShip {
     // Revive tracking (weapon powerup revive system)
     bool justRevived;        // Flag set when a revive happens
     float reviveEffectTimer; // Timer for revive visual effect
+    
+    // Start freeze period
+    float startFreezeTimer;  // Initial freeze period at game start (1-2 seconds)
 } PlayerShip;
 
 // Ship configuration
@@ -128,10 +132,10 @@ typedef struct {
 void InitPlayerShip(PlayerShip* ship);
 
 // Update player ship
-void UpdatePlayerShip(PlayerShip* ship, float deltaTime);
+void UpdatePlayerShip(PlayerShip* ship, float deltaTime, const InputManager* inputManager);
 
 // Handle player input
-void HandlePlayerInput(PlayerShip* ship);
+void HandlePlayerInput(PlayerShip* ship, const InputManager* inputManager);
 
 // Update ship physics
 void UpdateShipPhysics(PlayerShip* ship, float deltaTime);

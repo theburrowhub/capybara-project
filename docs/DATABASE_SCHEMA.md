@@ -48,6 +48,9 @@ Stores the top 10 scores per difficulty level.
 
 **Index:** `idx_difficulty_score` on `(difficulty, score DESC)` for fast queries.
 
+**Preset Data:**
+The database is automatically populated on first run with 40 legendary developers (10 per difficulty level) ranging from industry pioneers to rising stars. This provides an engaging leaderboard from the start. See `docs/HIGH_SCORES_PRESETS.md` for the complete list.
+
 ## Schema Migration
 
 The database automatically migrates from older versions when initialized. The migration adds missing columns with default values:

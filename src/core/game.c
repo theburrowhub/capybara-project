@@ -99,6 +99,7 @@ void InitGame(Game* game) {
     game->backgroundX = 0;
     game->gameOver = false;
     game->gamePaused = false;
+    game->justStarted = true;         // Prevent input on first frame
     game->bossEnemyIndex = -1;        // No boss initially
     game->bossSpawnTime = -1.0f;      // Boss not spawned yet
     game->bossEscapeTriggered = false;
@@ -110,6 +111,7 @@ void InitGame(Game* game) {
     game->levelCompleteTimer = 0.0f;
     game->transitioningToNextLevel = false;
     game->levelStartTime = 0.0f;  // Level starts at time 0
+    game->maxScrollSpeed = 0.0f;  // No speed cap initially
     
     // Apply DEBUG_START_PHASE to set starting time
     float startTime = 0.0f;
@@ -144,11 +146,16 @@ void InitGame(Game* game) {
     }
     
     game->gameTime = startTime;
-    game->scrollSpeed = BASE_SCROLL_SPEED;
+    game->levelStartTime = 0.0f;  // Always start at 0 for the current level
     game->speedLevel = 1;
     
-    // Update scroll speed based on start time
-    UpdateGameSpeed(game);
+    // Calculate initial scroll speed based on start time
+    // This ensures proper speed even when starting at different phases
+    game->speedLevel = (int)(game->gameTime / SPEED_UPDATE_INTERVAL) + 1;
+    game->scrollSpeed = BASE_SCROLL_SPEED + (SPEED_INCREMENT * (game->speedLevel - 1));
+    
+    // Note: maxScrollSpeed is set to 0.0 initially
+    // UpdateGameSpeed() will cap speed based on current level number (not time)
     
     game->nextEnemyId = 1;
     game->nextProjectileId = 1;
@@ -156,10 +163,39 @@ void InitGame(Game* game) {
 }
 
 void UpdateGameSpeed(Game* game) {
+    // Get the current level number from the level manager
+    const LevelConfig* currentLevel = GetCurrentLevel(game->levelManager);
+    int currentLevelNumber = currentLevel ? currentLevel->levelNumber : 1;
+    
+    // If we're in level 2 or higher, cap the speed at what it would be at end of level 1
+    // This is simpler than tracking accumulated time across levels
+    if (currentLevelNumber > 1) {
+        // Calculate and set the cap if not already set
+        if (game->maxScrollSpeed == 0.0f) {
+            // Get level 1 duration to calculate final speed
+            const LevelConfig* level1 = GetLevel(game->levelManager, 1);
+            float level1Duration = level1 ? level1->duration : 553.82f;
+            int level1FinalSpeedLevel = (int)(level1Duration / SPEED_UPDATE_INTERVAL) + 1;
+            game->maxScrollSpeed = BASE_SCROLL_SPEED + (SPEED_INCREMENT * (level1FinalSpeedLevel - 1));
+        }
+        
+        // Use the capped speed
+        game->scrollSpeed = game->maxScrollSpeed;
+        return;
+    }
+    
+    // Normal speed progression during level 1
+    // Calculate what the speed level should be based on game time
     int newSpeedLevel = (int)(game->gameTime / SPEED_UPDATE_INTERVAL) + 1;
-    if (newSpeedLevel != game->speedLevel) {
-        game->speedLevel = newSpeedLevel;
-        game->scrollSpeed = BASE_SCROLL_SPEED + (SPEED_INCREMENT * (game->speedLevel - 1));
+    
+    // Always update scroll speed based on current calculations
+    // This ensures scrollSpeed is never left unset
+    game->speedLevel = newSpeedLevel;
+    game->scrollSpeed = BASE_SCROLL_SPEED + (SPEED_INCREMENT * (game->speedLevel - 1));
+    
+    // Ensure speed never goes below minimum
+    if (game->scrollSpeed < BASE_SCROLL_SPEED) {
+        game->scrollSpeed = BASE_SCROLL_SPEED;
     }
 }
 
@@ -255,22 +291,19 @@ void UpdateProjectiles(Game* game) {
 }
 
 void UpdateGame(Game* game) {
+    // Skip input processing on first frame after starting
+    if (game->justStarted) {
+        game->justStarted = false;
+        // Still update music
+        if (game->musicLoaded) {
+            UpdateMusicStream(game->backgroundMusic);
+        }
+        return;  // Skip all other updates on first frame
+    }
+    
     // Update music stream if loaded
     if (game->musicLoaded) {
         UpdateMusicStream(game->backgroundMusic);
-    }
-    
-    // Handle pause toggle (P key only)
-    if (IsKeyPressed(KEY_P)) {
-        game->gamePaused = !game->gamePaused;
-        // Pause/resume music based on game state
-        if (game->musicLoaded) {
-            if (game->gamePaused) {
-                PauseMusicStream(game->backgroundMusic);
-            } else {
-                ResumeMusicStream(game->backgroundMusic);
-            }
-        }
     }
     
     if (!game->gameOver) {
@@ -289,7 +322,7 @@ void UpdateGame(Game* game) {
             
             // Update game components
             // Update new player ship
-            UpdatePlayerShip(game->playerShip, deltaTime);
+            UpdatePlayerShip(game->playerShip, deltaTime, game->inputManager);
             
             // Check for weapon powerup revive event and log it
             static bool wasJustRevived = false;
@@ -478,6 +511,9 @@ void UpdateGame(Game* game) {
                         LogEvent(game, "[%.2f] Level %d complete! Score: %d - Transitioning to next level...", 
                                 game->gameTime, currentLevel->levelNumber, game->score);
                         
+                        // Note: Speed capping is now handled automatically in UpdateGameSpeed()
+                        // based on game time vs level 1 duration
+                        
                         // Advance to next level
                         AdvanceToNextLevel(game->levelManager);
                         const LevelConfig* nextLevel = GetCurrentLevel(game->levelManager);
@@ -562,6 +598,9 @@ void UpdateGame(Game* game) {
 
 void CleanupGame(Game* game) {
     CloseLogger(game);
+    
+    // Clear input manager reference (it's owned by main.c, not freed here)
+    game->inputManager = NULL;
     
     // Cleanup audio
     if (game->musicLoaded) {

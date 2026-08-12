@@ -1,5 +1,6 @@
 #include "wave_system.h"
 #include "level_system.h"
+#include "json_loader.h"
 #include "enemy_types.h"
 #include "constants.h"
 #include "utils.h"
@@ -17,17 +18,23 @@ void InitWaveSystem(WaveSystem* waveSystem, const LevelConfig* levelConfig, bool
     waveSystem->phases = NULL;
     waveSystem->currentPhase = 0;
     
-    // Load spawn events based on level
-    if (levelConfig->levelNumber == 1) {
-        waveSystem->spawnEvents = CreateLevel1Waveplan(&waveSystem->eventCount);
-    } else if (levelConfig->levelNumber == 2) {
-        waveSystem->spawnEvents = CreateLevel2Waveplan(&waveSystem->eventCount);
+    // Load spawn events from JSON file
+    if (levelConfig->jsonFilePath) {
+        waveSystem->spawnEvents = LoadWaveplanFromJSON(levelConfig->jsonFilePath, &waveSystem->eventCount);
     } else {
-        // Fallback to level 1
-        printf("[WAVE SYSTEM] WARNING: Unknown level %d, falling back to level 1\n", 
-               levelConfig->levelNumber);
-        waveSystem->spawnEvents = CreateLevel1Waveplan(&waveSystem->eventCount);
+        printf("[WAVE SYSTEM] ERROR: No JSON file path for level %d\n", levelConfig->levelNumber);
+        waveSystem->spawnEvents = NULL;
+        waveSystem->eventCount = 0;
     }
+    
+    if (!waveSystem->spawnEvents || waveSystem->eventCount == 0) {
+        printf("[WAVE SYSTEM] ERROR: Failed to load spawn events for level %d\n", 
+               levelConfig->levelNumber);
+        waveSystem->spawnEvents = NULL;
+        waveSystem->eventCount = 0;
+        return;
+    }
+    
     waveSystem->nextEventIndex = 0;
     
     printf("[WAVE SYSTEM] Loaded %d spawn events for level %d: %s\n", 
@@ -510,9 +517,15 @@ void CleanupWaveSystem(WaveSystem* waveSystem) {
         free(waveSystem->phases);
         waveSystem->phases = NULL;
     }
-    // DON'T free spawnEvents - it's a static array from CreateStaticWaveplan
-    // Static arrays are not heap-allocated and shouldn't be freed
-    waveSystem->spawnEvents = NULL;
+    
+    // Free dynamically allocated spawn events from JSON
+    if (waveSystem->spawnEvents) {
+        FreeSpawnEvents(waveSystem->spawnEvents);
+        waveSystem->spawnEvents = NULL;
+    }
+    
+    waveSystem->eventCount = 0;
+    waveSystem->nextEventIndex = 0;
 }
 
 const char* GetCurrentPhaseName(const WaveSystem* waveSystem) {

@@ -3,6 +3,8 @@
 #include "player_ship.h"
 #include "constants.h"
 #include "enemy_types.h"
+#include "input_config.h"
+#include "input_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -17,6 +19,12 @@ int main(void) {
     // Initialize window
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Powerup System Showcase");
     SetTargetFPS(60);
+    
+    // Initialize input system
+    InputConfig inputConfig;
+    InputConfig_InitDefaults(&inputConfig);
+    InputManager inputManager;
+    InputManager_Init(&inputManager, &inputConfig);
     
     // Initialize systems
     PowerupSystem powerupSystem;
@@ -58,8 +66,11 @@ int main(void) {
     while (!WindowShouldClose()) {
         float deltaTime = GetFrameTime();
         
+        // Update input manager
+        InputManager_Update(&inputManager);
+        
         // Handle input
-        HandlePlayerInput(&player);
+        HandlePlayerInput(&player, &inputManager);
         
         // Toggle instructions
         if (IsKeyPressed(KEY_I)) {

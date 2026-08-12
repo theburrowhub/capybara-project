@@ -171,6 +171,15 @@ void UpdateWeaponHeat(PlayerShip* playerShip, float deltaTime) {
     }
 }
 
+// Helper function to safely check if fire action is active (with NULL check)
+static bool IsFireActionDown(Game* game) {
+    if (game->inputManager) {
+        return InputManager_IsActionDown(game->inputManager, ACTION_FIRE);
+    }
+    // Fallback to direct input if inputManager is NULL
+    return IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_LEFT_BUTTON);
+}
+
 void UpdateBullets(Game* game) {
     Bullet *bullets = game->bullets;
     PlayerShip *playerShip = game->playerShip;
@@ -243,7 +252,7 @@ void UpdateBullets(Game* game) {
     
     // Handle charge mode charging
     if (playerShip->weaponMode == WEAPON_MODE_CHARGE) {
-        if (IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        if (IsFireActionDown(game)) {
             playerShip->isCharging = true;
             playerShip->chargeLevel += deltaTime * 150.0f;  // Charge rate
             if (playerShip->chargeLevel > 100.0f) {
@@ -294,7 +303,7 @@ void UpdateBullets(Game* game) {
             
             playerShip->chargeLevel = 0.0f;
             playerShip->isCharging = false;
-        } else if (!IsKeyDown(KEY_SPACE) && !IsMouseButtonDown(MOUSE_LEFT_BUTTON)) {
+        } else if (!IsFireActionDown(game)) {
             // Released too early
             playerShip->chargeLevel = 0.0f;
             playerShip->isCharging = false;
@@ -313,7 +322,7 @@ void UpdateBullets(Game* game) {
         // Can't fire when defensive special shield is active
         bool canFire = !(playerShip->energyMode == ENERGY_MODE_DEFENSIVE && playerShip->specialAbilityActive);
         
-        if ((IsKeyDown(KEY_SPACE) || IsMouseButtonDown(MOUSE_LEFT_BUTTON)) && 
+        if (IsFireActionDown(game) && 
             (!WEAPON_OVERHEATING || !playerShip->overheated) && shootTimer <= 0 && canFire) {
             // Use new weapon mode system
             ShootBulletsForMode(bullets, playerShip);

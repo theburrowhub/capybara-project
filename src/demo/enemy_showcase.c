@@ -9,6 +9,8 @@
 #include "projectile_manager.h"
 #include "explosion.h"
 #include "constants.h"
+#include "input_config.h"
+#include "input_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -46,6 +48,7 @@ typedef struct {
 typedef struct {
     EnemyType testingEnemyType;
     PlayerShip* playerShip;
+    InputManager* inputManager;  // Input manager for controls
     Bullet* bullets;
     EnemyEx* enemies;
     void* projectiles;        // Projectile* (enemy projectiles)
@@ -94,8 +97,9 @@ void InitGridState(GridState* state) {
 }
 
 // Initialize test arena mode
-void InitArenaState(ArenaState* state, EnemyType enemyType) {
+void InitArenaState(ArenaState* state, EnemyType enemyType, InputManager* inputManager) {
     state->testingEnemyType = enemyType;
+    state->inputManager = inputManager;
     
     // Initialize player ship (position in playable area below HUD)
     state->playerShip = (PlayerShip*)malloc(sizeof(PlayerShip));
@@ -309,7 +313,7 @@ void UpdateArenaState(ArenaState* state) {
     float deltaTime = GetFrameTime();
     
     // Update player ship (invincible)
-    HandlePlayerInput(state->playerShip);
+    HandlePlayerInput(state->playerShip, state->inputManager);
     UpdateShipPhysics(state->playerShip, deltaTime);
     UpdateShipEffects(state->playerShip, deltaTime);
     
@@ -576,7 +580,7 @@ void InitShowcase(ShowcaseState* state) {
 }
 
 // Update showcase
-void UpdateShowcase(ShowcaseState* state) {
+void UpdateShowcase(ShowcaseState* state, InputManager* inputManager) {
     if (state->mode == MODE_GRID_SELECT) {
         UpdateGridState(&state->gridState);
         
@@ -584,7 +588,7 @@ void UpdateShowcase(ShowcaseState* state) {
         if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON) && state->gridState.selectedEnemy >= 0) {
             // Enter arena mode with selected enemy
             EnemyType selectedType = (EnemyType)state->gridState.selectedEnemy;
-            InitArenaState(&state->arenaState, selectedType);
+            InitArenaState(&state->arenaState, selectedType, inputManager);
             state->mode = MODE_TEST_ARENA;
         }
         
@@ -616,6 +620,12 @@ int main(void) {
     SetTargetFPS(60);
     SetExitKey(KEY_NULL);  // Disable automatic ESC to close window
     
+    // Initialize input system
+    InputConfig inputConfig;
+    InputConfig_InitDefaults(&inputConfig);
+    InputManager inputManager;
+    InputManager_Init(&inputManager, &inputConfig);
+    
     // Initialize showcase state
     ShowcaseState state = {0};
     InitShowcase(&state);
@@ -624,6 +634,9 @@ int main(void) {
     
     // Main game loop
     while (!shouldExit && !WindowShouldClose()) {
+        // Update input manager
+        InputManager_Update(&inputManager);
+        
         // Handle ESC key based on current mode
         if (IsKeyPressed(KEY_ESCAPE)) {
             if (state.mode == MODE_GRID_SELECT) {
@@ -633,7 +646,7 @@ int main(void) {
             // In arena mode: ESC is handled in UpdateShowcase() to return to grid
         }
         
-        UpdateShowcase(&state);
+        UpdateShowcase(&state, &inputManager);
         DrawShowcase(&state);
     }
     
