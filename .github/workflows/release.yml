@@ -1,349 +1,67 @@
-name: Release Multi-Platform
+name: Godot desktop release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ["v*"]
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v1.0.0)'
+        description: Release tag
         required: true
-        default: 'v1.0.0'
+        default: v0.3.0
 
 permissions:
   contents: write
-  
+
+env:
+  GODOT_VERSION: 4.7.1
+
 jobs:
-  build-manual:
+  export:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Build LaTeX manual
-      uses: ./.github/actions/build-latex-manual
-      
-    - name: Upload manual as artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: user-manual
-        path: docs/USER_MANUAL.pdf
-        retention-days: 1
+      - name: Checkout
+        uses: actions/checkout@v4
 
-  create-release:
-    runs-on: ubuntu-latest
-    outputs:
-      version: ${{ steps.get_version.outputs.version }}
-      is_prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
-      release_type: ${{ steps.check_prerelease.outputs.release_type }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Get version
-      id: get_version
-      uses: ./.github/actions/get-version
-      
-    - name: Determine if pre-release
-      id: check_prerelease
-      run: |
-        VERSION="${{ steps.get_version.outputs.version }}"
-        # Convert to lowercase for case-insensitive matching
-        VERSION_LOWER=$(echo "$VERSION" | tr '[:upper:]' '[:lower:]')
-        
-        echo "🔍 Analyzing version: $VERSION"
-        
-        # Check for pre-release markers (commitizen uses: a0, a1, b0, b1, rc0, etc.)
-        # Also support full names: alpha, beta, rc
-        if [[ "$VERSION_LOWER" =~ (a[0-9]+|alpha|b[0-9]+|beta|rc[0-9]*) ]]; then
-          echo "is_prerelease=true" >> $GITHUB_OUTPUT
-          IS_PRERELEASE="true"
-          # Check for alpha (a0, a1, etc. or alpha)
-          if [[ "$VERSION_LOWER" =~ (a[0-9]+|alpha) ]]; then
-            echo "release_type=Alpha" >> $GITHUB_OUTPUT
-            RELEASE_TYPE="Alpha"
-          # Check for beta (b0, b1, etc. or beta)
-          elif [[ "$VERSION_LOWER" =~ (b[0-9]+|beta) ]]; then
-            echo "release_type=Beta" >> $GITHUB_OUTPUT
-            RELEASE_TYPE="Beta"
-          # Check for release candidate (rc0, rc1, etc.)
-          elif [[ "$VERSION_LOWER" =~ rc[0-9]* ]]; then
-            echo "release_type=Release Candidate" >> $GITHUB_OUTPUT
-            RELEASE_TYPE="Release Candidate"
-          fi
-        else
-          echo "is_prerelease=false" >> $GITHUB_OUTPUT
-          echo "release_type=Stable Release" >> $GITHUB_OUTPUT
-          IS_PRERELEASE="false"
-          RELEASE_TYPE="Stable Release"
-        fi
-        
-        echo "✅ Version: $VERSION"
-        echo "✅ Is Pre-release: $IS_PRERELEASE"
-        echo "✅ Release Type: $RELEASE_TYPE"
-        
-    - name: Create Release
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      run: |
-        # Create release notes
-        cat > release_notes.md << 'EOF'
-        ## Capybara Shoot'em Up - Release ${{ steps.get_version.outputs.version }}
-        
-        ### Download
-        Download the appropriate package for your platform:
-        - **Linux**: `capybara-shootemup-linux-x86_64-${{ steps.get_version.outputs.version_number }}.tar.gz`
-        - **macOS**: `capybara-shootemup-macos-universal-${{ steps.get_version.outputs.version_number }}.tar.gz`
-        - **Windows**: `capybara-shootemup-windows-x86_64-${{ steps.get_version.outputs.version_number }}.zip`
-        
-        ### Installation
-        
-        #### Linux
-        ```bash
-        tar xzf capybara-shootemup-linux-x86_64-${{ steps.get_version.outputs.version_number }}.tar.gz
-        cd capybara-shootemup-linux-x86_64-${{ steps.get_version.outputs.version_number }}
-        ./run.sh
-        # Or directly: ./shootemup
-        ```
-        
-        #### macOS
-        ```bash
-        tar xzf capybara-shootemup-macos-universal-${{ steps.get_version.outputs.version_number }}.tar.gz
-        cd capybara-shootemup-macos-universal-${{ steps.get_version.outputs.version_number }}
-        ./run.sh
-        # Or directly: ./shootemup
-        ```
-        
-        #### Windows
-        1. Extract the ZIP file
-        2. Double-click `run.bat` or `shootemup.exe`
-        
-        ### What's New
-        - See CHANGELOG.md for details
-        
-        ### System Requirements
-        - OpenGL 3.3+ compatible graphics
-        - 512MB RAM minimum
-        - 100MB disk space
-        
-        ### Documentation Included
-        - **USER_MANUAL.pdf** - Complete user guide with controls, gameplay, and features
-        - **GAMEPLAY.md** - Quick reference for controls
-        - **README.md** - Project overview
-        
-        ### Release Type
-        This is a **${{ steps.check_prerelease.outputs.release_type }}**
-        ${{ steps.check_prerelease.outputs.is_prerelease == 'true' && '⚠️ Pre-release version - use for testing only!' || '✅ Stable release - production ready!' }}
-        EOF
-        
-        # Create release using GitHub CLI
-        if [ "${{ steps.check_prerelease.outputs.is_prerelease }}" = "true" ]; then
-          gh release create "${{ steps.get_version.outputs.version }}" \
-            --title "Capybara Shoot'em Up ${{ steps.get_version.outputs.version }} (${{ steps.check_prerelease.outputs.release_type }})" \
-            --notes-file release_notes.md \
-            --prerelease
-        else
-          gh release create "${{ steps.get_version.outputs.version }}" \
-            --title "Capybara Shoot'em Up ${{ steps.get_version.outputs.version }} (${{ steps.check_prerelease.outputs.release_type }})" \
-            --notes-file release_notes.md \
-            --latest
-        fi
+      - name: Install Godot and export templates
+        run: |
+          curl --fail --location --output godot.zip \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          curl --fail --location --output export_templates.tpz \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_export_templates.tpz"
+          unzip -q godot.zip -d godot-bin
+          sudo install "godot-bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+          unzip -q export_templates.tpz -d template-unpack
+          mkdir -p "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable"
+          cp template-unpack/templates/* "$HOME/.local/share/godot/export_templates/${GODOT_VERSION}.stable/"
 
-  build-release:
-    needs: [build-manual, create-release]
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            artifact_name: linux-x86_64
-            build_static: "ON"
-            shell: bash
-          - os: macos-latest
-            platform: macos
-            artifact_name: macos-universal
-            build_static: "OFF"
-            shell: bash
-          - os: windows-latest
-            platform: windows
-            artifact_name: windows-x86_64
-            build_static: "ON"
-            shell: msys2 {0}
-    
-    runs-on: ${{ matrix.os }}
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Get version
-      id: version
-      uses: ./.github/actions/get-version
-      
-    - name: Install dependencies
-      uses: ./.github/actions/install-deps
-      
-    - name: Build and install raylib
-      uses: ./.github/actions/build-raylib
-      
-    - name: Download pre-built manual
-      uses: actions/download-artifact@v4
-      with:
-        name: user-manual
-        path: docs/
-      
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      env:
-        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. -G "MinGW Makefiles" \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=${{ matrix.build_static }} \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON
-          
-    - name: Configure CMake (macOS)
-      if: runner.os == 'macOS'
-      shell: bash
-      env:
-        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=${{ matrix.build_static }} \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
-          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
-          
-    - name: Configure CMake (Linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      env:
-        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=${{ matrix.build_static }} \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON
-          
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      run: |
-        cd build
-        mingw32-make -j$(nproc)
-        strip shootemup.exe
-        
-    - name: Build (macOS)
-      if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        cd build
-        make -j$(sysctl -n hw.ncpu)
-        strip shootemup
-        
-    - name: Build (Linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        cd build
-        make -j$(nproc)
-        strip shootemup
-        
-    - name: Create package with CPack (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      env:
-        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
-      run: |
-        cd build
-        cmake -DCMAKE_INSTALL_PREFIX=install_temp .
-        mingw32-make install
-        cpack
-        
-    - name: Create package with CPack (Unix)
-      if: runner.os != 'Windows'
-      shell: bash
-      env:
-        PROJECT_VERSION: ${{ steps.version.outputs.version_number }}
-      run: |
-        cd build
-        cmake -DCMAKE_INSTALL_PREFIX=install_temp .
-        make install
-        cpack
-        
-    - name: Find and rename package
-      shell: bash
-      run: |
-        cd build
-        echo "Current directory contents:"
-        ls -la
-        
-        # Find the generated package
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          echo "Looking for Windows ZIP package..."
-          PACKAGE=$(ls capybara-shootemup-windows-x86_64-*.zip 2>/dev/null | head -1)
-          FINAL_NAME="capybara-shootemup-windows-x86_64-${{ steps.version.outputs.version_number }}.zip"
-        elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          echo "Looking for macOS tar.gz package..."
-          PACKAGE=$(ls capybara-shootemup-macos-universal-*.tar.gz 2>/dev/null | head -1)
-          FINAL_NAME="capybara-shootemup-macos-universal-${{ steps.version.outputs.version_number }}.tar.gz"
-        else
-          echo "Looking for Linux tar.gz package..."
-          PACKAGE=$(ls capybara-shootemup-linux-x86_64-*.tar.gz 2>/dev/null | head -1)
-          FINAL_NAME="capybara-shootemup-linux-x86_64-${{ steps.version.outputs.version_number }}.tar.gz"
-        fi
-        
-        if [ -n "$PACKAGE" ] && [ -f "$PACKAGE" ]; then
-          echo "Found package: $PACKAGE"
-          # Only rename if the names are different
-          if [ "$PACKAGE" != "$FINAL_NAME" ]; then
-            mv "$PACKAGE" "$FINAL_NAME"
-            echo "Renamed to: $FINAL_NAME"
+      - name: Validate
+        run: |
+          godot --headless --editor --path . --quit
+          godot --headless --path . --scene res://tests/smoke_test.tscn
+
+      - name: Export desktop builds
+        run: |
+          mkdir -p build/linux build/windows build/macos artifacts
+          godot --headless --path . --export-release "Linux" build/linux/CapybaraProject.x86_64
+          godot --headless --path . --export-release "Windows Desktop" build/windows/CapybaraProject.exe
+          godot --headless --path . --export-release "macOS" build/macos/CapybaraProject.zip
+          cp README.md build/linux/
+          cp README.md build/windows/
+          tar -C build/linux -czf artifacts/capybara-project-linux-x86_64.tar.gz .
+          (cd build/windows && zip -q -r ../../artifacts/capybara-project-windows-x86_64.zip .)
+          cp build/macos/CapybaraProject.zip artifacts/capybara-project-macos-universal.zip
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DISPATCH_VERSION: ${{ github.event.inputs.version }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="$DISPATCH_VERSION"
           else
-            echo "Package already has correct name: $FINAL_NAME"
+            VERSION="${GITHUB_REF#refs/tags/}"
           fi
-          echo "Final package:"
-          ls -lh "$FINAL_NAME"
-        else
-          echo "ERROR: Package not found"
-          echo "Expected pattern based on OS: ${{ matrix.os }}"
-          echo "All .zip files:"
-          ls -la *.zip 2>/dev/null || echo "No ZIP files found"
-          echo "All .tar.gz files:"
-          ls -la *.tar.gz 2>/dev/null || echo "No tar.gz files found"
-          exit 1
-        fi
-        
-    - name: Upload Release Asset
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      shell: bash
-      run: |
-        cd build
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          PACKAGE="capybara-shootemup-windows-x86_64-${{ steps.version.outputs.version_number }}.zip"
-        elif [ "${{ matrix.os }}" = "macos-latest" ]; then
-          PACKAGE="capybara-shootemup-macos-universal-${{ steps.version.outputs.version_number }}.tar.gz"
-        else
-          PACKAGE="capybara-shootemup-linux-x86_64-${{ steps.version.outputs.version_number }}.tar.gz"
-        fi
-        
-        echo "Uploading $PACKAGE to release ${{ needs.create-release.outputs.version }}"
-        gh release upload ${{ needs.create-release.outputs.version }} "$PACKAGE"
+          gh release view "$VERSION" >/dev/null 2>&1 || \
+            gh release create "$VERSION" --title "Capybara Project $VERSION" --generate-notes
+          gh release upload "$VERSION" artifacts/* --clobber

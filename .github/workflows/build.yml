@@ -1,171 +1,32 @@
-name: Build Multi-Platform
+name: Godot validation
 
 on:
-  # Only run on pull requests and manual triggers
-  # Releases are handled by release.yml
   pull_request:
-    branches: [ main, master, develop, pipeline ]
+    branches: [main-godot, main]
+  push:
+    branches: [main-godot]
   workflow_dispatch:
 
+env:
+  GODOT_VERSION: 4.7.1
+
 jobs:
-  build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-            platform: linux
-            artifact_name: linux-x86_64
-            build_static: "ON"
-            shell: bash
-          - os: macos-latest
-            platform: macos
-            artifact_name: macos-universal
-            build_static: "OFF"
-            shell: bash
-          - os: windows-latest
-            platform: windows
-            artifact_name: windows-x86_64
-            build_static: "ON"
-            shell: msys2 {0}
-    
-    runs-on: ${{ matrix.os }}
-    
+  validate:
+    runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Get version
-      id: version
-      uses: ./.github/actions/get-version
-      
-    - name: Install dependencies
-      uses: ./.github/actions/install-deps
-      
-    - name: Build and install raylib
-      uses: ./.github/actions/build-raylib
-      
-    - name: Configure CMake (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. -G "MinGW Makefiles" \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=${{ matrix.build_static }} \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON
-          
-    - name: Configure CMake (macOS)
-      if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=${{ matrix.build_static }} \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON \
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
-          -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64"
-          
-    - name: Configure CMake (Linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        mkdir -p build
-        cd build
-        cmake .. \
-          -DCMAKE_BUILD_TYPE=Release \
-          -DBUILD_STATIC=${{ matrix.build_static }} \
-          -DBUILD_GAME=ON \
-          -DBUILD_TOOLS=ON \
-          -DBUILD_DEMOS=ON
-          
-    - name: Build (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      run: |
-        cd build
-        mingw32-make -j$(nproc)
-        
-    - name: Build (macOS)
-      if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        cd build
-        make -j$(sysctl -n hw.ncpu)
-        
-    - name: Build (Linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        cd build
-        make -j$(nproc)
-        
-    - name: Create artifacts directory (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      run: |
-        mkdir -p artifacts/${{ matrix.platform }}
-        cp build/shootemup.exe artifacts/${{ matrix.platform }}/ || echo "Main game not built"
-        cp build/*.exe artifacts/${{ matrix.platform }}/ 2>/dev/null || true
-        cp -r assets artifacts/${{ matrix.platform }}/ || echo "No assets to copy"
-        cp README.md artifacts/${{ matrix.platform }}/ || echo "No README"
-        
-    - name: Create artifacts directory (Unix)
-      if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        mkdir -p artifacts/${{ matrix.platform }}
-        cp build/shootemup artifacts/${{ matrix.platform }}/ || echo "Main game not built"
-        cp build/enemy_showcase artifacts/${{ matrix.platform }}/ 2>/dev/null || true
-        cp build/generate_enemy_sprites artifacts/${{ matrix.platform }}/ 2>/dev/null || true
-        cp build/populate_highscores artifacts/${{ matrix.platform }}/ 2>/dev/null || true
-        cp -r assets artifacts/${{ matrix.platform }}/ || echo "No assets to copy"
-        cp README.md artifacts/${{ matrix.platform }}/ || echo "No README"
-        
-    - name: Test binary (Windows)
-      if: runner.os == 'Windows'
-      shell: msys2 {0}
-      run: |
-        file artifacts/${{ matrix.platform }}/shootemup.exe || true
-        ldd artifacts/${{ matrix.platform }}/shootemup.exe || echo "Static binary - no dynamic dependencies expected"
-        
-    - name: Test binary (macOS)
-      if: runner.os == 'macOS'
-      shell: bash
-      run: |
-        file artifacts/${{ matrix.platform }}/shootemup
-        otool -L artifacts/${{ matrix.platform }}/shootemup
-        
-    - name: Test binary (Linux)
-      if: runner.os == 'Linux'
-      shell: bash
-      run: |
-        file artifacts/${{ matrix.platform }}/shootemup
-        ldd artifacts/${{ matrix.platform }}/shootemup || echo "Static binary - no dynamic dependencies expected"
-        
-    - name: Create archive
-      shell: bash
-      run: |
-        cd artifacts
-        if [ "${{ matrix.os }}" = "windows-latest" ]; then
-          # Use PowerShell for Windows ZIP creation
-          powershell -Command "Compress-Archive -Path ${{ matrix.platform }}/* -DestinationPath capybara-shootemup-${{ matrix.artifact_name }}.zip"
-        else
-          tar czf capybara-shootemup-${{ matrix.artifact_name }}.tar.gz ${{ matrix.platform }}/
-        fi
-        
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: capybara-shootemup-${{ matrix.artifact_name }}
-        path: |
-          artifacts/capybara-shootemup-${{ matrix.artifact_name }}.tar.gz
-          artifacts/capybara-shootemup-${{ matrix.artifact_name }}.zip
-        retention-days: 30
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Godot
+        run: |
+          curl --fail --location --output godot.zip \
+            "https://github.com/godotengine/godot-builds/releases/download/${GODOT_VERSION}-stable/Godot_v${GODOT_VERSION}-stable_linux.x86_64.zip"
+          unzip -q godot.zip -d godot-bin
+          sudo install "godot-bin/Godot_v${GODOT_VERSION}-stable_linux.x86_64" /usr/local/bin/godot
+
+      - name: Import and parse project
+        run: godot --headless --editor --path . --quit
+
+      - name: Run gameplay smoke test
+        run: godot --headless --path . --scene res://tests/smoke_test.tscn
+

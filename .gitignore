@@ -2,6 +2,8 @@
 build/
 build-debug/
 build-release/
+.godot/
+*.import
 *.o
 *.a
 *.so
@@ -23,9 +25,9 @@ _deps/
 *.cmake
 !CMakeLists.txt
 
-# Executables
-bin/          # Legacy bin folder (deprecated, now using build/)
-shootemup     # Standalone executable (if built in root)
+# Executable
+bin
+shootemup
 
 # Configuration files
 .audio_analysis.conf
