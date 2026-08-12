@@ -28,6 +28,12 @@ func _run() -> void:
 	_check(is_instance_valid(game.player), "player exists")
 	_check(game.player.has_node("Ship3DViewport"), "GLB player model is rendered through a SubViewport")
 	_check(FileAccess.file_exists("res://assets/models/player_ship.glb"), "player GLB source is bundled")
+	_check(is_equal_approx(game.player.bank, -PI * 0.5), "player rests in side-profile orientation")
+	game.player.set_visual_bank(1.0, true)
+	_check(is_zero_approx(game.player.bank), "moving down exposes the top of the player ship")
+	game.player.set_visual_bank(-1.0, true)
+	_check(is_equal_approx(game.player.bank, -PI), "moving up exposes the underside of the player ship")
+	game.player.set_visual_bank(0.0, true)
 	for index in range(CONFIG.ENEMY_ORDER.size()):
 		game._spawn_enemy(CONFIG.ENEMY_ORDER[index], Vector2(760.0 + index * 22.0, 80.0 + index * 35.0), "straight")
 	await get_tree().process_frame

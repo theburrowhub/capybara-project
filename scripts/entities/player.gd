@@ -12,6 +12,9 @@ enum EnergyMode { OFFENSIVE, DEFENSIVE }
 const WEAPON_NAMES := ["Single", "Double", "Spread", "Rapid", "Charge", "Dual"]
 const MODEL_PATH := "res://assets/models/player_ship.glb"
 const CONFIG := preload("res://scripts/core/game_config.gd")
+const NEUTRAL_VISUAL_BANK := -PI * 0.5
+const MAX_VISUAL_BANK_DELTA := PI * 0.5
+const BANK_RESPONSE := 7.5
 
 var max_health := 100.0
 var health := 100.0
@@ -30,9 +33,10 @@ var last_damage_time := -10.0
 var last_energy_depletion := -10.0
 var invulnerable := false
 var active := true
-var bank := 0.0
+var bank := NEUTRAL_VISUAL_BANK
 var _elapsed := 0.0
 var _model_pivot: Node3D
+var _model_bank: Node3D
 
 func _ready() -> void:
 	add_to_group("player")
@@ -50,8 +54,6 @@ func _process(delta: float) -> void:
 	_handle_energy(delta)
 	_handle_regeneration(delta)
 	_handle_weapon(delta)
-	if is_instance_valid(_model_pivot):
-		_model_pivot.rotation.y += delta * 0.08
 	queue_redraw()
 
 func _handle_modes() -> void:
@@ -82,8 +84,14 @@ func _handle_movement(delta: float) -> void:
 	position += input * 300.0 * delta
 	position.x = clampf(position.x, 34.0, CONFIG.WIDTH - 34.0)
 	position.y = clampf(position.y, CONFIG.HUD_TOP + 34.0, CONFIG.HUD_BOTTOM - 34.0)
-	bank = lerpf(bank, input.y * -0.22, minf(1.0, delta * 8.0))
-	rotation = bank
+	set_visual_bank(input.y, false, delta)
+	rotation = 0.0
+
+func set_visual_bank(vertical_direction: float, immediate := false, delta := 0.0) -> void:
+	var target := NEUTRAL_VISUAL_BANK + clampf(vertical_direction, -1.0, 1.0) * MAX_VISUAL_BANK_DELTA
+	bank = target if immediate else lerpf(bank, target, minf(1.0, delta * BANK_RESPONSE))
+	if is_instance_valid(_model_bank):
+		_model_bank.rotation.x = bank
 
 func _handle_energy(delta: float) -> void:
 	special_active = Input.is_physical_key_pressed(KEY_E) and energy > 0.0
@@ -209,8 +217,11 @@ func _build_model_view() -> void:
 	add_child(viewport)
 	_model_pivot = Node3D.new()
 	viewport.add_child(_model_pivot)
+	_model_bank = Node3D.new()
+	_model_pivot.add_child(_model_bank)
+	_model_bank.rotation.x = bank
 	var model: Node = model_resource.instantiate()
-	_model_pivot.add_child(model)
+	_model_bank.add_child(model)
 	_model_pivot.rotation_degrees = Vector3(0.0, -90.0, 0.0)
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-50.0, -35.0, 0.0)
