@@ -36,7 +36,7 @@ func _run() -> void:
 	_check(is_instance_valid(defensive_special), "defensive special uses a 3D polyhedron")
 	_check(int(defensive_special.get_meta("face_count", 0)) == 20, "defensive special polyhedron has exactly twenty faces")
 	_check(defensive_special.mesh.surface_get_array_len(0) == 60, "defensive special contains twenty triangular faces")
-	_check(is_equal_approx((shield_sphere.material_override as StandardMaterial3D).albedo_color.a, 0.10), "shield sphere is ninety percent transparent")
+	_check(is_equal_approx((shield_sphere.material_override as StandardMaterial3D).albedo_color.a, 0.15), "shield sphere is eighty-five percent transparent")
 	_check(is_equal_approx((defensive_special.material_override as StandardMaterial3D).albedo_color.a, 0.15), "defensive special is eighty-five percent transparent")
 	_check(shield_sphere.visible and not defensive_special.visible, "normal shield geometry is exclusive")
 	game.player.energy_mode = PLAYER_TYPE.EnergyMode.DEFENSIVE

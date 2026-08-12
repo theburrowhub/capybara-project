@@ -5,7 +5,7 @@ const PLAYER_TYPE := preload("res://scripts/entities/player.gd")
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("15171d"))
-	var shield_player := _add_player(Vector2(380.0, 290.0), "DEFENSE · 90% TRANSPARENT")
+	var shield_player := _add_player(Vector2(380.0, 290.0), "DEFENSE · 85% TRANSPARENT")
 	shield_player.shield = shield_player.max_shield
 	shield_player._update_defense_visuals()
 	var special_player := _add_player(Vector2(820.0, 290.0), "DEFENSIVE SPECIAL · 20 FACES · 85% TRANSPARENT")
