@@ -49,9 +49,16 @@ func _run() -> void:
 	game._try_drop_powerup("boss", Vector2(500.0, 250.0))
 	await get_tree().process_frame
 	_check(get_tree().get_nodes_in_group("powerup").size() >= 1, "power-up spawning works")
-	if failures.is_empty():
+	var exit_code := 0 if failures.is_empty() else 1
+	if exit_code == 0:
 		print("SMOKE_OK: Godot gameplay scene, GLB ship, enemies, projectiles and power-ups")
-		get_tree().quit(0)
 	else:
 		print("SMOKE_FAILED: %s" % ", ".join(failures))
-		get_tree().quit(1)
+	game.music.stop()
+	game.music.stream = null
+	game.music.free()
+	game.queue_free()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	await get_tree().create_timer(0.5).timeout
+	get_tree().quit(exit_code)
