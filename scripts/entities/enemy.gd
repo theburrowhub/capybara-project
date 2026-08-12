@@ -2,6 +2,11 @@ class_name EnemyShip
 extends Area2D
 
 const CONFIG := preload("res://scripts/core/game_config.gd")
+const BANK_FRAME_COUNT := 9
+const NEUTRAL_BANK := -PI * 0.5
+const MAX_BANK_DELTA := PI * 0.5
+const BANK_RESPONSE := 7.5
+const NEUTRAL_BANK_FRAME := 4
 
 signal destroyed(enemy_type: String, points: int, at: Vector2)
 signal projectile_requested(config: Dictionary)
@@ -27,6 +32,9 @@ var state_timer := 0.0
 var stop_x := 700.0
 var escaping := false
 var base_tint := Color.WHITE
+var bank := NEUTRAL_BANK
+var bank_frame := NEUTRAL_BANK_FRAME
+var _bank_textures: Array[Texture2D] = []
 
 @onready var sprite: Sprite2D = $Sprite2D
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
@@ -60,32 +68,59 @@ func _apply_visuals() -> void:
 	if not is_instance_valid(sprite) or not is_instance_valid(collision_shape):
 		return
 	var data: Dictionary = CONFIG.ENEMIES[enemy_type]
-	var path := "res://assets/sprites/enemies_3d/%s.png" % str(data["sprite"])
-	if ResourceLoader.exists(path):
-		sprite.texture = load(path)
+	_bank_textures.clear()
+	for frame in range(BANK_FRAME_COUNT):
+		var frame_path := "res://assets/sprites/enemies_3d/%s_bank_%02d.png" % [str(data["sprite"]), frame]
+		if ResourceLoader.exists(frame_path):
+			_bank_textures.append(load(frame_path) as Texture2D)
+	if _bank_textures.size() == BANK_FRAME_COUNT:
+		_set_bank_frame(bank_frame)
 	else:
-		path = "res://assets/sprites/enemies/enemy_%s.png" % enemy_type
-		if ResourceLoader.exists(path):
-			sprite.texture = load(path)
-	base_tint = data["tint"] as Color
+		_bank_textures.clear()
+		var fallback_path := "res://assets/sprites/enemies_3d/%s.png" % str(data["sprite"])
+		if not ResourceLoader.exists(fallback_path):
+			fallback_path = "res://assets/sprites/enemies/enemy_%s.png" % enemy_type
+		if ResourceLoader.exists(fallback_path):
+			sprite.texture = load(fallback_path)
+	var configured_tint := data["tint"] as Color
+	base_tint = configured_tint.lerp(Color.WHITE, 0.38)
+	base_tint.a = 1.0
 	sprite.modulate = base_tint
-	sprite.rotation = float(data["sprite_rotation"])
-	sprite.flip_h = bool(data["flip"])
-	var visual_size := radius * 2.4
+	sprite.rotation = 0.0
+	sprite.flip_h = false
+	var visual_size := radius * 3.0
 	if sprite.texture:
-		sprite.scale = Vector2.ONE * (visual_size / maxf(sprite.texture.get_width(), 1.0))
+		var content_width := float(sprite.texture.get_width())
+		var image := sprite.texture.get_image()
+		if image:
+			content_width = maxf(float(image.get_used_rect().size.x), 1.0)
+		sprite.scale = Vector2.ONE * (visual_size / content_width)
 	var shape := CircleShape2D.new()
 	shape.radius = radius
 	collision_shape.shape = shape
 
 func _process(delta: float) -> void:
 	elapsed += delta
+	var previous_y := position.y
 	_update_movement(delta)
+	var vertical_direction := signf(position.y - previous_y)
+	set_visual_bank(vertical_direction, false, delta)
 	_update_firing(delta)
 	_update_special_visuals()
 	if position.x < -100.0 or position.y < -100.0 or position.y > CONFIG.HEIGHT + 100.0:
 		queue_free()
 	queue_redraw()
+
+func set_visual_bank(vertical_direction: float, immediate := false, delta := 0.0) -> void:
+	var target := NEUTRAL_BANK + clampf(vertical_direction, -1.0, 1.0) * MAX_BANK_DELTA
+	bank = target if immediate else lerpf(bank, target, minf(1.0, delta * BANK_RESPONSE))
+	var normalized_bank := clampf((bank + PI) / PI, 0.0, 1.0)
+	_set_bank_frame(clampi(int(round(normalized_bank * float(BANK_FRAME_COUNT - 1))), 0, BANK_FRAME_COUNT - 1))
+
+func _set_bank_frame(frame: int) -> void:
+	bank_frame = clampi(frame, 0, BANK_FRAME_COUNT - 1)
+	if _bank_textures.size() == BANK_FRAME_COUNT:
+		sprite.texture = _bank_textures[bank_frame]
 
 func _update_movement(delta: float) -> void:
 	if escaping:
@@ -160,8 +195,8 @@ func _update_special_visuals() -> void:
 	if enemy_type == "ghost":
 		var phased := fmod(elapsed, 4.0) > 2.0
 		modulate.a = 0.28 if phased else 1.0
-	elif enemy_type == "shield":
-		rotation = elapsed * 0.8
+	else:
+		modulate.a = 1.0
 
 func take_damage(amount: float) -> void:
 	health -= maxf(0.1, amount * (1.0 - resistance))
@@ -184,6 +219,7 @@ func _draw() -> void:
 		draw_rect(Rect2(-width * 0.5, -radius - 11.0, width * clampf(health / max_health, 0.0, 1.0), 4.0), Color("62e77f"))
 	if enemy_type == "shield":
 		draw_arc(Vector2.ZERO, radius + 8.0, 0.0, TAU, 28, Color(0.2, 0.85, 1.0, 0.55), 3.0)
+		draw_arc(Vector2.ZERO, radius + 13.0, elapsed * 0.8, elapsed * 0.8 + PI * 1.35, 22, Color(0.3, 0.95, 1.0, 0.38), 2.0)
 	elif enemy_type == "boss":
 		draw_arc(Vector2.ZERO, radius + 10.0, 0.0, TAU, 40, Color(1.0, 0.1, 0.18, 0.55), 4.0)
 		draw_arc(Vector2.ZERO, radius + 18.0, -elapsed, PI - elapsed, 24, Color(0.8, 0.05, 0.12, 0.38), 3.0)

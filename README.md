@@ -36,7 +36,7 @@ make test
 - Menú, opciones de vídeo/audio, cuatro dificultades y récords por dificultad.
 - Pausa, reinicio, fullscreen y visualización de hitboxes.
 
-La nave del jugador usa `assets/models/player_ship.glb` en un `SubViewport` 3D transparente. Los cuatro GLB enemigos se conservan en `assets/models/enemies/` y se prerenderizan a sprites mediante `tools/render_glb_sprites.py`, evitando mantener decenas de viewports 3D durante el combate.
+La nave del jugador usa `assets/models/player_ship.glb` en un `SubViewport` 3D transparente. Los cuatro GLB enemigos se conservan en `assets/models/enemies/` y se prerenderizan mediante `tools/render_glb_sprites.py` en nueve ángulos de inclinación, evitando mantener decenas de viewports 3D durante el combate.
 
 ## Controles
 

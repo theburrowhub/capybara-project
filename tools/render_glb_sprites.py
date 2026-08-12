@@ -1,4 +1,4 @@
-"""Render top-down transparent PNG sprites from the bundled enemy GLB sources.
+"""Render banked transparent PNG sprites from the bundled enemy GLB sources.
 
 Run with Blender, not regular Python:
   blender --background --python tools/render_glb_sprites.py -- \
@@ -14,6 +14,13 @@ from pathlib import Path
 
 import bpy
 from mathutils import Vector
+
+
+BANK_ANGLES = (90.0, 67.5, 45.0, 22.5, 0.0, -22.5, -45.0, -67.5, -90.0)
+MODEL_YAWS = {
+    "enemy_model_03": 90.0,
+    "enemy_model_04": 90.0,
+}
 
 
 def arguments() -> argparse.Namespace:
@@ -52,7 +59,7 @@ def add_area_light(name: str, location: tuple[float, float, float], energy: floa
     point_camera(light, target)
 
 
-def render_model(source: Path, destination: Path, size: int) -> None:
+def render_model(source: Path, output_dir: Path, size: int) -> None:
     reset_scene()
     bpy.ops.import_scene.gltf(filepath=str(source))
     meshes = [obj for obj in bpy.context.scene.objects if obj.type == "MESH"]
@@ -62,6 +69,20 @@ def render_model(source: Path, destination: Path, size: int) -> None:
     minimum, maximum = world_bounds(meshes)
     center = (minimum + maximum) * 0.5
     footprint = max(maximum.x - minimum.x, maximum.z - minimum.z)
+
+    orientation_pivot = bpy.data.objects.new("OrientationPivot", None)
+    bpy.context.scene.collection.objects.link(orientation_pivot)
+    orientation_pivot.location = center
+    for root in [obj for obj in bpy.context.scene.objects if obj != orientation_pivot and obj.parent is None]:
+        world_transform = root.matrix_world.copy()
+        root.parent = orientation_pivot
+        root.matrix_world = world_transform
+    pivot = bpy.data.objects.new("BankPivot", None)
+    bpy.context.scene.collection.objects.link(pivot)
+    pivot.location = center
+    orientation_pivot.parent = pivot
+    orientation_pivot.location = Vector((0.0, 0.0, 0.0))
+    orientation_pivot.rotation_euler.z = math.radians(MODEL_YAWS.get(source.stem, 0.0))
 
     camera_data = bpy.data.cameras.new("SpriteCamera")
     camera_data.type = "ORTHO"
@@ -84,13 +105,17 @@ def render_model(source: Path, destination: Path, size: int) -> None:
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
     scene.render.film_transparent = True
-    scene.render.filepath = str(destination)
     scene.render.image_settings.color_depth = "8"
     scene.view_settings.look = "AgX - Medium High Contrast"
     scene.view_settings.exposure = 1.15
     scene.render.resolution_percentage = 100
     scene.render.film_transparent = True
-    bpy.ops.render.render(write_still=True)
+    for frame, bank_angle in enumerate(BANK_ANGLES):
+        pivot.rotation_euler.x = math.radians(bank_angle)
+        destination = output_dir / f"{source.stem}_bank_{frame:02d}.png"
+        scene.render.filepath = str(destination)
+        bpy.ops.render.render(write_still=True)
+        print(f"Rendered {source.name} at {bank_angle:g}° -> {destination.name}")
 
 
 def main() -> None:
@@ -102,9 +127,7 @@ def main() -> None:
     if not sources:
         raise SystemExit(f"No GLB files found in {input_dir}")
     for source in sources:
-        destination = output_dir / f"{source.stem}.png"
-        render_model(source, destination, args.size)
-        print(f"Rendered {source.name} -> {destination.name}")
+        render_model(source, output_dir, args.size)
 
 
 if __name__ == "__main__":
