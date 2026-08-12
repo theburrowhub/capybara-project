@@ -36,13 +36,18 @@ func _run() -> void:
 	_check(is_instance_valid(defensive_special), "defensive special uses a 3D polyhedron")
 	_check(int(defensive_special.get_meta("face_count", 0)) == 20, "defensive special polyhedron has exactly twenty faces")
 	_check(defensive_special.mesh.surface_get_array_len(0) == 60, "defensive special contains twenty triangular faces")
-	_check(is_equal_approx((shield_sphere.material_override as StandardMaterial3D).albedo_color.a, 0.10), "shield sphere is ninety percent transparent")
+	_check(is_equal_approx((shield_sphere.material_override as StandardMaterial3D).albedo_color.a, 0.15), "shield sphere is eighty-five percent transparent")
 	_check(is_equal_approx((defensive_special.material_override as StandardMaterial3D).albedo_color.a, 0.15), "defensive special is eighty-five percent transparent")
 	_check(shield_sphere.visible and not defensive_special.visible, "normal shield geometry is exclusive")
 	game.player.energy_mode = PLAYER_TYPE.EnergyMode.DEFENSIVE
 	game.player.special_active = true
 	game.player._update_defense_visuals()
 	_check(not shield_sphere.visible and defensive_special.visible, "defensive special replaces the shield sphere")
+	var protected_shield := game.player.shield
+	var protected_health := game.player.health
+	game.player.take_damage(20.0)
+	_check(is_equal_approx(game.player.shield, protected_shield), "defensive special absorbs impacts without consuming shield")
+	_check(is_equal_approx(game.player.health, protected_health), "defensive special prevents impact damage to the hull")
 	game.player.special_active = false
 	game.player._update_defense_visuals()
 	_check(is_equal_approx(game.player.bank, -PI * 0.5), "player rests in side-profile orientation")
@@ -59,9 +64,23 @@ func _run() -> void:
 	var model_sprites: Dictionary = {}
 	for enemy_node in enemies:
 		var enemy := enemy_node as ENEMY_TYPE
+		enemy.set_visual_bank(0.0, true)
 		if enemy.sprite.texture:
 			model_sprites[enemy.sprite.texture.resource_path] = true
-	_check(model_sprites.size() == 4, "four selected enemy GLBs provide the runtime sprites")
+		_check(enemy._bank_textures.size() == 9, "%s loads all nine banked sprite frames" % enemy.enemy_type)
+		_check(enemy.bank_frame == 4, "%s starts in mirrored side-profile orientation" % enemy.enemy_type)
+		_check(not enemy.sprite.flip_h, "%s consistently faces left" % enemy.enemy_type)
+		var sprite_image := enemy.sprite.texture.get_image()
+		var visible_width := float(sprite_image.get_used_rect().size.x) * absf(enemy.sprite.scale.x)
+		_check(visible_width > enemy.radius * 2.8 and visible_width < enemy.radius * 3.2, "%s uses its visible pixels for proportional scaling" % enemy.enemy_type)
+	_check(model_sprites.size() == 4, "four selected enemy GLBs provide visible neutral runtime sprites")
+	if not enemies.is_empty():
+		var banking_enemy := enemies[0] as ENEMY_TYPE
+		banking_enemy.set_visual_bank(1.0, true)
+		_check(banking_enemy.bank_frame == 8, "enemy moving down exposes the top of its mirrored ship")
+		banking_enemy.set_visual_bank(-1.0, true)
+		_check(banking_enemy.bank_frame == 0, "enemy moving up exposes the underside of its mirrored ship")
+		banking_enemy.set_visual_bank(0.0, true)
 	if not enemies.is_empty():
 		(enemies[0] as ENEMY_TYPE).take_damage(9999.0)
 	await get_tree().process_frame

@@ -15,7 +15,7 @@ const CONFIG := preload("res://scripts/core/game_config.gd")
 const NEUTRAL_VISUAL_BANK := -PI * 0.5
 const MAX_VISUAL_BANK_DELTA := PI * 0.5
 const BANK_RESPONSE := 7.5
-const SHIELD_ALPHA := 0.10
+const SHIELD_ALPHA := 0.15
 const DEFENSIVE_SPECIAL_ALPHA := 0.15
 const SHIELD_RADIUS := 9.5
 const DEFENSIVE_SPECIAL_RADIUS := 10.2
@@ -171,7 +171,7 @@ func take_damage(amount: float) -> void:
 	if not active or invulnerable:
 		return
 	if energy_mode == EnergyMode.DEFENSIVE and special_active:
-		amount *= 0.25
+		return
 	last_damage_time = _elapsed
 	var shield_damage := minf(shield, amount)
 	shield -= shield_damage
@@ -367,6 +367,16 @@ func _draw() -> void:
 	var pulse := 1.0 + sin(_elapsed * 8.0) * 0.12
 	draw_circle(Vector2(-34.0, -9.0), 7.0 * pulse, Color(0.25, 0.8, 1.0, 0.28))
 	draw_circle(Vector2(-34.0, 9.0), 7.0 * pulse, Color(0.25, 0.8, 1.0, 0.28))
+	if energy_mode == EnergyMode.OFFENSIVE and special_active:
+		var offensive_radius := 49.0 + sin(_elapsed * 10.0) * 3.0
+		draw_circle(Vector2.ZERO, offensive_radius, Color(1.0, 0.16, 0.04, 0.10))
+		draw_arc(Vector2.ZERO, offensive_radius, 0.0, TAU, 48, Color(1.0, 0.38, 0.08, 0.88), 3.0)
+		draw_arc(Vector2.ZERO, offensive_radius + 8.0, _elapsed * 2.4, _elapsed * 2.4 + PI * 0.72, 24, Color(1.0, 0.78, 0.18, 0.92), 3.0)
+		draw_arc(Vector2.ZERO, offensive_radius + 8.0, _elapsed * 2.4 + PI, _elapsed * 2.4 + PI * 1.72, 24, Color(1.0, 0.28, 0.06, 0.76), 3.0)
+		for index in range(8):
+			var particle_angle := _elapsed * 3.2 + TAU * float(index) / 8.0
+			var particle_position := Vector2.from_angle(particle_angle) * (offensive_radius + 2.0)
+			draw_circle(particle_position, 2.4, Color(1.0, 0.82, 0.26, 0.94))
 	if charge_level > 0.0:
 		draw_arc(Vector2.ZERO, 46.0, -PI * 0.5, -PI * 0.5 + TAU * charge_level, 32, Color("ffe45e"), 4.0)
 	if get_meta("debug_hitbox", false):
