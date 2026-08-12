@@ -8,6 +8,15 @@ const ENEMY_SCENE := preload("res://scenes/entities/enemy.tscn")
 const PROJECTILE_SCENE := preload("res://scenes/entities/projectile.tscn")
 const POWERUP_SCENE := preload("res://scenes/entities/power_up.tscn")
 const EXPLOSION_SCENE := preload("res://scenes/entities/explosion.tscn")
+const CONFIG := preload("res://scripts/core/game_config.gd")
+const ENEMY_TYPE := preload("res://scripts/entities/enemy.gd")
+const PLAYER_TYPE := preload("res://scripts/entities/player.gd")
+const PROJECTILE_TYPE := preload("res://scripts/entities/projectile.gd")
+const POWERUP_TYPE := preload("res://scripts/entities/power_up.gd")
+const EXPLOSION_TYPE := preload("res://scripts/entities/explosion.gd")
+const STARFIELD_TYPE := preload("res://scripts/systems/starfield.gd")
+const WAVE_DIRECTOR_TYPE := preload("res://scripts/systems/wave_director.gd")
+const HUD_TYPE := preload("res://scripts/ui/hud.gd")
 
 @export var level_index := 0
 @export var difficulty := 1
@@ -21,7 +30,7 @@ var paused := false
 var game_over := false
 var victory := false
 var debug_hitboxes := false
-var boss_enemy: EnemyShip
+var boss_enemy: ENEMY_TYPE
 var boss_spawn_time := -1.0
 var boss_escape := false
 var boss_escape_timer := 0.0
@@ -29,14 +38,14 @@ var level_transitioning := false
 var transition_timer := 0.0
 
 @onready var entities: Node2D = $Entities
-@onready var player: PlayerShip = $Entities/Player
-@onready var starfield: Starfield = $Starfield
-@onready var director: WaveDirector = $WaveDirector
-@onready var hud: GameHUD = $HUD
+@onready var player: PLAYER_TYPE = $Entities/Player
+@onready var starfield: STARFIELD_TYPE = $Starfield
+@onready var director: WAVE_DIRECTOR_TYPE = $WaveDirector
+@onready var hud: HUD_TYPE = $HUD
 @onready var music: AudioStreamPlayer = $Music
 
 func _ready() -> void:
-	level_config = GameConfig.level(level_index)
+	level_config = CONFIG.level(level_index)
 	director.setup(level_index, difficulty)
 	director.spawn_requested.connect(_spawn_enemy)
 	director.boss_requested.connect(_spawn_boss)
@@ -99,10 +108,10 @@ func _set_paused(value: bool) -> void:
 	hud.show_pause(paused)
 
 func _spawn_enemy(type: String, at: Vector2, pattern: String) -> void:
-	if active_enemy_count() >= GameConfig.MAX_ENEMIES:
+	if active_enemy_count() >= CONFIG.MAX_ENEMIES:
 		return
-	var enemy := ENEMY_SCENE.instantiate() as EnemyShip
-	enemy.setup(type, pattern, GameConfig.difficulty_scale(difficulty), level_time >= float(level_config["fire_from"]))
+	var enemy := ENEMY_SCENE.instantiate() as ENEMY_TYPE
+	enemy.setup(type, pattern, CONFIG.difficulty_scale(difficulty), level_time >= float(level_config["fire_from"]))
 	enemy.set_meta("debug_hitbox", debug_hitboxes)
 	enemy.position = at
 	entities.add_child(enemy)
@@ -113,16 +122,16 @@ func _spawn_boss(at: Vector2) -> void:
 	if is_instance_valid(boss_enemy):
 		return
 	_spawn_enemy("boss", at, "boss")
-	var bosses := get_tree().get_nodes_in_group("enemy").filter(func(node: Node) -> bool: return node is EnemyShip and node.enemy_type == "boss")
+	var bosses := get_tree().get_nodes_in_group("enemy").filter(func(node: Node) -> bool: return node is ENEMY_TYPE and node.enemy_type == "boss")
 	if not bosses.is_empty():
-		boss_enemy = bosses[-1] as EnemyShip
+		boss_enemy = bosses[-1] as ENEMY_TYPE
 		boss_spawn_time = level_time
 		hud.show_notice("WARNING · BOSS SIGNATURE DETECTED", 4.0)
 
 func _spawn_projectile(config: Dictionary) -> void:
-	if get_tree().get_nodes_in_group("player_projectile").size() + get_tree().get_nodes_in_group("enemy_projectile").size() >= GameConfig.MAX_PROJECTILES:
+	if get_tree().get_nodes_in_group("player_projectile").size() + get_tree().get_nodes_in_group("enemy_projectile").size() >= CONFIG.MAX_PROJECTILES:
 		return
-	var projectile := PROJECTILE_SCENE.instantiate() as GameProjectile
+	var projectile := PROJECTILE_SCENE.instantiate() as PROJECTILE_TYPE
 	projectile.setup(config)
 	projectile.position = config.get("position", Vector2.ZERO)
 	entities.add_child(projectile)
@@ -139,14 +148,14 @@ func _on_enemy_destroyed(type: String, points: int, at: Vector2) -> void:
 		hud.show_notice("BOSS CORE DESTROYED · +2500", 4.0)
 
 func _try_drop_powerup(type: String, at: Vector2) -> void:
-	var rates: Array = GameConfig.DROP_RATES.get(type, [0.0, 0.0, 0.0, 0.0])
+	var rates: Array = CONFIG.DROP_RATES.get(type, [0.0, 0.0, 0.0, 0.0])
 	var roll := randf() * 100.0
 	var cumulative := 0.0
 	var kinds := ["energy", "shield", "hull", "weapon"]
 	for index in range(rates.size()):
 		cumulative += float(rates[index])
 		if roll <= cumulative:
-			var powerup := POWERUP_SCENE.instantiate() as PowerUp
+			var powerup := POWERUP_SCENE.instantiate() as POWERUP_TYPE
 			powerup.setup(kinds[index])
 			powerup.position = at
 			entities.add_child(powerup)
@@ -157,7 +166,7 @@ func _on_powerup_collected(_kind: String) -> void:
 	score += 50
 
 func _spawn_explosion(at: Vector2, color: Color, size: float) -> void:
-	var explosion := EXPLOSION_SCENE.instantiate() as ExplosionEffect
+	var explosion := EXPLOSION_SCENE.instantiate() as EXPLOSION_TYPE
 	explosion.position = at
 	explosion.setup(color, size)
 	entities.add_child(explosion)
@@ -202,7 +211,7 @@ func _begin_level_transition() -> void:
 	level_transitioning = true
 	transition_timer = 0.0
 	director.running = false
-	if level_index + 1 < GameConfig.LEVELS.size():
+	if level_index + 1 < CONFIG.LEVELS.size():
 		hud.show_overlay("LEVEL COMPLETE", "%s SECURED · PREPARING NEXT SECTOR" % str(level_config["name"]).to_upper())
 	else:
 		victory = true
@@ -218,7 +227,7 @@ func _update_level_transition(delta: float) -> void:
 		_end_game(true, "VICTORY", "ALL SECTORS SECURED · FINAL SCORE %09d\n[ESC] MAIN MENU" % score)
 		return
 	level_index += 1
-	level_config = GameConfig.level(level_index)
+	level_config = CONFIG.level(level_index)
 	level_time = 0.0
 	level_transitioning = false
 	transition_timer = 0.0

@@ -11,6 +11,7 @@ enum EnergyMode { OFFENSIVE, DEFENSIVE }
 
 const WEAPON_NAMES := ["Single", "Double", "Spread", "Rapid", "Charge", "Dual"]
 const MODEL_PATH := "res://assets/models/player_ship.glb"
+const CONFIG := preload("res://scripts/core/game_config.gd")
 
 var max_health := 100.0
 var health := 100.0
@@ -79,8 +80,8 @@ func _handle_movement(delta: float) -> void:
 	input.y = float(Input.is_physical_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)) - float(Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP))
 	input = input.normalized()
 	position += input * 300.0 * delta
-	position.x = clampf(position.x, 34.0, GameConfig.WIDTH - 34.0)
-	position.y = clampf(position.y, GameConfig.HUD_TOP + 34.0, GameConfig.HUD_BOTTOM - 34.0)
+	position.x = clampf(position.x, 34.0, CONFIG.WIDTH - 34.0)
+	position.y = clampf(position.y, CONFIG.HUD_TOP + 34.0, CONFIG.HUD_BOTTOM - 34.0)
 	bank = lerpf(bank, input.y * -0.22, minf(1.0, delta * 8.0))
 	rotation = bank
 

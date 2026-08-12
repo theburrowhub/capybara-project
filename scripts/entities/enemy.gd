@@ -1,6 +1,8 @@
 class_name EnemyShip
 extends Area2D
 
+const CONFIG := preload("res://scripts/core/game_config.gd")
+
 signal destroyed(enemy_type: String, points: int, at: Vector2)
 signal projectile_requested(config: Dictionary)
 
@@ -30,10 +32,10 @@ var base_tint := Color.WHITE
 @onready var collision_shape: CollisionShape2D = $CollisionShape2D
 
 func setup(type: String, movement_pattern: String, difficulty: Dictionary, firing: bool) -> void:
-	enemy_type = type if GameConfig.ENEMIES.has(type) else "grunt"
+	enemy_type = type if CONFIG.ENEMIES.has(type) else "grunt"
 	pattern = movement_pattern
 	can_fire = firing
-	var data: Dictionary = GameConfig.ENEMIES[enemy_type]
+	var data: Dictionary = CONFIG.ENEMIES[enemy_type]
 	max_health = float(data["health"]) * float(difficulty["enemy_health"])
 	health = max_health
 	speed = float(data["speed"])
@@ -57,7 +59,7 @@ func _ready() -> void:
 func _apply_visuals() -> void:
 	if not is_instance_valid(sprite) or not is_instance_valid(collision_shape):
 		return
-	var data: Dictionary = GameConfig.ENEMIES[enemy_type]
+	var data: Dictionary = CONFIG.ENEMIES[enemy_type]
 	var path := "res://assets/sprites/enemies_3d/%s.png" % str(data["sprite"])
 	if ResourceLoader.exists(path):
 		sprite.texture = load(path)
@@ -81,7 +83,7 @@ func _process(delta: float) -> void:
 	_update_movement(delta)
 	_update_firing(delta)
 	_update_special_visuals()
-	if position.x < -100.0 or position.y < -100.0 or position.y > GameConfig.HEIGHT + 100.0:
+	if position.x < -100.0 or position.y < -100.0 or position.y > CONFIG.HEIGHT + 100.0:
 		queue_free()
 	queue_redraw()
 
@@ -128,7 +130,7 @@ func _update_assault(delta: float) -> void:
 			state = 2
 	else:
 		position.x += speed * 1.3 * delta
-		if position.x > GameConfig.WIDTH + 100.0:
+		if position.x > CONFIG.WIDTH + 100.0:
 			queue_free()
 
 func _update_firing(delta: float) -> void:

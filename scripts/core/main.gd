@@ -1,12 +1,14 @@
 extends Control
 
 const GAME_SCENE := preload("res://scenes/game.tscn")
+const CONFIG := preload("res://scripts/core/game_config.gd")
+const GAME_TYPE := preload("res://scripts/core/game.gd")
 const RESOLUTIONS := [Vector2i(960, 480), Vector2i(1200, 600), Vector2i(1440, 720), Vector2i(1920, 960)]
 
 var menu_layer: Control
 var panel_host: CenterContainer
 var current_panel: Control
-var game_instance: CapybaraGame
+var game_instance: GAME_TYPE
 var options_music: HSlider
 var options_sfx: HSlider
 var options_resolution: OptionButton
@@ -40,7 +42,7 @@ func _build_interface() -> void:
 	header.add_child(subtitle)
 	panel_host = CenterContainer.new()
 	panel_host.position = Vector2(0.0, 145.0)
-	panel_host.size = Vector2(GameConfig.WIDTH, 400.0)
+	panel_host.size = Vector2(CONFIG.WIDTH, 400.0)
 	menu_layer.add_child(panel_host)
 	var footer := _label("WASD / ARROWS  NAVIGATE     ·     ENTER  SELECT     ·     F11  FULLSCREEN", 13, Color("50688d"))
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -171,7 +173,7 @@ func _start_game() -> void:
 	if is_instance_valid(game_instance):
 		game_instance.queue_free()
 	menu_layer.hide()
-	game_instance = GAME_SCENE.instantiate() as CapybaraGame
+	game_instance = GAME_SCENE.instantiate() as GAME_TYPE
 	game_instance.difficulty = int(GameData.settings["difficulty"])
 	add_child(game_instance)
 	move_child(game_instance, 1)

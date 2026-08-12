@@ -1,6 +1,8 @@
 class_name GameProjectile
 extends Area2D
 
+const CONFIG := preload("res://scripts/core/game_config.gd")
+
 signal impacted(at: Vector2, color: Color, size: float)
 
 var kind := "laser"
@@ -23,7 +25,7 @@ var projectile_color := Color.WHITE
 
 func setup(config: Dictionary) -> void:
 	kind = str(config.get("kind", "laser"))
-	var definition: Dictionary = GameConfig.PROJECTILES.get(kind, GameConfig.PROJECTILES["laser"])
+	var definition: Dictionary = CONFIG.PROJECTILES.get(kind, CONFIG.PROJECTILES["laser"])
 	direction = (config.get("direction", Vector2.LEFT) as Vector2).normalized()
 	base_direction = direction
 	speed = float(definition["speed"])
@@ -82,7 +84,7 @@ func _process(delta: float) -> void:
 	else:
 		position += direction * speed * delta
 	rotation = direction.angle()
-	if position.x < -120.0 or position.x > GameConfig.WIDTH + 120.0 or position.y < -120.0 or position.y > GameConfig.HEIGHT + 120.0:
+	if position.x < -120.0 or position.x > CONFIG.WIDTH + 120.0 or position.y < -120.0 or position.y > CONFIG.HEIGHT + 120.0:
 		queue_free()
 	queue_redraw()
 

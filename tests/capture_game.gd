@@ -1,14 +1,17 @@
 extends Node
 
+const CONFIG := preload("res://scripts/core/game_config.gd")
+const GAME_TYPE := preload("res://scripts/core/game.gd")
+
 func _ready() -> void:
-	var game := (load("res://scenes/game.tscn") as PackedScene).instantiate() as CapybaraGame
+	var game := (load("res://scenes/game.tscn") as PackedScene).instantiate() as GAME_TYPE
 	get_tree().root.add_child.call_deferred(game)
 	await get_tree().process_frame
 	game.director.running = false
-	for index in range(GameConfig.ENEMY_ORDER.size()):
+	for index in range(CONFIG.ENEMY_ORDER.size()):
 		var column := index % 2
 		var row := index / 2
-		game._spawn_enemy(GameConfig.ENEMY_ORDER[index], Vector2(760.0 + column * 240.0, 90.0 + row * 82.0), "hover")
+		game._spawn_enemy(CONFIG.ENEMY_ORDER[index], Vector2(760.0 + column * 240.0, 90.0 + row * 82.0), "hover")
 	game._spawn_projectile({"kind": "player_bullet", "position": Vector2(245.0, 265.0), "direction": Vector2.RIGHT, "damage": 1.0, "from_player": true})
 	for _frame in range(8):
 		await get_tree().process_frame

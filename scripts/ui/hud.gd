@@ -1,9 +1,14 @@
 class_name GameHUD
 extends CanvasLayer
 
+const CONFIG := preload("res://scripts/core/game_config.gd")
+const ENEMY_TYPE := preload("res://scripts/entities/enemy.gd")
+const PLAYER_TYPE := preload("res://scripts/entities/player.gd")
+const WAVE_DIRECTOR_TYPE := preload("res://scripts/systems/wave_director.gd")
+
 var game: Node
-var player: PlayerShip
-var director: WaveDirector
+var player: PLAYER_TYPE
+var director: WAVE_DIRECTOR_TYPE
 var top_label: Label
 var time_label: Label
 var enemy_label: Label
@@ -26,7 +31,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	_build_hud()
 
-func setup(game_node: Node, player_node: PlayerShip, wave_director: WaveDirector) -> void:
+func setup(game_node: Node, player_node: PLAYER_TYPE, wave_director: WAVE_DIRECTOR_TYPE) -> void:
 	game = game_node
 	player = player_node
 	director = wave_director
@@ -47,7 +52,7 @@ func _process(delta: float) -> void:
 	hull_bar.value = player.health / player.max_health * 100.0
 	shield_bar.value = player.shield / maxf(player.max_shield, 1.0) * 100.0
 	energy_bar.value = player.energy
-	var boss := game.boss_enemy as EnemyShip
+	var boss := game.boss_enemy as ENEMY_TYPE
 	if is_instance_valid(boss):
 		boss_bar.visible = true
 		boss_label.visible = true
@@ -83,7 +88,7 @@ func _build_hud() -> void:
 	var top := ColorRect.new()
 	top.color = Color(0.015, 0.025, 0.075, 0.96)
 	top.position = Vector2.ZERO
-	top.size = Vector2(GameConfig.WIDTH, GameConfig.HUD_TOP)
+	top.size = Vector2(CONFIG.WIDTH, CONFIG.HUD_TOP)
 	add_child(top)
 	top_label = _label(16, Color("9ee9ff"), HORIZONTAL_ALIGNMENT_LEFT)
 	top_label.position = Vector2(16.0, 4.0)
@@ -100,13 +105,13 @@ func _build_hud() -> void:
 	progress_bar = ProgressBar.new()
 	progress_bar.show_percentage = false
 	progress_bar.position = Vector2(0.0, 27.0)
-	progress_bar.size = Vector2(GameConfig.WIDTH, 3.0)
+	progress_bar.size = Vector2(CONFIG.WIDTH, 3.0)
 	top.add_child(progress_bar)
 
 	var bottom := ColorRect.new()
 	bottom.color = Color(0.012, 0.02, 0.062, 0.98)
-	bottom.position = Vector2(0.0, GameConfig.HUD_BOTTOM)
-	bottom.size = Vector2(GameConfig.WIDTH, GameConfig.HEIGHT - GameConfig.HUD_BOTTOM)
+	bottom.position = Vector2(0.0, CONFIG.HUD_BOTTOM)
+	bottom.size = Vector2(CONFIG.WIDTH, CONFIG.HEIGHT - CONFIG.HUD_BOTTOM)
 	add_child(bottom)
 	score_label = _label(23, Color("ffe45e"), HORIZONTAL_ALIGNMENT_RIGHT)
 	score_label.position = Vector2(900.0, 10.0)
@@ -148,8 +153,8 @@ func _build_hud() -> void:
 
 	center_overlay = ColorRect.new()
 	center_overlay.color = Color(0.0, 0.0, 0.03, 0.82)
-	center_overlay.position = Vector2(0.0, GameConfig.HUD_TOP)
-	center_overlay.size = Vector2(GameConfig.WIDTH, GameConfig.HUD_BOTTOM - GameConfig.HUD_TOP)
+	center_overlay.position = Vector2(0.0, CONFIG.HUD_TOP)
+	center_overlay.size = Vector2(CONFIG.WIDTH, CONFIG.HUD_BOTTOM - CONFIG.HUD_TOP)
 	add_child(center_overlay)
 	overlay_title = _label(52, Color("e8f9ff"), HORIZONTAL_ALIGNMENT_CENTER)
 	overlay_title.position = Vector2(120.0, 145.0)

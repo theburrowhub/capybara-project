@@ -1,6 +1,8 @@
 class_name Starfield
 extends Node2D
 
+const CONFIG := preload("res://scripts/core/game_config.gd")
+
 var stars: Array[Dictionary] = []
 var scroll_speed := 2.0
 
@@ -9,7 +11,7 @@ func _ready() -> void:
 	generator.seed = 0xCA9BA4A
 	for index in range(150):
 		stars.append({
-			"position": Vector2(generator.randf_range(0.0, GameConfig.WIDTH), generator.randf_range(GameConfig.HUD_TOP, GameConfig.HUD_BOTTOM)),
+			"position": Vector2(generator.randf_range(0.0, CONFIG.WIDTH), generator.randf_range(CONFIG.HUD_TOP, CONFIG.HUD_BOTTOM)),
 			"layer": 1 + index % 3,
 			"twinkle": generator.randf_range(0.0, TAU),
 		})
@@ -19,8 +21,8 @@ func _process(delta: float) -> void:
 		var position: Vector2 = star["position"]
 		position.x -= float(star["layer"]) * scroll_speed * 32.0 * delta
 		if position.x < -4.0:
-			position.x = GameConfig.WIDTH + 4.0
-			position.y = randf_range(GameConfig.HUD_TOP, GameConfig.HUD_BOTTOM)
+			position.x = CONFIG.WIDTH + 4.0
+			position.y = randf_range(CONFIG.HUD_TOP, CONFIG.HUD_BOTTOM)
 		star["position"] = position
 	queue_redraw()
 

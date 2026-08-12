@@ -11,6 +11,8 @@ No se necesitan CMake, Raylib, SQLite ni un compilador C.
 ## Desarrollo
 
 ```bash
+make          # ayuda dinámica de comandos
+make run      # importar y ejecutar
 godot --editor --path .
 godot --path .
 ```
@@ -61,4 +63,3 @@ En Linux o Windows, sustituye la ruta al ejecutable de Blender.
 ## CI/CD
 
 `.github/workflows/build.yml` importa y prueba el proyecto en cada cambio a `main-godot`. `.github/workflows/release.yml` exporta Linux, Windows y macOS desde una etiqueta `v*` o desde ejecución manual.
-

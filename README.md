@@ -14,6 +14,8 @@ godot --path .           # ejecutar el juego
 También están disponibles:
 
 ```bash
+make          # mostrar todos los comandos y su finalidad
+make help     # equivalente explícito
 make run
 make editor
 make check

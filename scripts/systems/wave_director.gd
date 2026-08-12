@@ -1,6 +1,8 @@
 class_name WaveDirector
 extends Node
 
+const CONFIG := preload("res://scripts/core/game_config.gd")
+
 signal spawn_requested(enemy_type: String, position: Vector2, pattern: String)
 signal phase_changed(name: String, index: int)
 signal boss_requested(position: Vector2)
@@ -16,8 +18,8 @@ var boss_spawned := false
 var running := true
 
 func setup(level_index: int, difficulty: int) -> void:
-	level_config = GameConfig.level(level_index)
-	difficulty_config = GameConfig.difficulty_scale(difficulty)
+	level_config = CONFIG.level(level_index)
+	difficulty_config = CONFIG.difficulty_scale(difficulty)
 	level_time = 0.0
 	spawn_timer = 0.05
 	current_phase = -1
@@ -37,8 +39,8 @@ func advance(delta: float, active_enemy_count: int) -> void:
 		phase_changed.emit(phase_name(), current_phase)
 	if not boss_spawned and level_time >= float(level_config["boss_time"]):
 		boss_spawned = true
-		boss_requested.emit(Vector2(GameConfig.WIDTH + 110.0, 265.0))
-	if phase_index < 0 or active_enemy_count >= GameConfig.MAX_ENEMIES:
+		boss_requested.emit(Vector2(CONFIG.WIDTH + 110.0, 265.0))
+	if phase_index < 0 or active_enemy_count >= CONFIG.MAX_ENEMIES:
 		return
 	spawn_timer -= delta
 	if spawn_timer > 0.0:
@@ -50,14 +52,14 @@ func advance(delta: float, active_enemy_count: int) -> void:
 	if roster.is_empty():
 		return
 	var count := int(phase["count"])
-	var center_y := randf_range(GameConfig.HUD_TOP + 55.0, GameConfig.HUD_BOTTOM - 55.0)
+	var center_y := randf_range(CONFIG.HUD_TOP + 55.0, CONFIG.HUD_BOTTOM - 55.0)
 	var spacing := 42.0
 	for index in range(count):
-		if active_enemy_count + index >= GameConfig.MAX_ENEMIES:
+		if active_enemy_count + index >= CONFIG.MAX_ENEMIES:
 			break
 		var type := str(roster[randi() % roster.size()])
-		var y := clampf(center_y + (float(index) - float(count - 1) * 0.5) * spacing, GameConfig.HUD_TOP + 38.0, GameConfig.HUD_BOTTOM - 38.0)
-		spawn_requested.emit(type, Vector2(GameConfig.WIDTH + 70.0 + index * 30.0, y), str(phase["pattern"]))
+		var y := clampf(center_y + (float(index) - float(count - 1) * 0.5) * spacing, CONFIG.HUD_TOP + 38.0, CONFIG.HUD_BOTTOM - 38.0)
+		spawn_requested.emit(type, Vector2(CONFIG.WIDTH + 70.0 + index * 30.0, y), str(phase["pattern"]))
 		total_spawned += 1
 
 func register_kill() -> void:
