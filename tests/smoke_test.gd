@@ -3,6 +3,7 @@ extends Node
 const CONFIG := preload("res://scripts/core/game_config.gd")
 const ENEMY_TYPE := preload("res://scripts/entities/enemy.gd")
 const GAME_TYPE := preload("res://scripts/core/game.gd")
+const PLAYER_TYPE := preload("res://scripts/entities/player.gd")
 
 var failures: Array[String] = []
 
@@ -28,6 +29,22 @@ func _run() -> void:
 	_check(is_instance_valid(game.player), "player exists")
 	_check(game.player.has_node("Ship3DViewport"), "GLB player model is rendered through a SubViewport")
 	_check(FileAccess.file_exists("res://assets/models/player_ship.glb"), "player GLB source is bundled")
+	var ship_viewport := game.player.get_node("Ship3DViewport")
+	var shield_sphere := ship_viewport.find_child("ShieldSphere", true, false) as MeshInstance3D
+	var defensive_special := ship_viewport.find_child("DefensiveSpecialIcosahedron", true, false) as MeshInstance3D
+	_check(is_instance_valid(shield_sphere), "normal defense uses a 3D sphere")
+	_check(is_instance_valid(defensive_special), "defensive special uses a 3D polyhedron")
+	_check(int(defensive_special.get_meta("face_count", 0)) == 20, "defensive special polyhedron has exactly twenty faces")
+	_check(defensive_special.mesh.surface_get_array_len(0) == 60, "defensive special contains twenty triangular faces")
+	_check(is_equal_approx((shield_sphere.material_override as StandardMaterial3D).albedo_color.a, 0.10), "shield sphere is ninety percent transparent")
+	_check(is_equal_approx((defensive_special.material_override as StandardMaterial3D).albedo_color.a, 0.15), "defensive special is eighty-five percent transparent")
+	_check(shield_sphere.visible and not defensive_special.visible, "normal shield geometry is exclusive")
+	game.player.energy_mode = PLAYER_TYPE.EnergyMode.DEFENSIVE
+	game.player.special_active = true
+	game.player._update_defense_visuals()
+	_check(not shield_sphere.visible and defensive_special.visible, "defensive special replaces the shield sphere")
+	game.player.special_active = false
+	game.player._update_defense_visuals()
 	_check(is_equal_approx(game.player.bank, -PI * 0.5), "player rests in side-profile orientation")
 	game.player.set_visual_bank(1.0, true)
 	_check(is_zero_approx(game.player.bank), "moving down exposes the top of the player ship")

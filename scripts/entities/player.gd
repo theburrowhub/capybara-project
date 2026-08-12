@@ -15,6 +15,10 @@ const CONFIG := preload("res://scripts/core/game_config.gd")
 const NEUTRAL_VISUAL_BANK := -PI * 0.5
 const MAX_VISUAL_BANK_DELTA := PI * 0.5
 const BANK_RESPONSE := 7.5
+const SHIELD_ALPHA := 0.10
+const DEFENSIVE_SPECIAL_ALPHA := 0.15
+const SHIELD_RADIUS := 9.5
+const DEFENSIVE_SPECIAL_RADIUS := 10.2
 
 var max_health := 100.0
 var health := 100.0
@@ -37,6 +41,9 @@ var bank := NEUTRAL_VISUAL_BANK
 var _elapsed := 0.0
 var _model_pivot: Node3D
 var _model_bank: Node3D
+var _shield_sphere: MeshInstance3D
+var _defensive_polyhedron: MeshInstance3D
+var _defensive_polyhedron_edges: MeshInstance3D
 
 func _ready() -> void:
 	add_to_group("player")
@@ -54,6 +61,7 @@ func _process(delta: float) -> void:
 	_handle_energy(delta)
 	_handle_regeneration(delta)
 	_handle_weapon(delta)
+	_update_defense_visuals(delta)
 	queue_redraw()
 
 func _handle_modes() -> void:
@@ -222,6 +230,7 @@ func _build_model_view() -> void:
 	_model_bank.rotation.x = bank
 	var model: Node = model_resource.instantiate()
 	_model_bank.add_child(model)
+	_build_defense_geometry()
 	_model_pivot.rotation_degrees = Vector3(0.0, -90.0, 0.0)
 	var light := DirectionalLight3D.new()
 	light.rotation_degrees = Vector3(-50.0, -35.0, 0.0)
@@ -246,6 +255,107 @@ func _build_model_view() -> void:
 	sprite.scale = Vector2(0.58, 0.58)
 	sprite.rotation = -PI * 0.5
 	add_child(sprite)
+	_update_defense_visuals()
+
+func _build_defense_geometry() -> void:
+	_shield_sphere = MeshInstance3D.new()
+	_shield_sphere.name = "ShieldSphere"
+	var sphere := SphereMesh.new()
+	sphere.radius = SHIELD_RADIUS
+	sphere.height = SHIELD_RADIUS * 2.0
+	sphere.radial_segments = 32
+	sphere.rings = 16
+	_shield_sphere.mesh = sphere
+	_shield_sphere.material_override = _transparent_energy_material(Color(0.12, 0.92, 1.0, SHIELD_ALPHA))
+	_shield_sphere.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_model_bank.add_child(_shield_sphere)
+
+	var polyhedron_data := _icosahedron_data(DEFENSIVE_SPECIAL_RADIUS)
+	_defensive_polyhedron = MeshInstance3D.new()
+	_defensive_polyhedron.name = "DefensiveSpecialIcosahedron"
+	_defensive_polyhedron.mesh = _icosahedron_faces(polyhedron_data["vertices"], polyhedron_data["faces"])
+	_defensive_polyhedron.material_override = _transparent_energy_material(Color(0.30, 1.0, 0.68, DEFENSIVE_SPECIAL_ALPHA))
+	_defensive_polyhedron.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_defensive_polyhedron.set_meta("face_count", 20)
+	_model_bank.add_child(_defensive_polyhedron)
+
+	_defensive_polyhedron_edges = MeshInstance3D.new()
+	_defensive_polyhedron_edges.name = "DefensiveSpecialEdges"
+	_defensive_polyhedron_edges.mesh = _icosahedron_edges(
+		polyhedron_data["vertices"], polyhedron_data["faces"],
+		_transparent_energy_material(Color(0.45, 1.0, 0.78, DEFENSIVE_SPECIAL_ALPHA))
+	)
+	_defensive_polyhedron_edges.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_model_bank.add_child(_defensive_polyhedron_edges)
+
+func _transparent_energy_material(color: Color) -> StandardMaterial3D:
+	var material := StandardMaterial3D.new()
+	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	material.albedo_color = color
+	material.emission_enabled = true
+	material.emission = Color(color.r, color.g, color.b)
+	material.emission_energy_multiplier = 1.25
+	return material
+
+func _icosahedron_data(radius: float) -> Dictionary:
+	var golden_ratio := (1.0 + sqrt(5.0)) * 0.5
+	var vertices := PackedVector3Array([
+		Vector3(-1.0, golden_ratio, 0.0), Vector3(1.0, golden_ratio, 0.0),
+		Vector3(-1.0, -golden_ratio, 0.0), Vector3(1.0, -golden_ratio, 0.0),
+		Vector3(0.0, -1.0, golden_ratio), Vector3(0.0, 1.0, golden_ratio),
+		Vector3(0.0, -1.0, -golden_ratio), Vector3(0.0, 1.0, -golden_ratio),
+		Vector3(golden_ratio, 0.0, -1.0), Vector3(golden_ratio, 0.0, 1.0),
+		Vector3(-golden_ratio, 0.0, -1.0), Vector3(-golden_ratio, 0.0, 1.0),
+	])
+	for index in range(vertices.size()):
+		vertices[index] = vertices[index].normalized() * radius
+	var faces := PackedInt32Array([
+		0, 11, 5, 0, 5, 1, 0, 1, 7, 0, 7, 10, 0, 10, 11,
+		1, 5, 9, 5, 11, 4, 11, 10, 2, 10, 7, 6, 7, 1, 8,
+		3, 9, 4, 3, 4, 2, 3, 2, 6, 3, 6, 8, 3, 8, 9,
+		4, 9, 5, 2, 4, 11, 6, 2, 10, 8, 6, 7, 9, 8, 1,
+	])
+	return {"vertices": vertices, "faces": faces}
+
+func _icosahedron_faces(vertices: PackedVector3Array, faces: PackedInt32Array) -> ArrayMesh:
+	var face_vertices := PackedVector3Array()
+	for vertex_index in faces:
+		face_vertices.append(vertices[vertex_index])
+	var arrays := []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = face_vertices
+	var mesh := ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+	return mesh
+
+func _icosahedron_edges(vertices: PackedVector3Array, faces: PackedInt32Array, material: Material) -> ImmediateMesh:
+	var mesh := ImmediateMesh.new()
+	var unique_edges := {}
+	mesh.surface_begin(Mesh.PRIMITIVE_LINES, material)
+	for face_offset in range(0, faces.size(), 3):
+		for edge_offset in range(3):
+			var first := faces[face_offset + edge_offset]
+			var second := faces[face_offset + (edge_offset + 1) % 3]
+			var edge_key := "%d:%d" % [mini(first, second), maxi(first, second)]
+			if unique_edges.has(edge_key):
+				continue
+			unique_edges[edge_key] = true
+			mesh.surface_add_vertex(vertices[first])
+			mesh.surface_add_vertex(vertices[second])
+	mesh.surface_end()
+	return mesh
+
+func _update_defense_visuals(delta := 0.0) -> void:
+	if not is_instance_valid(_shield_sphere):
+		return
+	var defensive_special := energy_mode == EnergyMode.DEFENSIVE and special_active
+	_shield_sphere.visible = shield > 0.0 and not defensive_special
+	_defensive_polyhedron.visible = defensive_special
+	_defensive_polyhedron_edges.visible = defensive_special
+	if defensive_special and delta > 0.0:
+		_defensive_polyhedron.rotation.y += delta * 0.45
+		_defensive_polyhedron_edges.rotation.y = _defensive_polyhedron.rotation.y
 
 func _add_fallback_sprite() -> void:
 	var sprite := Sprite2D.new()
@@ -257,9 +367,6 @@ func _draw() -> void:
 	var pulse := 1.0 + sin(_elapsed * 8.0) * 0.12
 	draw_circle(Vector2(-34.0, -9.0), 7.0 * pulse, Color(0.25, 0.8, 1.0, 0.28))
 	draw_circle(Vector2(-34.0, 9.0), 7.0 * pulse, Color(0.25, 0.8, 1.0, 0.28))
-	if shield > 0.0 or (energy_mode == EnergyMode.DEFENSIVE and special_active):
-		var alpha := 0.18 + 0.20 * shield / maxf(max_shield, 1.0)
-		draw_arc(Vector2.ZERO, 39.0, 0.0, TAU, 48, Color(0.15, 1.0, 0.8, alpha), 3.0)
 	if charge_level > 0.0:
 		draw_arc(Vector2.ZERO, 46.0, -PI * 0.5, -PI * 0.5 + TAU * charge_level, 32, Color("ffe45e"), 4.0)
 	if get_meta("debug_hitbox", false):
