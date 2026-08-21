@@ -20,6 +20,7 @@ const HUD_TYPE := preload("res://scripts/ui/hud.gd")
 
 @export var level_index := 0
 @export var difficulty := 1
+@export var player_ship_id := "vindicator"
 
 var level_config: Dictionary
 var score := 0
@@ -43,6 +44,13 @@ var transition_timer := 0.0
 @onready var director: WAVE_DIRECTOR_TYPE = $WaveDirector
 @onready var hud: HUD_TYPE = $HUD
 @onready var music: AudioStreamPlayer = $Music
+
+func configure_session(session_difficulty: int, session_ship_id: String) -> void:
+	difficulty = session_difficulty
+	player_ship_id = session_ship_id if CONFIG.PLAYER_SHIPS.has(session_ship_id) else "vindicator"
+	var session_player := get_node_or_null("Entities/Player") as PLAYER_TYPE
+	if is_instance_valid(session_player):
+		session_player.configure_ship(player_ship_id)
 
 func _ready() -> void:
 	level_config = CONFIG.level(level_index)

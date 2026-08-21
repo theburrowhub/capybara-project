@@ -1,0 +1,48 @@
+{
+  "schemaVersion": 1,
+  "targets": {
+    "ship-selection": {
+      "targetKind": "new-ui",
+      "projectId": "482ecc15-9275-4d3d-8bb9-dc2494cff2c1",
+      "activeDraftId": "764fd276-435a-43fb-9cbf-6b3f439568c3",
+      "designSystemPath": ".superdesign/design-system.md",
+      "referenceIds": [
+        "1d3cd61a-128d-4daa-aa4d-035594a24aab",
+        "c3016981-77c2-4ab1-9a84-e38287435534",
+        "62ca5150-4fb4-4814-b655-c0476c36c1dd",
+        "32f9e808-d5ec-4742-a99d-da73e7838671"
+      ],
+      "contextFiles": [
+        ".superdesign/design-system.md",
+        ".superdesign/init/theme.md",
+        "scripts/core/main.gd",
+        "scripts/ui/menu_background.gd",
+        "scenes/main.tscn",
+        "scripts/core/game_config.gd",
+        "scripts/ui/ship_selection_panel.gd",
+        "scripts/ui/ship_showcase_preview.gd",
+        "scripts/ui/ship_radar_chart.gd"
+      ],
+      "fingerprints": {
+        ".superdesign/design-system.md": "8ce6a18aebcac5309855d46a717dcd9a86a184178b326fa0e035e01a870a41fb",
+        ".superdesign/init/theme.md": "c9886a6f9948a780ca590fb6bc8dd8220145aaad74d12d64d783acd8334f8b87",
+        "scripts/core/main.gd": "9e4e55bb618a90ebfe1d523ba863d0f55c915a3f824f3bf319c84d5a5c02556b",
+        "scripts/ui/menu_background.gd": "82f8844d196d7537eabde03dafdcb5c48fb9d5ff732a62b6a62a9f56d82d95a8",
+        "scenes/main.tscn": "8de151e771f78fbc7f21a2d1ead28b1448323cf356b26b2897e84c62c390d23f",
+        "scripts/core/game_config.gd": "c75352016264c92a243f2ede0e9451cef953d0c620ea6032216e961988454bdd",
+        "scripts/ui/ship_selection_panel.gd": "61b2ab7eabbf3d1b7f75d98638c4e65c861646e2448aad518dd8db2618400355",
+        "scripts/ui/ship_showcase_preview.gd": "f576e949c552c426aed86c4936f0d8a4d8dcab0165627093ff430d8c4eedebab",
+        "scripts/ui/ship_radar_chart.gd": "3b5592520bd0dce7c8de216bdc637ee8df9df669756cca7ef8659f5317bd6b13"
+      },
+      "components": [],
+      "drafts": {
+        "764fd276-435a-43fb-9cbf-6b3f439568c3": {
+          "title": "Ship Selection · 90s Arcade",
+          "visualDirection": "1990s arcade cabinet selector with real ship renders and five-axis radar chart",
+          "currentVersion": 2
+        }
+      },
+      "updatedAt": "2026-08-21T14:52:26Z"
+    }
+  }
+}

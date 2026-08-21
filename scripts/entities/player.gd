@@ -10,7 +10,6 @@ enum WeaponMode { SINGLE, DOUBLE, SPREAD, RAPID, CHARGE, DUAL }
 enum EnergyMode { OFFENSIVE, DEFENSIVE }
 
 const WEAPON_NAMES := ["Single", "Double", "Spread", "Rapid", "Charge", "Dual"]
-const MODEL_PATH := "res://assets/models/player_ship.glb"
 const CONFIG := preload("res://scripts/core/game_config.gd")
 const NEUTRAL_VISUAL_BANK := -PI * 0.5
 const MAX_VISUAL_BANK_DELTA := PI * 0.5
@@ -20,6 +19,18 @@ const DEFENSIVE_SPECIAL_ALPHA := 0.15
 const SHIELD_RADIUS := 9.5
 const DEFENSIVE_SPECIAL_RADIUS := 10.2
 
+@export var ship_id := "vindicator"
+
+var ship_profile: Dictionary = {}
+var model_path := "res://assets/models/player_ship.glb"
+var model_scale := 1.0
+var move_speed := 300.0
+var base_max_shield := 25.0
+var damage_multiplier := 1.0
+var shield_regen_rate := 2.0
+var energy_regen_rate := 2.0
+var shield_regen_delay := 5.0
+var energy_regen_delay := 5.0
 var max_health := 100.0
 var health := 100.0
 var max_shield := 25.0
@@ -46,10 +57,33 @@ var _defensive_polyhedron: MeshInstance3D
 var _defensive_polyhedron_edges: MeshInstance3D
 
 func _ready() -> void:
+	_apply_ship_profile()
 	add_to_group("player")
 	area_entered.connect(_on_area_entered)
 	_build_model_view()
 	stats_changed.emit()
+
+func configure_ship(value: String) -> void:
+	ship_id = value if CONFIG.PLAYER_SHIPS.has(value) else "vindicator"
+
+func _apply_ship_profile() -> void:
+	ship_profile = CONFIG.player_ship(ship_id)
+	ship_id = str(ship_profile["id"])
+	model_path = str(ship_profile["model"])
+	model_scale = float(ship_profile["model_scale"])
+	move_speed = float(ship_profile["move_speed"])
+	max_health = float(ship_profile["max_health"])
+	health = max_health
+	base_max_shield = float(ship_profile["base_shield"])
+	max_shield = base_max_shield
+	shield = max_shield
+	max_energy = float(ship_profile["max_energy"])
+	energy = max_energy
+	damage_multiplier = float(ship_profile["damage_multiplier"])
+	shield_regen_rate = float(ship_profile["shield_regen_rate"])
+	energy_regen_rate = float(ship_profile["energy_regen_rate"])
+	shield_regen_delay = float(ship_profile["shield_regen_delay"])
+	energy_regen_delay = float(ship_profile["energy_regen_delay"])
 
 func _process(delta: float) -> void:
 	if not active:
@@ -72,7 +106,7 @@ func _handle_modes() -> void:
 		set_meta("q_down", true)
 		var ratio := shield / maxf(max_shield, 1.0)
 		energy_mode = EnergyMode.DEFENSIVE if energy_mode == EnergyMode.OFFENSIVE else EnergyMode.OFFENSIVE
-		max_shield = 50.0 if energy_mode == EnergyMode.DEFENSIVE else 25.0
+		max_shield = base_max_shield * (2.0 if energy_mode == EnergyMode.DEFENSIVE else 1.0)
 		shield = ratio * max_shield
 		stats_changed.emit()
 	elif not Input.is_physical_key_pressed(KEY_Q):
@@ -89,7 +123,7 @@ func _handle_movement(delta: float) -> void:
 	input.x = float(Input.is_physical_key_pressed(KEY_D) or Input.is_key_pressed(KEY_RIGHT)) - float(Input.is_physical_key_pressed(KEY_A) or Input.is_key_pressed(KEY_LEFT))
 	input.y = float(Input.is_physical_key_pressed(KEY_S) or Input.is_key_pressed(KEY_DOWN)) - float(Input.is_physical_key_pressed(KEY_W) or Input.is_key_pressed(KEY_UP))
 	input = input.normalized()
-	position += input * 300.0 * delta
+	position += input * move_speed * delta
 	position.x = clampf(position.x, 34.0, CONFIG.WIDTH - 34.0)
 	position.y = clampf(position.y, CONFIG.HUD_TOP + 34.0, CONFIG.HUD_BOTTOM - 34.0)
 	set_visual_bank(input.y, false, delta)
@@ -106,18 +140,19 @@ func _handle_energy(delta: float) -> void:
 	if special_active:
 		var drain := 40.0 if energy_mode == EnergyMode.OFFENSIVE else 20.0
 		energy = maxf(0.0, energy - drain * delta)
+		last_energy_depletion = _elapsed
 		if energy <= 0.0:
 			special_active = false
 			last_energy_depletion = _elapsed
 
 func _handle_regeneration(delta: float) -> void:
-	if shield < max_shield and _elapsed - last_damage_time > 5.0:
-		var regen := 2.0
+	if shield < max_shield and _elapsed - last_damage_time > shield_regen_delay:
+		var regen := shield_regen_rate
 		if energy_mode == EnergyMode.DEFENSIVE and is_equal_approx(energy, max_energy):
 			regen *= 2.0
 		shield = minf(max_shield, shield + regen * delta)
-	if energy < max_energy and _elapsed - last_energy_depletion > 5.0 and not special_active:
-		energy = minf(max_energy, energy + 2.0 * delta)
+	if energy < max_energy and _elapsed - last_energy_depletion > energy_regen_delay and not special_active:
+		energy = minf(max_energy, energy + energy_regen_rate * delta)
 
 func _handle_weapon(delta: float) -> void:
 	var shooting := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_physical_key_pressed(KEY_SPACE)
@@ -158,7 +193,7 @@ func _fire_charge() -> void:
 
 func _request_shot(offset: Vector2, angle: float, charge_multiplier := 1.0) -> void:
 	var power_multipliers := [1.0, 1.5, 2.0, 2.5]
-	var damage: float = float(power_multipliers[clampi(weapon_powerups, 0, 3)]) * charge_multiplier
+	var damage: float = float(power_multipliers[clampi(weapon_powerups, 0, 3)]) * charge_multiplier * damage_multiplier
 	if energy_mode == EnergyMode.OFFENSIVE and special_active:
 		damage *= 2.0
 	projectile_requested.emit({
@@ -212,7 +247,7 @@ func _on_area_entered(area: Area2D) -> void:
 			area.take_damage(99999.0)
 
 func _build_model_view() -> void:
-	var model_resource := load(MODEL_PATH)
+	var model_resource := load(model_path)
 	if model_resource == null:
 		_add_fallback_sprite()
 		return
@@ -228,7 +263,12 @@ func _build_model_view() -> void:
 	_model_bank = Node3D.new()
 	_model_pivot.add_child(_model_bank)
 	_model_bank.rotation.x = bank
-	var model: Node = model_resource.instantiate()
+	var model := model_resource.instantiate() as Node3D
+	if model == null:
+		viewport.queue_free()
+		_add_fallback_sprite()
+		return
+	model.scale = Vector3.ONE * model_scale
 	_model_bank.add_child(model)
 	_build_defense_geometry()
 	_model_pivot.rotation_degrees = Vector3(0.0, -90.0, 0.0)

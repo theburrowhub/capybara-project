@@ -9,6 +9,41 @@ const PLAY_RECT := Rect2(0.0, HUD_TOP, WIDTH, HUD_BOTTOM - HUD_TOP)
 const MAX_ENEMIES := 30
 const MAX_PROJECTILES := 200
 
+const PLAYER_SHIP_ORDER := ["vindicator", "sting", "goliat"]
+
+const PLAYER_SHIPS := {
+	"vindicator": {
+		"id": "vindicator", "name": "VINDICATOR", "role": "BALANCED STRIKER",
+		"description": "Balanced armor, firepower and recovery. No critical weakness.",
+		"model": "res://assets/models/player_ship.glb", "model_scale": 1.0,
+		"accent": Color("ff445e"), "dark_accent": Color("7a1f35"),
+		"move_speed": 300.0, "max_health": 100.0, "base_shield": 25.0, "max_energy": 100.0,
+		"damage_multiplier": 1.0, "shield_regen_rate": 2.0, "energy_regen_rate": 2.0,
+		"shield_regen_delay": 5.0, "energy_regen_delay": 5.0,
+		"radar": [3, 3, 3, 3, 3],
+	},
+	"sting": {
+		"id": "sting", "name": "STING", "role": "RAPID INTERCEPTOR",
+		"description": "Extreme speed and rapid bar recovery. Hull, shield and firepower run light.",
+		"model": "res://assets/models/player_ship_sting.glb", "model_scale": 0.485185,
+		"accent": Color("35a7ff"), "dark_accent": Color("184f81"),
+		"move_speed": 450.0, "max_health": 70.0, "base_shield": 15.0, "max_energy": 100.0,
+		"damage_multiplier": 0.70, "shield_regen_rate": 4.0, "energy_regen_rate": 4.0,
+		"shield_regen_delay": 2.5, "energy_regen_delay": 2.5,
+		"radar": [5, 2, 2, 2, 5],
+	},
+	"goliat": {
+		"id": "goliat", "name": "GOLIAT", "role": "HEAVY DREADNOUGHT",
+		"description": "Overwhelming firepower, hull and shield. Movement and recovery are brutally slow.",
+		"model": "res://assets/models/player_ship_goliat.glb", "model_scale": 0.608025,
+		"accent": Color("5de071"), "dark_accent": Color("1d7a45"),
+		"move_speed": 180.0, "max_health": 180.0, "base_shield": 60.0, "max_energy": 100.0,
+		"damage_multiplier": 2.25, "shield_regen_rate": 0.5, "energy_regen_rate": 0.5,
+		"shield_regen_delay": 10.0, "energy_regen_delay": 10.0,
+		"radar": [1, 5, 5, 5, 1],
+	},
+}
+
 const ENEMY_ORDER := [
 	"grunt", "tank", "speeder", "zigzag", "bomber",
 	"shield", "swarm", "elite", "ghost", "boss"
@@ -93,6 +128,11 @@ const LEVELS := [
 
 static func level(index: int) -> Dictionary:
 	return LEVELS[clampi(index, 0, LEVELS.size() - 1)]
+
+static func player_ship(ship_id: String) -> Dictionary:
+	if PLAYER_SHIPS.has(ship_id):
+		return PLAYER_SHIPS[ship_id]
+	return PLAYER_SHIPS["vindicator"]
 
 static func difficulty_scale(difficulty: int) -> Dictionary:
 	const SCALES := [

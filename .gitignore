@@ -57,6 +57,7 @@ core.*
 # Temporary files
 *.tmp
 *.temp
+.superdesign/tmp/
 
 # Media files (audio)
 assets/audio/
