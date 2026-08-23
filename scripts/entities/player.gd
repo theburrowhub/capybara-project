@@ -18,6 +18,8 @@ const SHIELD_ALPHA := 0.15
 const DEFENSIVE_SPECIAL_ALPHA := 0.15
 const SHIELD_RADIUS := 9.5
 const DEFENSIVE_SPECIAL_RADIUS := 10.2
+const STANDARD_SPREAD_ANGLES := [-0.20, 0.0, 0.20]
+const GOLIAT_SPREAD_ANGLES := [-0.55, -0.33, -0.11, 0.11, 0.33, 0.55]
 
 @export var ship_id := "vindicator"
 
@@ -44,6 +46,7 @@ var weapon_powerups := 0
 var fire_timer := 0.0
 var charge_level := 0.0
 var was_shooting := false
+var sting_spread_index := 0
 var last_damage_time := -10.0
 var last_energy_depletion := -10.0
 var invulnerable := false
@@ -176,13 +179,24 @@ func _fire_current_mode() -> void:
 			_request_shot(Vector2(30.0, -10.0), 0.0)
 			_request_shot(Vector2(30.0, 10.0), 0.0)
 		WeaponMode.SPREAD:
-			for angle in [-0.20, 0.0, 0.20]:
-				_request_shot(Vector2(30.0, 0.0), angle)
+			_fire_spread()
 		WeaponMode.DUAL:
 			_request_shot(Vector2(30.0, 0.0), 0.0)
 			_request_shot(Vector2(-30.0, 0.0), PI)
 		_:
 			_request_shot(Vector2(30.0, 0.0), 0.0)
+
+func _fire_spread() -> void:
+	match ship_id:
+		"sting":
+			_request_shot(Vector2(30.0, 0.0), STANDARD_SPREAD_ANGLES[sting_spread_index])
+			sting_spread_index = (sting_spread_index + 1) % STANDARD_SPREAD_ANGLES.size()
+		"goliat":
+			for angle in GOLIAT_SPREAD_ANGLES:
+				_request_shot(Vector2(30.0, 0.0), angle)
+		_:
+			for angle in STANDARD_SPREAD_ANGLES:
+				_request_shot(Vector2(30.0, 0.0), angle)
 
 func _fire_charge() -> void:
 	var bullet_count := clampi(int(charge_level * 9.0) + 2, 2, 11)

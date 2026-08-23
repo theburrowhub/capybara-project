@@ -15,6 +15,31 @@ func _check(condition: bool, message: String) -> void:
 		failures.append(message)
 		push_error("SMOKE: " + message)
 
+func _capture_spread_angles(ship_id: String, volley_count: int, volley_sizes: Array[int]) -> Array[float]:
+	var test_player := PLAYER_TYPE.new() as PlayerShip
+	test_player.configure_ship(ship_id)
+	test_player._apply_ship_profile()
+	test_player.weapon_mode = PLAYER_TYPE.WeaponMode.SPREAD
+	var angles: Array[float] = []
+	test_player.projectile_requested.connect(func(config: Dictionary) -> void:
+		var direction: Vector2 = config.get("direction", Vector2.ZERO)
+		angles.append(direction.angle())
+	)
+	for _volley in range(volley_count):
+		var previous_size := angles.size()
+		test_player._fire_current_mode()
+		volley_sizes.append(angles.size() - previous_size)
+	test_player.free()
+	return angles
+
+func _angles_match(actual: Array[float], expected: Array[float]) -> bool:
+	if actual.size() != expected.size():
+		return false
+	for index in range(expected.size()):
+		if not is_equal_approx(actual[index], expected[index]):
+			return false
+	return true
+
 func _run() -> void:
 	var game_scene := load("res://scenes/game.tscn") as PackedScene
 	_check(game_scene != null, "game scene loads")
@@ -27,6 +52,18 @@ func _run() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_check(is_instance_valid(game.player), "player exists")
+	var vindicator_volley_sizes: Array[int] = []
+	var sting_volley_sizes: Array[int] = []
+	var goliat_volley_sizes: Array[int] = []
+	var vindicator_spread := _capture_spread_angles("vindicator", 1, vindicator_volley_sizes)
+	var sting_spread := _capture_spread_angles("sting", 4, sting_volley_sizes)
+	var goliat_spread := _capture_spread_angles("goliat", 1, goliat_volley_sizes)
+	_check(vindicator_volley_sizes == [3], "Vindicator still fires all three spread shells per trigger")
+	_check(_angles_match(vindicator_spread, [-0.20, 0.0, 0.20]), "Vindicator keeps its simultaneous three-way spread")
+	_check(sting_volley_sizes == [1, 1, 1, 1], "Sting fires only one spread shell per trigger")
+	_check(_angles_match(sting_spread, [-0.20, 0.0, 0.20, -0.20]), "Sting cycles one spread shell through upper, center and lower directions")
+	_check(goliat_volley_sizes == [6], "Goliat fires all six spread shells per trigger")
+	_check(_angles_match(goliat_spread, [-0.55, -0.33, -0.11, 0.11, 0.33, 0.55]), "Goliat fires six simultaneous spread shells across a wider cone")
 	_check(game.player.has_node("Ship3DViewport"), "GLB player model is rendered through a SubViewport")
 	_check(FileAccess.file_exists("res://assets/models/player_ship.glb"), "player GLB source is bundled")
 	var ship_viewport := game.player.get_node("Ship3DViewport")
