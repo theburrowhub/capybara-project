@@ -20,6 +20,14 @@ const SHIELD_RADIUS := 9.5
 const DEFENSIVE_SPECIAL_RADIUS := 10.2
 const STANDARD_SPREAD_ANGLES := [-0.20, 0.0, 0.20]
 const GOLIAT_SPREAD_ANGLES := [-0.55, -0.33, -0.11, 0.11, 0.33, 0.55]
+const SHIP_WEAPON_COOLDOWNS := {
+	"sting": [0.08, 0.06, 0.08, 0.04, 0.0, 0.06],
+	"goliat": [0.18, 0.18, 0.20, 0.10, 0.0, 0.24],
+}
+const SHIP_PROJECTILE_OVERRIDES := {
+	"sting": {"speed_scale": 1.25, "radius_scale": 0.75, "color": Color("35a7ff")},
+	"goliat": {"speed_scale": 0.80, "radius_scale": 1.60, "color": Color("5de071")},
+}
 
 @export var ship_id := "vindicator"
 
@@ -46,7 +54,10 @@ var weapon_powerups := 0
 var fire_timer := 0.0
 var charge_level := 0.0
 var was_shooting := false
+var sting_double_index := 0
 var sting_spread_index := 0
+var sting_rapid_index := 0
+var sting_dual_index := 0
 var last_damage_time := -10.0
 var last_energy_depletion := -10.0
 var invulnerable := false
@@ -161,7 +172,7 @@ func _handle_weapon(delta: float) -> void:
 	var shooting := Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or Input.is_physical_key_pressed(KEY_SPACE)
 	if weapon_mode == WeaponMode.CHARGE:
 		if shooting:
-			charge_level = minf(1.0, charge_level + delta * 1.5)
+			charge_level = minf(1.0, charge_level + delta * _charge_rate())
 		elif was_shooting and charge_level >= 0.2:
 			_fire_charge()
 			charge_level = 0.0
@@ -172,19 +183,47 @@ func _handle_weapon(delta: float) -> void:
 	was_shooting = shooting
 
 func _fire_current_mode() -> void:
-	var cooldown := 0.06 if weapon_mode == WeaponMode.RAPID else 0.12
-	fire_timer = cooldown
+	fire_timer = _weapon_cooldown()
 	match weapon_mode:
+		WeaponMode.SINGLE:
+			_fire_single()
 		WeaponMode.DOUBLE:
-			_request_shot(Vector2(30.0, -10.0), 0.0)
-			_request_shot(Vector2(30.0, 10.0), 0.0)
+			_fire_double()
 		WeaponMode.SPREAD:
 			_fire_spread()
+		WeaponMode.RAPID:
+			_fire_rapid()
 		WeaponMode.DUAL:
-			_request_shot(Vector2(30.0, 0.0), 0.0)
-			_request_shot(Vector2(-30.0, 0.0), PI)
+			_fire_dual()
 		_:
 			_request_shot(Vector2(30.0, 0.0), 0.0)
+
+func _weapon_cooldown() -> float:
+	if SHIP_WEAPON_COOLDOWNS.has(ship_id):
+		return float(SHIP_WEAPON_COOLDOWNS[ship_id][weapon_mode])
+	return 0.06 if weapon_mode == WeaponMode.RAPID else 0.12
+
+func _charge_rate() -> float:
+	match ship_id:
+		"sting": return 2.5
+		"goliat": return 0.75
+		_: return 1.5
+
+func _fire_single() -> void:
+	_request_shot(Vector2(30.0, 0.0), 0.0)
+
+func _fire_double() -> void:
+	match ship_id:
+		"sting":
+			var offset_y: float = [-10.0, 10.0][sting_double_index]
+			_request_shot(Vector2(30.0, offset_y), 0.0)
+			sting_double_index = (sting_double_index + 1) % 2
+		"goliat":
+			_request_shot(Vector2(30.0, -18.0), -0.03)
+			_request_shot(Vector2(30.0, 18.0), 0.03)
+		_:
+			_request_shot(Vector2(30.0, -10.0), 0.0)
+			_request_shot(Vector2(30.0, 10.0), 0.0)
 
 func _fire_spread() -> void:
 	match ship_id:
@@ -198,9 +237,49 @@ func _fire_spread() -> void:
 			for angle in STANDARD_SPREAD_ANGLES:
 				_request_shot(Vector2(30.0, 0.0), angle)
 
+func _fire_rapid() -> void:
+	match ship_id:
+		"sting":
+			var offset_y: float = [-6.0, 6.0][sting_rapid_index]
+			_request_shot(Vector2(30.0, offset_y), 0.0)
+			sting_rapid_index = (sting_rapid_index + 1) % 2
+		"goliat":
+			_request_shot(Vector2(30.0, -8.0), 0.0)
+			_request_shot(Vector2(30.0, 8.0), 0.0)
+		_:
+			_request_shot(Vector2(30.0, 0.0), 0.0)
+
+func _fire_dual() -> void:
+	match ship_id:
+		"sting":
+			if sting_dual_index == 0:
+				_request_shot(Vector2(30.0, 0.0), 0.0)
+			else:
+				_request_shot(Vector2(-30.0, 0.0), PI)
+			sting_dual_index = (sting_dual_index + 1) % 2
+		"goliat":
+			_request_shot(Vector2(30.0, -15.0), 0.0)
+			_request_shot(Vector2(30.0, 15.0), 0.0)
+			_request_shot(Vector2(-30.0, -15.0), PI)
+			_request_shot(Vector2(-30.0, 15.0), PI)
+		_:
+			_request_shot(Vector2(30.0, 0.0), 0.0)
+			_request_shot(Vector2(-30.0, 0.0), PI)
+
 func _fire_charge() -> void:
-	var bullet_count := clampi(int(charge_level * 9.0) + 2, 2, 11)
-	var spread := lerpf(0.35, 1.15, charge_level)
+	var bullet_count: int
+	var spread: float
+	var effective_charge := clampf(inverse_lerp(0.2, 1.0, charge_level), 0.0, 1.0)
+	match ship_id:
+		"sting":
+			bullet_count = clampi(int(effective_charge * 4.0) + 2, 2, 6)
+			spread = lerpf(0.12, 0.35, effective_charge)
+		"goliat":
+			bullet_count = clampi(int(effective_charge * 11.0) + 4, 4, 15)
+			spread = lerpf(0.70, 1.50, effective_charge)
+		_:
+			bullet_count = clampi(int(charge_level * 9.0) + 2, 2, 11)
+			spread = lerpf(0.35, 1.15, charge_level)
 	for index in range(bullet_count):
 		var ratio := 0.5 if bullet_count == 1 else float(index) / float(bullet_count - 1)
 		_request_shot(Vector2(30.0, 0.0), lerpf(-spread * 0.5, spread * 0.5, ratio), 1.0 + charge_level * 2.0)
@@ -210,11 +289,14 @@ func _request_shot(offset: Vector2, angle: float, charge_multiplier := 1.0) -> v
 	var damage: float = float(power_multipliers[clampi(weapon_powerups, 0, 3)]) * charge_multiplier * damage_multiplier
 	if energy_mode == EnergyMode.OFFENSIVE and special_active:
 		damage *= 2.0
-	projectile_requested.emit({
+	var shot := {
 		"kind": "player_bullet", "position": global_position + offset.rotated(rotation),
 		"direction": Vector2.RIGHT.rotated(rotation + angle), "damage": damage,
 		"from_player": true, "target": null,
-	})
+	}
+	if SHIP_PROJECTILE_OVERRIDES.has(ship_id):
+		shot.merge(SHIP_PROJECTILE_OVERRIDES[ship_id], true)
+	projectile_requested.emit(shot)
 
 func take_damage(amount: float) -> void:
 	if not active or invulnerable:
