@@ -2,6 +2,11 @@ class_name ShipShowcasePreview
 extends TextureRect
 
 const CONFIG := preload("res://scripts/core/game_config.gd")
+const SHIP_MODELS := {
+	"vindicator": preload("res://assets/models/player_ship.glb"),
+	"sting": preload("res://assets/models/player_ship_sting.glb"),
+	"goliat": preload("res://assets/models/player_ship_goliat.glb"),
+}
 
 var current_ship_id := "vindicator"
 var rotation_speed := 0.42
@@ -26,18 +31,21 @@ func show_ship(ship_id: String) -> void:
 	current_ship_id = ship_id if CONFIG.PLAYER_SHIPS.has(ship_id) else "vindicator"
 	if not is_node_ready() or not is_instance_valid(model_pivot):
 		return
-	if is_instance_valid(active_model):
-		active_model.free()
-		active_model = null
 	var profile := CONFIG.player_ship(current_ship_id)
-	var resource := load(str(profile["model"]))
+	var resource := SHIP_MODELS.get(current_ship_id) as PackedScene
 	if resource == null:
 		return
-	active_model = resource.instantiate() as Node3D
-	if active_model == null:
+	var next_model := resource.instantiate() as Node3D
+	if next_model == null:
 		return
-	active_model.name = "ShowcaseModel"
-	active_model.scale = Vector3.ONE * float(profile["model_scale"])
+	next_model.name = "ShowcaseModel"
+	next_model.scale = Vector3.ONE * float(profile["model_scale"])
+	if is_instance_valid(active_model):
+		active_model.hide()
+		active_model.queue_free()
+		if active_model.get_parent() == model_pivot:
+			model_pivot.remove_child(active_model)
+	active_model = next_model
 	model_pivot.add_child(active_model)
 	if is_instance_valid(accent_light):
 		accent_light.light_color = profile["accent"]

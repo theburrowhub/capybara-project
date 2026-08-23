@@ -30,8 +30,8 @@
         "scripts/ui/menu_background.gd": "82f8844d196d7537eabde03dafdcb5c48fb9d5ff732a62b6a62a9f56d82d95a8",
         "scenes/main.tscn": "8de151e771f78fbc7f21a2d1ead28b1448323cf356b26b2897e84c62c390d23f",
         "scripts/core/game_config.gd": "c75352016264c92a243f2ede0e9451cef953d0c620ea6032216e961988454bdd",
-        "scripts/ui/ship_selection_panel.gd": "61b2ab7eabbf3d1b7f75d98638c4e65c861646e2448aad518dd8db2618400355",
-        "scripts/ui/ship_showcase_preview.gd": "f576e949c552c426aed86c4936f0d8a4d8dcab0165627093ff430d8c4eedebab",
+        "scripts/ui/ship_selection_panel.gd": "356ed864ee54efe65c7f7e9cdb154d17acdbd12673d037eea92411a04ee0bc0b",
+        "scripts/ui/ship_showcase_preview.gd": "6a3df8d1070226169420c66bdeae579d1b1f20aa4c2a6e0224c00f92efdeb721",
         "scripts/ui/ship_radar_chart.gd": "3b5592520bd0dce7c8de216bdc637ee8df9df669756cca7ef8659f5317bd6b13"
       },
       "components": [],
@@ -42,7 +42,7 @@
           "currentVersion": 2
         }
       },
-      "updatedAt": "2026-08-21T14:52:26Z"
+      "updatedAt": "2026-08-23T13:02:39Z"
     }
   }
 }

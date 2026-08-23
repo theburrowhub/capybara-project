@@ -27,14 +27,42 @@ func _run() -> void:
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_check(selector.selected_ship_id() == "vindicator", "selector defaults to Vindicator")
+	var ship_count := CONFIG.PLAYER_SHIP_ORDER.size()
+	var expected_tab_width := (selector.PANEL_SIZE.x - 40.0) / float(ship_count)
+	for index in range(ship_count):
+		var tab := selector.tab_buttons[index] as Button
+		_check(is_equal_approx(tab.position.x, 20.0 + expected_tab_width * index), "tab position follows the configured ship count")
+		_check(is_equal_approx(tab.size.x, expected_tab_width - 1.0), "tab width follows the configured ship count")
+		_check(ResourceLoader.has_cached(str(CONFIG.player_ship(CONFIG.PLAYER_SHIP_ORDER[index])["model"])), "showcase model is preloaded before ship switching")
 	var starting_rotation: float = selector.preview.model_pivot.rotation.y
 	for _frame in range(4):
 		await get_tree().process_frame
 	_check(not is_equal_approx(selector.preview.model_pivot.rotation.y, starting_rotation), "showcase ship rotates continuously")
+	var previous_model := selector.preview.active_model as Node3D
 	selector._select_ship(1)
 	_check(selector.selected_ship_id() == "sting", "selector changes to Sting")
 	_check(selector.preview.current_ship_id == "sting", "showcase swaps to Sting GLB")
+	_check(previous_model != selector.preview.active_model, "showcase replaces the previous model")
+	_check(previous_model.is_queued_for_deletion() and not previous_model.is_inside_tree(), "replaced model is safely queued and detached")
+	_check(selector.preview.model_pivot.get_child_count() == 1, "showcase keeps exactly one model after a switch")
 	_check(selector.radar.target_stats == [5.0, 2.0, 2.0, 2.0, 5.0], "radar updates to Sting stats")
+	_check(selector.ship_index_label.text == "%02d/%02d" % [2, ship_count], "ship index displays the configured total")
+	var sting_tab_style_id := selector.tab_buttons[1].get_theme_stylebox("normal").get_instance_id()
+	var sting_deploy_style_id := selector.deploy_button.get_theme_stylebox("normal").get_instance_id()
+	selector._select_ship(2)
+	selector._select_ship(0)
+	selector._select_ship(1)
+	_check(selector.preview.model_pivot.get_child_count() == 1, "rapid switches never overlap showcase models")
+	_check(selector.tab_buttons[1].get_theme_stylebox("normal").get_instance_id() == sting_tab_style_id, "tab styles are reused across ship switches")
+	_check(selector.deploy_button.get_theme_stylebox("normal").get_instance_id() == sting_deploy_style_id, "deploy styles are reused across ship switches")
+	var deployments: Array[String] = []
+	selector.deploy_requested.connect(func(ship_id: String) -> void: deployments.append(ship_id))
+	selector._deploy_current()
+	selector._deploy_current()
+	_check(deployments == ["sting"], "deploy emits exactly once")
+	_check(selector.deploy_button.disabled, "deploy button locks after confirmation")
+	await get_tree().process_frame
+	_check(selector.preview.model_pivot.get_child_count() == 1, "showcase still has one model after queued models are freed")
 	selector.queue_free()
 	await get_tree().process_frame
 

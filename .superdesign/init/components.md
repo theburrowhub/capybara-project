@@ -279,6 +279,8 @@ const STAT_LABELS := ["SPEED", "HULL", "SHIELD", "FIREPOWER", "RECOVERY"]
 
 var selected_index := 0
 var accent := Color("ff445e")
+var _deployment_started := false
+var _stylebox_cache: Dictionary = {}
 var tab_buttons: Array[Button] = []
 var stat_values: Array[Label] = []
 var stat_pips: Array = []
@@ -293,6 +295,7 @@ var preview
 var radar
 
 func _ready() -> void:
+	assert(not CONFIG.PLAYER_SHIP_ORDER.is_empty(), "Ship selection requires at least one configured ship")
 	custom_minimum_size = PANEL_SIZE
 	size = PANEL_SIZE
 	mouse_filter = Control.MOUSE_FILTER_STOP
@@ -314,11 +317,12 @@ func _build_interface() -> void:
 	status_label = _label("●  SHIP LINK READY", 9, Color("62e77f"))
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_place(status_label, Vector2(735.0, 10.0), Vector2(260.0, 24.0))
-	ship_index_label = _label("01/03", 21, accent, true)
+	ship_index_label = _label("01/%02d" % CONFIG.PLAYER_SHIP_ORDER.size(), 21, accent, true)
 	ship_index_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_place(ship_index_label, Vector2(1000.0, 5.0), Vector2(88.0, 30.0))
 
-	var tab_width := 356.0
+	var ship_count := CONFIG.PLAYER_SHIP_ORDER.size()
+	var tab_width := (PANEL_SIZE.x - 40.0) / float(ship_count)
 	for index in range(CONFIG.PLAYER_SHIP_ORDER.size()):
 		var ship_id: String = CONFIG.PLAYER_SHIP_ORDER[index]
 		var profile := CONFIG.player_ship(ship_id)
@@ -401,7 +405,8 @@ func _build_interface() -> void:
 	_place(deploy_button, Vector2(866.0, 369.0), Vector2(222.0, 38.0))
 
 func _select_ship(index: int) -> void:
-	selected_index = posmod(index, CONFIG.PLAYER_SHIP_ORDER.size())
+	var ship_count := CONFIG.PLAYER_SHIP_ORDER.size()
+	selected_index = posmod(index, ship_count)
 	var ship_id: String = CONFIG.PLAYER_SHIP_ORDER[selected_index]
 	var profile := CONFIG.player_ship(ship_id)
 	accent = profile["accent"]
@@ -410,7 +415,7 @@ func _select_ship(index: int) -> void:
 	ship_role_label.text = str(profile["role"])
 	ship_code_label.text = "%s-%02d" % [str(profile["name"]).substr(0, 2), selected_index + 1]
 	ship_code_label.add_theme_color_override("font_color", accent)
-	ship_index_label.text = "%02d/03" % (selected_index + 1)
+	ship_index_label.text = "%02d/%02d" % [selected_index + 1, ship_count]
 	ship_index_label.add_theme_color_override("font_color", accent)
 	description_label.text = str(profile["description"])
 	status_label.text = "●  SHIP LINK READY"
@@ -435,6 +440,11 @@ func _select_ship(index: int) -> void:
 	queue_redraw()
 
 func _deploy_current() -> void:
+	if _deployment_started:
+		return
+	_deployment_started = true
+	set_process_unhandled_input(false)
+	deploy_button.disabled = true
 	status_label.text = "●  DEPLOYMENT CONFIRMED"
 	deploy_requested.emit(selected_ship_id())
 
@@ -502,10 +512,11 @@ func _apply_tab_style(button: Button, profile: Dictionary, active: bool) -> void
 	if active:
 		background = Color(ship_accent.r * 0.12, ship_accent.g * 0.12, ship_accent.b * 0.12, 0.96)
 	var border := ship_accent if active else Color(0.16, 0.45, 0.65, 0.32)
-	button.add_theme_stylebox_override("normal", _box(background, border, 1))
-	button.add_theme_stylebox_override("hover", _box(background.lightened(0.06), ship_accent, 1))
-	button.add_theme_stylebox_override("pressed", _box(background.darkened(0.08), ship_accent, 2))
-	button.add_theme_stylebox_override("focus", _box(background, Color("edfaff"), 2))
+	var prefix := "tab:%s:%s" % [str(profile["id"]), "active" if active else "inactive"]
+	button.add_theme_stylebox_override("normal", _cached_box(prefix + ":normal", background, border, 1))
+	button.add_theme_stylebox_override("hover", _cached_box(prefix + ":hover", background.lightened(0.06), ship_accent, 1))
+	button.add_theme_stylebox_override("pressed", _cached_box(prefix + ":pressed", background.darkened(0.08), ship_accent, 2))
+	button.add_theme_stylebox_override("focus", _cached_box(prefix + ":focus", background, Color("edfaff"), 2))
 	button.add_theme_color_override("font_color", Color("edfaff") if active else Color("7692b7"))
 	button.add_theme_color_override("font_hover_color", Color("edfaff"))
 	button.add_theme_color_override("font_focus_color", Color("edfaff"))
@@ -514,10 +525,11 @@ func _apply_tab_style(button: Button, profile: Dictionary, active: bool) -> void
 	button.text = "%s%s\n     %02d · %s" % [cursor, str(profile["name"]), index + 1, str(profile["role"])]
 
 func _update_deploy_style() -> void:
-	deploy_button.add_theme_stylebox_override("normal", _box(accent, accent, 1))
-	deploy_button.add_theme_stylebox_override("hover", _box(accent.lightened(0.12), Color("edfaff"), 2))
-	deploy_button.add_theme_stylebox_override("pressed", _box(accent.darkened(0.16), accent, 2))
-	deploy_button.add_theme_stylebox_override("focus", _box(accent, Color("edfaff"), 3))
+	var prefix := "deploy:%s" % selected_ship_id()
+	deploy_button.add_theme_stylebox_override("normal", _cached_box(prefix + ":normal", accent, accent, 1))
+	deploy_button.add_theme_stylebox_override("hover", _cached_box(prefix + ":hover", accent.lightened(0.12), Color("edfaff"), 2))
+	deploy_button.add_theme_stylebox_override("pressed", _cached_box(prefix + ":pressed", accent.darkened(0.16), accent, 2))
+	deploy_button.add_theme_stylebox_override("focus", _cached_box(prefix + ":focus", accent, Color("edfaff"), 3))
 	deploy_button.add_theme_color_override("font_color", Color("020613"))
 	deploy_button.add_theme_color_override("font_hover_color", Color("020613"))
 	deploy_button.add_theme_color_override("font_focus_color", Color("020613"))
@@ -568,6 +580,11 @@ func _box(background: Color, border: Color, width: int) -> StyleBoxFlat:
 	style.corner_radius_bottom_right = 2
 	return style
 
+func _cached_box(cache_key: String, background: Color, border: Color, width: int) -> StyleBoxFlat:
+	if not _stylebox_cache.has(cache_key):
+		_stylebox_cache[cache_key] = _box(background, border, width)
+	return _stylebox_cache[cache_key] as StyleBoxFlat
+
 func _place(control: Control, at: Vector2, dimensions: Vector2) -> void:
 	control.position = at
 	control.size = dimensions
@@ -586,6 +603,11 @@ class_name ShipShowcasePreview
 extends TextureRect
 
 const CONFIG := preload("res://scripts/core/game_config.gd")
+const SHIP_MODELS := {
+	"vindicator": preload("res://assets/models/player_ship.glb"),
+	"sting": preload("res://assets/models/player_ship_sting.glb"),
+	"goliat": preload("res://assets/models/player_ship_goliat.glb"),
+}
 
 var current_ship_id := "vindicator"
 var rotation_speed := 0.42
@@ -610,18 +632,21 @@ func show_ship(ship_id: String) -> void:
 	current_ship_id = ship_id if CONFIG.PLAYER_SHIPS.has(ship_id) else "vindicator"
 	if not is_node_ready() or not is_instance_valid(model_pivot):
 		return
-	if is_instance_valid(active_model):
-		active_model.free()
-		active_model = null
 	var profile := CONFIG.player_ship(current_ship_id)
-	var resource := load(str(profile["model"]))
+	var resource := SHIP_MODELS.get(current_ship_id) as PackedScene
 	if resource == null:
 		return
-	active_model = resource.instantiate() as Node3D
-	if active_model == null:
+	var next_model := resource.instantiate() as Node3D
+	if next_model == null:
 		return
-	active_model.name = "ShowcaseModel"
-	active_model.scale = Vector3.ONE * float(profile["model_scale"])
+	next_model.name = "ShowcaseModel"
+	next_model.scale = Vector3.ONE * float(profile["model_scale"])
+	if is_instance_valid(active_model):
+		active_model.hide()
+		active_model.queue_free()
+		if active_model.get_parent() == model_pivot:
+			model_pivot.remove_child(active_model)
+	active_model = next_model
 	model_pivot.add_child(active_model)
 	if is_instance_valid(accent_light):
 		accent_light.light_color = profile["accent"]
