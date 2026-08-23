@@ -28,14 +28,14 @@ func setup(config: Dictionary) -> void:
 	var definition: Dictionary = CONFIG.PROJECTILES.get(kind, CONFIG.PROJECTILES["laser"])
 	direction = (config.get("direction", Vector2.LEFT) as Vector2).normalized()
 	base_direction = direction
-	speed = float(definition["speed"])
+	speed = float(definition["speed"]) * float(config.get("speed_scale", 1.0))
 	damage = float(config.get("damage", definition["damage"])) * float(config.get("damage_scale", 1.0))
-	radius = float(definition["radius"])
+	radius = float(definition["radius"]) * float(config.get("radius_scale", 1.0))
 	lifetime = float(definition["lifetime"])
 	homing = float(definition["homing"])
 	from_player = bool(config.get("from_player", false))
 	target = config.get("target") as Node2D
-	projectile_color = definition["color"] as Color
+	projectile_color = config.get("color", definition["color"]) as Color
 	if is_node_ready():
 		_apply_setup()
 
