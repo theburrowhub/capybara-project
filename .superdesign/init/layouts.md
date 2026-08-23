@@ -1,3 +1,33 @@
+# Shared Layouts
+
+## Main application shell
+
+The root scene owns both the persistent menu chrome and the dynamically instanced gameplay scene. All menu panels mount into the centered `panel_host`; the wide ship selector temporarily expands that host while preserving the header and footer.
+
+### `scenes/main.tscn`
+
+```ini
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/main.gd" id="1_main"]
+[ext_resource type="Script" path="res://scripts/ui/menu_background.gd" id="2_background"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="MenuBackground" type="Node2D" parent="."]
+script = ExtResource("2_background")
+```
+
+### `scripts/core/main.gd`
+
+```gdscript
 extends Control
 
 const GAME_SCENE := preload("res://scenes/game.tscn")
@@ -353,3 +383,63 @@ func _control_row(title: String, control: Control) -> HBoxContainer:
 	control.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(control)
 	return row
+```
+
+## Gameplay shell
+
+### `scenes/game.tscn`
+
+```ini
+[gd_scene load_steps=6 format=3]
+
+[ext_resource type="Script" path="res://scripts/core/game.gd" id="1_game"]
+[ext_resource type="Script" path="res://scripts/systems/starfield.gd" id="2_stars"]
+[ext_resource type="PackedScene" path="res://scenes/entities/player.tscn" id="3_player"]
+[ext_resource type="Script" path="res://scripts/systems/wave_director.gd" id="4_waves"]
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="5_hud"]
+
+[node name="Game" type="Node2D"]
+script = ExtResource("1_game")
+
+[node name="Backdrop" type="Polygon2D" parent="."]
+polygon = PackedVector2Array(0, 30, 1200, 30, 1200, 500, 0, 500)
+color = Color(0.006, 0.012, 0.045, 1)
+
+[node name="Starfield" type="Node2D" parent="."]
+script = ExtResource("2_stars")
+
+[node name="Entities" type="Node2D" parent="."]
+
+[node name="Player" parent="Entities" instance=ExtResource("3_player")]
+position = Vector2(150, 265)
+
+[node name="WaveDirector" type="Node" parent="."]
+script = ExtResource("4_waves")
+
+[node name="Music" type="AudioStreamPlayer" parent="."]
+bus = &"Music"
+
+[node name="HUD" type="CanvasLayer" parent="."]
+script = ExtResource("5_hud")
+```
+
+### `scenes/entities/player.tscn`
+
+```ini
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/entities/player.gd" id="1_player"]
+
+[sub_resource type="CapsuleShape2D" id="Capsule_player"]
+radius = 18.0
+height = 52.0
+
+[node name="Player" type="Area2D"]
+collision_layer = 1
+collision_mask = 26
+script = ExtResource("1_player")
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="."]
+rotation = 1.5708
+shape = SubResource("Capsule_player")
+```
