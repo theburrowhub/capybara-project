@@ -235,9 +235,30 @@ func _run() -> void:
 	game._try_drop_powerup("boss", Vector2(500.0, 250.0))
 	await get_tree().process_frame
 	_check(get_tree().get_nodes_in_group("powerup").size() >= 1, "power-up spawning works")
+	var destruction_start_y := game.player.position.y
+	game.player.shield = 0.0
+	game.player.weapon_powerups = 0
+	game.player.take_damage(game.player.health)
+	_check(game.player_destruction_active, "lethal hull damage starts the player destruction sequence")
+	_check(not game.game_over, "game over waits for the player destruction sequence")
+	_check(game.player.visible and not game.player.active, "destroyed player remains visible but inactive during descent")
+	var initial_destruction_effects := game.entities.get_children().filter(func(node: Node) -> bool: return node is ExplosionEffect).size()
+	_check(initial_destruction_effects >= 1, "player destruction starts with a small explosion")
+	game._update_player_destruction(GAME_TYPE.PLAYER_DESTRUCTION_EXPLOSION_INTERVAL)
+	_check(game.player.position.y > destruction_start_y, "destroyed player descends toward the lower edge")
+	var repeated_destruction_effects := game.entities.get_children().filter(func(node: Node) -> bool: return node is ExplosionEffect).size()
+	_check(repeated_destruction_effects > initial_destruction_effects, "small explosions continue during the descent")
+	game._update_player_destruction(GAME_TYPE.PLAYER_DESTRUCTION_DESCENT_DURATION)
+	_check(game.player_destruction_reached_edge, "player destruction reaches the lower edge before game over")
+	_check(is_equal_approx(game.player.position.y, GAME_TYPE.PLAYER_DESTRUCTION_EDGE_Y), "destroyed player stops at the lower gameplay edge")
+	_check(not game.player.visible and not game.game_over, "player disappears in the final explosion before game over")
+	var final_explosion := game.entities.get_child(-1) as ExplosionEffect
+	_check(is_instance_valid(final_explosion) and is_equal_approx(final_explosion.size, GAME_TYPE.PLAYER_DESTRUCTION_FINAL_SIZE), "player disappears in a large final explosion")
+	game._update_player_destruction(GAME_TYPE.PLAYER_DESTRUCTION_FINAL_DELAY)
+	_check(game.game_over, "game over appears after the final explosion has played")
 	var exit_code := 0 if failures.is_empty() else 1
 	if exit_code == 0:
-		print("SMOKE_OK: Godot gameplay scene, GLB ship, enemies, projectiles and power-ups")
+		print("SMOKE_OK: Godot gameplay scene, combat systems and staged player destruction")
 	else:
 		print("SMOKE_FAILED: %s" % ", ".join(failures))
 	game.music.stop()

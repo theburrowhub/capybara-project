@@ -318,7 +318,11 @@ func take_damage(amount: float) -> void:
 		else:
 			health = 0.0
 			active = false
-			visible = false
+			special_active = false
+			set_deferred("monitoring", false)
+			set_deferred("monitorable", false)
+			_update_defense_visuals()
+			queue_redraw()
 			died.emit()
 	stats_changed.emit()
 
@@ -337,6 +341,8 @@ func energy_mode_name() -> String:
 	return "OFFENSIVE" if energy_mode == EnergyMode.OFFENSIVE else "DEFENSIVE"
 
 func _on_area_entered(area: Area2D) -> void:
+	if not active:
+		return
 	if area.is_in_group("enemy"):
 		take_damage(float(area.get("contact_damage")) if area.get("contact_damage") != null else 10.0)
 		if area.has_method("take_damage") and str(area.get("enemy_type")) != "boss":
