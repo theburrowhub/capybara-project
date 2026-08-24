@@ -17,6 +17,12 @@ const EXPLOSION_TYPE := preload("res://scripts/entities/explosion.gd")
 const STARFIELD_TYPE := preload("res://scripts/systems/starfield.gd")
 const WAVE_DIRECTOR_TYPE := preload("res://scripts/systems/wave_director.gd")
 const HUD_TYPE := preload("res://scripts/ui/hud.gd")
+const PLAYER_DESTRUCTION_DESCENT_DURATION := 2.4
+const PLAYER_DESTRUCTION_EXPLOSION_INTERVAL := 0.24
+const PLAYER_DESTRUCTION_FINAL_DELAY := 0.65
+const PLAYER_DESTRUCTION_SMALL_SIZE := 15.0
+const PLAYER_DESTRUCTION_FINAL_SIZE := 96.0
+const PLAYER_DESTRUCTION_EDGE_Y := CONFIG.HUD_BOTTOM - 12.0
 
 @export var level_index := 0
 @export var difficulty := 1
@@ -37,6 +43,15 @@ var boss_escape := false
 var boss_escape_timer := 0.0
 var level_transitioning := false
 var transition_timer := 0.0
+var player_destruction_active := false
+var player_destruction_reached_edge := false
+var player_destruction_start_y := 0.0
+var player_destruction_elapsed := 0.0
+var player_destruction_explosion_timer := 0.0
+var player_destruction_final_timer := 0.0
+var player_destruction_explosion_count := 0
+var player_destruction_title := "SHIP DESTROYED"
+var player_destruction_subtitle := "[R] RESTART   ·   [ESC] MAIN MENU"
 
 @onready var entities: Node2D = $Entities
 @onready var player: PLAYER_TYPE = $Entities/Player
@@ -69,6 +84,9 @@ func _process(delta: float) -> void:
 	if game_over:
 		return
 	if paused:
+		return
+	if player_destruction_active:
+		_update_player_destruction(delta)
 		return
 	game_time += delta
 	level_time += delta
@@ -180,10 +198,59 @@ func _spawn_explosion(at: Vector2, color: Color, size: float) -> void:
 	entities.add_child(explosion)
 
 func _on_player_died() -> void:
-	if boss_escape:
+	if player_destruction_active or game_over:
 		return
-	_spawn_explosion(player.global_position, Color("64d9ff"), 70.0)
-	_end_game(false, "SHIP DESTROYED", "[R] RESTART   ·   [ESC] MAIN MENU")
+	player_destruction_active = true
+	player_destruction_reached_edge = false
+	player_destruction_start_y = player.position.y
+	player_destruction_elapsed = 0.0
+	player_destruction_explosion_timer = PLAYER_DESTRUCTION_EXPLOSION_INTERVAL
+	player_destruction_final_timer = 0.0
+	player_destruction_explosion_count = 0
+	player_destruction_title = "DEFEAT" if boss_escape else "SHIP DESTROYED"
+	player_destruction_subtitle = (
+		"THE BOSS ESCAPED AND OBLITERATED THE FLEET\n[R] RESTART   ·   [ESC] MAIN MENU"
+		if boss_escape
+		else "[R] RESTART   ·   [ESC] MAIN MENU"
+	)
+	director.running = false
+	_freeze_combat_for_player_destruction()
+	_spawn_player_destruction_explosion()
+
+func _update_player_destruction(delta: float) -> void:
+	if player_destruction_reached_edge:
+		player_destruction_final_timer += delta
+		if player_destruction_final_timer >= PLAYER_DESTRUCTION_FINAL_DELAY:
+			player_destruction_active = false
+			_end_game(false, player_destruction_title, player_destruction_subtitle)
+		return
+
+	player_destruction_elapsed += delta
+	var descent_progress := clampf(player_destruction_elapsed / PLAYER_DESTRUCTION_DESCENT_DURATION, 0.0, 1.0)
+	player.position.y = lerpf(player_destruction_start_y, PLAYER_DESTRUCTION_EDGE_Y, descent_progress)
+	player.set_visual_bank(1.0, false, delta)
+	player_destruction_explosion_timer -= delta
+	while player_destruction_explosion_timer <= 0.0 and descent_progress < 1.0:
+		_spawn_player_destruction_explosion()
+		player_destruction_explosion_timer += PLAYER_DESTRUCTION_EXPLOSION_INTERVAL
+	if descent_progress < 1.0:
+		return
+
+	player_destruction_reached_edge = true
+	player.visible = false
+	_spawn_explosion(player.global_position, Color("64d9ff"), PLAYER_DESTRUCTION_FINAL_SIZE)
+
+func _spawn_player_destruction_explosion() -> void:
+	var offset := Vector2(randf_range(-28.0, 28.0), randf_range(-18.0, 18.0))
+	var color := Color("ffb84d") if player_destruction_explosion_count % 2 == 0 else Color("64d9ff")
+	_spawn_explosion(player.global_position + offset, color, PLAYER_DESTRUCTION_SMALL_SIZE)
+	player_destruction_explosion_count += 1
+
+func _freeze_combat_for_player_destruction() -> void:
+	for group_name in ["enemy", "player_projectile", "enemy_projectile", "powerup"]:
+		for node in get_tree().get_nodes_in_group(group_name):
+			if is_instance_valid(node):
+				node.process_mode = Node.PROCESS_MODE_DISABLED
 
 func _update_boss_escape(delta: float) -> void:
 	if not boss_escape and is_instance_valid(boss_enemy) and boss_spawn_time >= 0.0:
